@@ -3,6 +3,7 @@
 
 #include "sessioncontroller.h"
 
+#include <algorithm>
 #include <QDir>
 #include <QFileInfo>
 #include <QImage>
@@ -25,6 +26,14 @@ SessionController::SessionController(CatalogModel *model,
     {
         connect(m_model, &CatalogModel::countChanged, this, &SessionController::onModelCountChanged);
         connect(m_model, &CatalogModel::fileLoadError, this, &SessionController::onFileLoadError);
+    }
+
+    if (m_selectionManager)
+    {
+        connect(m_selectionManager, &SelectionManager::selectionChanged, this, [this]() {
+            resetViewerZoom();
+            resetViewerRotation();
+        });
     }
 
     connect(m_scanner, &DirectoryScanner::scanStarted, this, [this](const QString &path) {
@@ -53,6 +62,12 @@ void SessionController::setPreviewMode(bool active)
         return;
     }
     m_previewMode = active;
+    if (!active && m_isFullscreen)
+    {
+        setFullscreen(false);
+    }
+    resetViewerZoom();
+    resetViewerRotation();
     emit previewModeChanged();
 }
 
@@ -517,6 +532,88 @@ bool SessionController::captureScreenshot(QObject *windowObject, const QString &
 
     emit screenshotCompleted(filePath, saved);
     return saved;
+}
+
+double SessionController::viewerZoom() const
+{
+    return m_viewerZoom;
+}
+
+void SessionController::setViewerZoom(double zoom)
+{
+    const double clamped = std::clamp(zoom, 0.1, 10.0);
+    if (qFuzzyCompare(m_viewerZoom, clamped))
+    {
+        return;
+    }
+    m_viewerZoom = clamped;
+    emit viewerZoomChanged();
+}
+
+void SessionController::zoomIn(double step)
+{
+    setViewerZoom(m_viewerZoom + step);
+}
+
+void SessionController::zoomOut(double step)
+{
+    setViewerZoom(m_viewerZoom - step);
+}
+
+void SessionController::resetViewerZoom()
+{
+    setViewerZoom(1.0);
+}
+
+int SessionController::viewerRotation() const
+{
+    return m_viewerRotation;
+}
+
+void SessionController::setViewerRotation(int degrees)
+{
+    const int normalized = ((degrees % 360) + 360) % 360;
+    if (m_viewerRotation == normalized)
+    {
+        return;
+    }
+    m_viewerRotation = normalized;
+    emit viewerRotationChanged();
+}
+
+void SessionController::rotateClockwise()
+{
+    setViewerRotation(m_viewerRotation + 90);
+}
+
+void SessionController::rotateCounterClockwise()
+{
+    setViewerRotation(m_viewerRotation - 90);
+}
+
+void SessionController::resetViewerRotation()
+{
+    setViewerRotation(0);
+}
+
+bool SessionController::isFullscreen() const
+{
+    return m_isFullscreen;
+}
+
+void SessionController::setFullscreen(bool fullscreen)
+{
+    if (m_isFullscreen == fullscreen)
+    {
+        return;
+    }
+    m_isFullscreen = fullscreen;
+    emit fullscreenChanged();
+}
+
+void SessionController::toggleFullscreen()
+{
+    setFullscreen(!m_isFullscreen);
 }
 
 void SessionController::onModelCountChanged()

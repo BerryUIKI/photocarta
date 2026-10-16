@@ -21,6 +21,7 @@ private slots:
     void testSessionController();
     void testErrorHandling();
     void testZoomFactorClamping();
+    void testViewerZoomAndRotation();
 };
 
 void TestThemeAndSession::testThemeManager()
@@ -119,6 +120,81 @@ void TestThemeAndSession::testZoomFactorClamping()
     // Test maximum clamping (2.0)
     controller.setZoomFactor(5.0);
     QCOMPARE(controller.zoomFactor(), 2.0);
+}
+
+void TestThemeAndSession::testViewerZoomAndRotation()
+{
+    CatalogModel model;
+    CatalogFilterModel filter;
+    filter.setSourceModel(&model);
+    SelectionManager selection(&filter);
+    SessionController controller(&model, &filter, &selection);
+
+    // Initial state
+    QCOMPARE(controller.viewerZoom(), 1.0);
+    QCOMPARE(controller.viewerRotation(), 0);
+    QCOMPARE(controller.isFullscreen(), false);
+
+    // Zoom tests
+    QSignalSpy zoomSpy(&controller, &SessionController::viewerZoomChanged);
+    controller.zoomIn(0.5);
+    QCOMPARE(controller.viewerZoom(), 1.5);
+    QCOMPARE(zoomSpy.count(), 1);
+
+    controller.zoomOut(0.25);
+    QCOMPARE(controller.viewerZoom(), 1.25);
+
+    // Clamping min / max
+    controller.setViewerZoom(0.01);
+    QCOMPARE(controller.viewerZoom(), 0.1);
+
+    controller.setViewerZoom(50.0);
+    QCOMPARE(controller.viewerZoom(), 10.0);
+
+    controller.resetViewerZoom();
+    QCOMPARE(controller.viewerZoom(), 1.0);
+
+    // Rotation tests
+    QSignalSpy rotSpy(&controller, &SessionController::viewerRotationChanged);
+    controller.rotateClockwise();
+    QCOMPARE(controller.viewerRotation(), 90);
+    QCOMPARE(rotSpy.count(), 1);
+
+    controller.rotateClockwise();
+    QCOMPARE(controller.viewerRotation(), 180);
+
+    controller.rotateClockwise();
+    QCOMPARE(controller.viewerRotation(), 270);
+
+    controller.rotateClockwise();
+    QCOMPARE(controller.viewerRotation(), 0);
+
+    controller.rotateCounterClockwise();
+    QCOMPARE(controller.viewerRotation(), 270);
+
+    controller.resetViewerRotation();
+    QCOMPARE(controller.viewerRotation(), 0);
+
+    // Fullscreen toggle
+    QSignalSpy fsSpy(&controller, &SessionController::fullscreenChanged);
+    controller.toggleFullscreen();
+    QCOMPARE(controller.isFullscreen(), true);
+    QCOMPARE(fsSpy.count(), 1);
+
+    controller.toggleFullscreen();
+    QCOMPARE(controller.isFullscreen(), false);
+    QCOMPARE(fsSpy.count(), 2);
+
+    // Changing selection resets zoom and rotation
+    controller.zoomIn(1.0);
+    controller.rotateClockwise();
+    QCOMPARE(controller.viewerZoom(), 2.0);
+    QCOMPARE(controller.viewerRotation(), 90);
+
+    controller.loadDemoSamples();
+    selection.select(1);
+    QCOMPARE(controller.viewerZoom(), 1.0);
+    QCOMPARE(controller.viewerRotation(), 0);
 }
 
 QTEST_MAIN(TestThemeAndSession)
