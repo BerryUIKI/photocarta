@@ -96,6 +96,12 @@ jobs:
           cache: true
           setup-python: false
 
+      - name: Patch Qt 6 AGL framework for macOS SDK 15+ (QTBUG-137687)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          find "${RUNNER_WORKSPACE}" -type f \( -name "*.cmake" -o -name "*.prl" \) -exec sed -i '' 's/-framework AGL//g' {} + 2>/dev/null || true
+
       - name: Set up MSVC environment on Windows
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
