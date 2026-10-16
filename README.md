@@ -24,12 +24,19 @@ backend. Release early, then improve functionality incrementally.
 - [Storage choices and scale](docs/storage-and-scale.md)
 - [Initial release scope](docs/initial-release.md)
 - [GitFlow and repository protection](docs/gitflow.md)
+- [Local build instructions](docs/build-instructions.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Current status
 
-Project documentation and repository tooling only. No application implementation, builds, or
-performance benchmarks have been completed in this repository yet.
+The initial Qt Quick GUI slice is implemented with CMake, C++ presentation models, and QML assets.
+It delivers a photo-focused desktop interface with dark and light themes, responsive collection and
+metadata sidebars, a virtualized thumbnail grid, keyboard navigation, a large-image preview mode,
+and procedural SVG demo fixtures.
+
+Local images can be opened into an ephemeral, non-destructive browsing session via the native file
+dialog. The presentation interface is decoupled from backend engines; digiKam database integration
+and metadata write operations will be introduced in subsequent milestones.
 
 The reference checkout is `F:/dev/digikam`, inspected at commit
 `c60c45a8aa30a6a135982cfa4e46cbcaff0bc2c8` (version declared as 9.2.0).

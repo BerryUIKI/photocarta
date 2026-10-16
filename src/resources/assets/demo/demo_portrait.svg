@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <radialGradient id="backdropGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </radialGradient>
+    <linearGradient id="rimLightGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="softFillGrad" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Studio Backdrop -->
+  <rect width="800" height="600" fill="url(#backdropGrad)"/>
+  <!-- Rim Light Aura -->
+  <circle cx="360" cy="270" r="160" fill="none" stroke="url(#rimLightGrad)" stroke-width="12" opacity="0.6"/>
+  <!-- Portrait Silhouette -->
+  <!-- Shoulders / Torso -->
+  <path d="M 230 600 C 240 500 280 440 330 420 C 370 410 430 410 470 420 C 520 440 560 500 570 600 Z" fill="#0f172a"/>
+  <!-- Neck -->
+  <rect x="365" y="340" width="70" height="90" rx="20" fill="#0f172a"/>
+  <!-- Head Silhouette Profile/Three-Quarter -->
+  <path d="M 340 260 C 330 180 400 130 460 150 C 490 160 510 190 500 240 C 495 265 505 280 495 310 C 485 335 460 365 420 370 C 370 375 345 320 340 260 Z" fill="#0f172a"/>
+  <!-- Subtle Key Light Highlight -->
+  <path d="M 345 220 C 340 180 380 150 420 155" fill="none" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+  <path d="M 335 255 C 335 280 345 315 365 345" fill="none" stroke="#f59e0b" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+  <!-- Soft Rim on Shoulder -->
+  <path d="M 240 560 C 255 490 290 445 335 425" fill="none" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" opacity="0.75"/>
+  <path d="M 560 560 C 545 490 510 445 465 425" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+  <!-- Studio Vignette -->
+  <rect width="800" height="600" fill="none" stroke="#000000" stroke-width="40" opacity="0.4"/>
+  <!-- Demo watermark badge -->
+  <rect x="24" y="24" width="130" height="30" rx="6" fill="#090a0f" fill-opacity="0.75" stroke="#475569" stroke-width="1"/>
+  <text x="89" y="44" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" text-anchor="middle" letter-spacing="1.5">DEMO FIXTURE</text>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="appGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#appGrad)"/>
+  <rect x="8" y="8" width="32" height="32" rx="8" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
+  <circle cx="17" cy="18" r="4" fill="#ffffff"/>
+  <path d="M 10 36 L 22 23 L 31 31 L 38 24 L 40 26 L 40 34 C 40 36 38 38 36 38 L 12 38 C 10 38 10 36 10 36 Z" fill="#ffffff" opacity="0.95"/>
+</svg>

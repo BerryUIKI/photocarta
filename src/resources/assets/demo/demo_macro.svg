@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <radialGradient id="macroBg" cx="40%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#166534"/>
+      <stop offset="50%" stop-color="#14532d"/>
+      <stop offset="100%" stop-color="#052e16"/>
+    </radialGradient>
+    <linearGradient id="leafGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#86efac"/>
+      <stop offset="40%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+    <radialGradient id="waterDrop" cx="35%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="30%" stop-color="#bae6fd" stop-opacity="0.7"/>
+      <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#0369a1" stop-opacity="0.8"/>
+    </radialGradient>
+  </defs>
+  <!-- Background Bokeh -->
+  <rect width="800" height="600" fill="url(#macroBg)"/>
+  <circle cx="160" cy="140" r="90" fill="#22c55e" opacity="0.15"/>
+  <circle cx="680" cy="480" r="120" fill="#4ade80" opacity="0.12"/>
+  <!-- Macro Leaf Blade Shape -->
+  <path d="M -50 650 Q 250 200 850 -50 L 850 650 Z" fill="url(#leafGrad)"/>
+  <!-- Primary Central Leaf Vein -->
+  <path d="M -50 650 Q 250 200 850 -50" fill="none" stroke="#fef08a" stroke-width="8" opacity="0.85"/>
+  <!-- Secondary Lateral Veins -->
+  <path d="M 120 480 Q 200 450 320 540" fill="none" stroke="#fef9c3" stroke-width="3.5" opacity="0.7"/>
+  <path d="M 230 380 Q 320 330 460 420" fill="none" stroke="#fef9c3" stroke-width="3.5" opacity="0.7"/>
+  <path d="M 360 280 Q 450 220 600 310" fill="none" stroke="#fef9c3" stroke-width="3.5" opacity="0.7"/>
+  <path d="M 500 180 Q 600 120 730 200" fill="none" stroke="#fef9c3" stroke-width="3.5" opacity="0.7"/>
+  <path d="M 640 90 Q 720 40 820 100" fill="none" stroke="#fef9c3" stroke-width="3.5" opacity="0.7"/>
+  <!-- Crystal Dew Drops -->
+  <!-- Main Macro Water Drop -->
+  <ellipse cx="380" cy="270" rx="35" ry="32" fill="url(#waterDrop)"/>
+  <ellipse cx="370" cy="260" rx="8" ry="6" fill="#ffffff" opacity="0.9"/>
+  <ellipse cx="395" cy="285" rx="5" ry="3" fill="#ffffff" opacity="0.5"/>
+  <!-- Secondary Drops -->
+  <ellipse cx="260" cy="360" rx="20" ry="18" fill="url(#waterDrop)"/>
+  <ellipse cx="254" cy="354" rx="5" ry="4" fill="#ffffff" opacity="0.9"/>
+  <ellipse cx="480" cy="200" rx="14" ry="13" fill="url(#waterDrop)"/>
+  <ellipse cx="476" cy="196" rx="4" ry="3" fill="#ffffff" opacity="0.9"/>
+  <ellipse cx="580" cy="130" rx="10" ry="9" fill="url(#waterDrop)"/>
+  <ellipse cx="577" cy="127" rx="2" ry="2" fill="#ffffff" opacity="0.9"/>
+  <!-- Demo watermark badge -->
+  <rect x="24" y="24" width="130" height="30" rx="6" fill="#090a0f" fill-opacity="0.75" stroke="#475569" stroke-width="1"/>
+  <text x="89" y="44" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" text-anchor="middle" letter-spacing="1.5">DEMO FIXTURE</text>
+</svg>

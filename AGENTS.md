@@ -14,8 +14,8 @@
 
 ## Repository and upstream
 
-- This repository currently contains project initialization and documentation;
-  application source and build targets have not been imported yet.
+- This repository contains the root CMake project, application source (`src/`),
+  presentation catalog models, QML interface assets, and focused Qt tests (`tests/qt/`).
 - `F:/dev/digikam` is the reference checkout on the current developer's machine.
   Read that repository's own instructions before working there. Do not make it a
   hard-coded build dependency or modify it as a side effect of PhotoCarta work.
@@ -56,11 +56,12 @@
 
 - Run `python scripts/check_repository.py` and
   `python -m unittest discover -s tests -v` for initialization/policy changes.
-- Current CI validates repository files and GitFlow policy on three host operating
-  systems. It does not compile or test the future application.
-- Once application targets exist, add real configure/build/tests and UI smoke
-  checks to CI. Use visual review for layout changes and focused behavioral tests
-  for integration changes; avoid tests that only restate styling code.
+- CI validates repository files, GitFlow policy, and native builds on
+  Windows, macOS, and Linux, running focused behavioral tests and startup smoke checks.
+- When native toolchains are present locally, run `ctest --test-dir build --output-on-failure`
+  and use visual review via `photocarta --screenshot <path>`.
+- Focused behavioral tests in `tests/qt/` verify model data roles, selection state,
+  filtering, and error handling.
 - Report what changed, what was actually verified, and remaining limitations.
   Do not report planned platform support or scale goals as tested facts.
 - Keep these instructions and project documentation aligned with agreed decisions.
