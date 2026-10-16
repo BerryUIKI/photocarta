@@ -4,6 +4,7 @@
 /out/
 /dist/
 /install/
+/packages/
 CMakeUserPresets.json
 CMakeCache.txt
 CMakeFiles/
