@@ -137,6 +137,18 @@ jobs:
           path: build/tests/qt/smoke_screenshot.png
           if-no-files-found: ignore
 
+      - name: Package standalone application binaries
+        shell: bash
+        run: |
+          python scripts/package.py --build-dir build --output-dir packages
+
+      - name: Upload packaged application artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: package-${{ matrix.os }}
+          path: packages/*
+          if-no-files-found: error
+
   required:
     name: ${{ github.event_name == 'pull_request' && 'Required checks' || 'Branch checks' }}
     if: ${{ always() }}

@@ -49,3 +49,6 @@ add_subdirectory(src)
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
+
+# CPack packaging configuration
+include(cmake/Packaging.cmake)
