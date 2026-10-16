@@ -27,6 +27,9 @@ Use a photo-focused professional desktop layout, neutral colors, consistent
 spacing and typography, collapsible side panels, and light/dark themes. Build a
 shared component style rather than applying isolated visual changes to each view.
 Validate the main layout with an early visual prototype before broad conversion.
+The first runnable GUI slice (`photocarta`) satisfies this milestone with dark/light themes,
+responsive sidebars, a virtualized thumbnail grid, preview mode, and procedural demo fixtures;
+see [Local build instructions](build-instructions.md).
 
 ## Release checks
 

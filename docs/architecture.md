@@ -83,9 +83,11 @@ upstream schema version. Use separate test catalog copies during development.
 - Keep source provenance and upstream changes traceable.
 - Do not claim a platform or catalog size has been validated until it has been tested.
 
-The source import layout, exact dependency versions, minimum operating system
-versions, and package formats will be settled during build bring-up. This repository
-currently contains documentation, not a configured digiKam build.
+The initial runnable GUI slice is implemented with CMake, C++ presentation models
+(`CatalogModel`, `CatalogFilterModel`, `SelectionManager`, `SessionController`, `ThemeManager`),
+and a Qt Quick interface. It provides an ephemeral, non-destructive session for browsing
+demo fixtures and local images while preserving clean boundaries for subsequent digiKam
+database and engine integration.
 
 ## References
 

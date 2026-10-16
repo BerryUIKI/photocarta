@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="40%" stop-color="#4338ca"/>
+      <stop offset="70%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#fef08a"/>
+    </linearGradient>
+    <linearGradient id="sunGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="lakeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.8"/>
+      <stop offset="30%" stop-color="#312e81"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <!-- Sky -->
+  <rect width="800" height="600" fill="url(#skyGrad)"/>
+  <!-- Sun -->
+  <circle cx="400" cy="360" r="70" fill="url(#sunGrad)"/>
+  <!-- Distant Mountains -->
+  <polygon points="-50,420 180,240 340,420" fill="#312e81" opacity="0.9"/>
+  <polygon points="120,420 400,210 620,420" fill="#3730a3" opacity="0.85"/>
+  <polygon points="460,420 680,260 850,420" fill="#1e1b4b" opacity="0.9"/>
+  <!-- Mountain Snow Caps -->
+  <polygon points="400,210 375,250 395,245 400,255 410,245 425,250" fill="#f8fafc" opacity="0.9"/>
+  <polygon points="180,240 160,270 175,265 180,275 190,265 200,270" fill="#f8fafc" opacity="0.8"/>
+  <polygon points="680,260 660,290 675,285 680,295 690,285 700,290" fill="#f8fafc" opacity="0.8"/>
+  <!-- Midground Hills -->
+  <polygon points="-50,450 150,340 380,450" fill="#1e293b"/>
+  <polygon points="320,450 560,330 850,450" fill="#0f172a"/>
+  <!-- Lake -->
+  <rect y="440" width="800" height="160" fill="url(#lakeGrad)"/>
+  <!-- Sun Reflection -->
+  <ellipse cx="400" cy="460" rx="45" ry="4" fill="#fef08a" opacity="0.7"/>
+  <ellipse cx="400" cy="475" rx="60" ry="5" fill="#fef08a" opacity="0.6"/>
+  <ellipse cx="400" cy="495" rx="75" ry="6" fill="#fde047" opacity="0.5"/>
+  <ellipse cx="400" cy="520" rx="90" ry="7" fill="#fde047" opacity="0.4"/>
+  <ellipse cx="400" cy="550" rx="110" ry="8" fill="#f59e0b" opacity="0.3"/>
+  <!-- Foreground Pine Silhouettes -->
+  <polygon points="40,580 40,410 20,460 40,430 15,490 40,460 10,530 40,500 0,580" fill="#020617"/>
+  <polygon points="760,590 760,430 745,470 760,450 735,510 760,480 730,550 760,520 720,590" fill="#020617"/>
+  <polygon points="785,600 785,460 770,500 785,480 765,540 785,510 760,570 785,540 750,600" fill="#020617"/>
+  <!-- Demo watermark badge -->
+  <rect x="24" y="24" width="130" height="30" rx="6" fill="#090a0f" fill-opacity="0.75" stroke="#475569" stroke-width="1"/>
+  <text x="89" y="44" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" text-anchor="middle" letter-spacing="1.5">DEMO FIXTURE</text>
+</svg>
