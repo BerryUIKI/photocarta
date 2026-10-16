@@ -14,6 +14,8 @@ Rectangle {
 
     width: GridView.view.cellWidth - 12
     height: GridView.view.cellHeight - 12
+    x: 6
+    y: 6
     radius: themeManager.radiusMd
     color: isSelected
            ? themeManager.surfaceSelected

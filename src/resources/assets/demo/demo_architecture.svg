@@ -38,7 +38,4 @@
   <line x1="380" y1="185" x2="380" y2="520" stroke="#bae6fd" stroke-width="2" opacity="0.6"/>
   <!-- Dramatic Architectural Shadow on Ground -->
   <polygon points="0,600 800,600 800,550 560,540 150,560 0,600" fill="#0f172a" opacity="0.8"/>
-  <!-- Demo watermark badge -->
-  <rect x="24" y="24" width="130" height="30" rx="6" fill="#090a0f" fill-opacity="0.75" stroke="#475569" stroke-width="1"/>
-  <text x="89" y="44" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" text-anchor="middle" letter-spacing="1.5">DEMO FIXTURE</text>
 </svg>
