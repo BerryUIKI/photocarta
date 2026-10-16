@@ -9,8 +9,8 @@ This guide describes how to configure, build, run, and test PhotoCarta on Window
   - Windows: MSVC 2022 (v143) or newer
   - Linux: GCC 11+ or Clang 13+
   - macOS: Apple Clang / Xcode 14+
-- **Qt 6**: version 6.5 or higher (6.7 LTS or 6.8 LTS recommended)
-  - Required modules: `Core`, `Gui`, `Widgets`, `Qml`, `Quick`, `QuickControls2`, `Concurrent`, `Test`
+- **Qt 6**: version 6.5 or higher (Qt 6.8 LTS recommended)
+  - Required components: `Core`, `Gui`, `Widgets`, `Qml`, `Quick`, `Concurrent`, `Test`
 - **Build tool**: [Ninja](https://ninja-build.org/) recommended (or Make / MSVC MSBuild)
 
 ---
@@ -22,16 +22,18 @@ If using Microsoft Visual Studio 2022:
 1. Open **x64 Native Tools Command Prompt for VS 2022** (or run `vcvars64.bat`).
 2. Ensure Qt 6 is in your `CMAKE_PREFIX_PATH`:
    ```cmd
-   set CMAKE_PREFIX_PATH=C:\Qt\6.7.3\msvc2022_64
+   set CMAKE_PREFIX_PATH=C:\Qt\6.8.3\msvc2022_64
    ```
 
 ### Linux (Debian / Ubuntu)
-Install compiler and development headers:
+Install compiler, development headers, and offscreen test dependencies:
 ```bash
 sudo apt update
 sudo apt install -y build-essential cmake ninja-build xvfb \
-    qt6-base-dev qt6-declarative-dev qml6-module-qtquick-controls \
-    libgl1-mesa-dev libxkbcommon-dev
+    qt6-base-dev qt6-declarative-dev \
+    libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-0 \
+    libegl1-mesa-dev libfontconfig1-dev libfreetype6-dev \
+    libx11-xcb1 libxrender1 libxi6 libxcursor1 libvulkan-dev
 ```
 
 ### macOS (Homebrew)

@@ -30,9 +30,17 @@ python -m unittest discover -s tests -v
 git diff --check
 ```
 
-There is no application build target yet. CMake, Qt, backend import, and native
-application CI will be added during GUI bring-up. Do not mistake a passing
-repository-check job for a passing application build.
+The application and behavioral tests are built with CMake and Qt 6. See
+[Local build instructions](docs/build-instructions.md) for platform prerequisites:
+
+```sh
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+cmake --build build --config Release
+ctest --test-dir build --output-on-failure
+```
+
+CI validates repository policy, GitFlow rules, and native builds on Windows,
+macOS, and Linux, executing the full Qt behavioral test suite and startup smoke tests.
 
 For UI changes, include before/after images where useful and describe keyboard,
 display-scaling, and theme validation. State which platforms were tested. Use
