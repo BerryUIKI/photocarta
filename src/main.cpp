@@ -29,7 +29,11 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QQuickStyle::setStyle(QStringLiteral("Basic"));
     app.setApplicationName(QStringLiteral("PhotoCarta"));
-    app.setApplicationVersion(QStringLiteral("0.1.0"));
+#ifdef PHOTOCARTA_VERSION
+    app.setApplicationVersion(QStringLiteral(PHOTOCARTA_VERSION));
+#else
+    app.setApplicationVersion(QStringLiteral("0.0.1"));
+#endif
     app.setOrganizationName(QStringLiteral("PhotoCarta"));
     app.setOrganizationDomain(QStringLiteral("photocarta.org"));
     app.setWindowIcon(QIcon(QStringLiteral(":/assets/icons/app_icon.svg")));

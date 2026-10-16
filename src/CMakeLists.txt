@@ -23,6 +23,10 @@ target_link_libraries(photocarta PRIVATE
     Qt6::QuickControls2
 )
 
+target_compile_definitions(photocarta PRIVATE
+    PHOTOCARTA_VERSION="${PROJECT_VERSION}"
+)
+
 set_target_properties(photocarta PROPERTIES
     AUTOMOC ON
     AUTORCC ON
