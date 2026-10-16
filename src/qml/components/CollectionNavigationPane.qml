@@ -455,7 +455,7 @@ Rectangle {
                     Text {
                         width: parent.width
                         wrapMode: Text.Wrap
-                        text: qsTr("This GUI slice operates on an ephemeral session without copying originals or modifying production databases. Backend digiKam reuse is isolated.")
+                        text: qsTr("This prototype operates on a temporary session without copying originals or modifying production databases. Backend digiKam integration will connect in subsequent milestones.")
                         font.pixelSize: 10
                         lineHeight: 1.3
                         color: themeManager.textMuted

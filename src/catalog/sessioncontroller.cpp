@@ -122,7 +122,7 @@ QString SessionController::sessionTypeDescription() const
     {
         return QStringLiteral("Demo Fixtures (Procedural SVGs - Display Only)");
     }
-    return QStringLiteral("Ephemeral Local Photos (Non-destructive Read-Only)");
+    return QStringLiteral("Temporary Local Photos (Read-Only)");
 }
 
 void SessionController::togglePreviewMode()

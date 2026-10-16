@@ -290,7 +290,7 @@ Rectangle {
                         anchors.fill: parent
                         anchors.margins: 8
                         wrapMode: Text.Wrap
-                        text: qsTr("Notice: In this GUI slice, rating and tags are display-only fixtures. Metadata write operations will connect to digiKam database engines in subsequent releases.")
+                        text: qsTr("Notice: In this prototype, ratings and tags are display-only fixtures. Metadata write operations will connect to digiKam database engines in subsequent releases.")
                         font.pixelSize: 10
                         lineHeight: 1.3
                         color: themeManager.textMuted

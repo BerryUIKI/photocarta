@@ -108,7 +108,7 @@ Rectangle {
             Text {
                 id: sessionModeText
                 anchors.centerIn: parent
-                text: qsTr("EPHEMERAL")
+                text: qsTr("TEMPORARY")
                 font.pixelSize: 9
                 font.weight: Font.Bold
                 color: themeManager.textMuted
