@@ -36,6 +36,9 @@ class SessionController : public QObject
     Q_PROPERTY(bool hasDatabase READ hasDatabase NOTIFY databaseStateChanged)
     Q_PROPERTY(int databaseItemCount READ databaseItemCount NOTIFY databaseStateChanged)
     Q_PROPERTY(int currentCollectionId READ currentCollectionId NOTIFY currentCollectionChanged)
+    Q_PROPERTY(double viewerZoom READ viewerZoom WRITE setViewerZoom NOTIFY viewerZoomChanged)
+    Q_PROPERTY(int viewerRotation READ viewerRotation WRITE setViewerRotation NOTIFY viewerRotationChanged)
+    Q_PROPERTY(bool isFullscreen READ isFullscreen WRITE setFullscreen NOTIFY fullscreenChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -97,6 +100,23 @@ public:
     Q_INVOKABLE void showError(const QString &message);
     Q_INVOKABLE bool captureScreenshot(QObject *windowObject, const QString &filePath);
 
+    // Image Viewer Zoom & Rotation
+    [[nodiscard]] double viewerZoom() const;
+    Q_INVOKABLE void setViewerZoom(double zoom);
+    Q_INVOKABLE void zoomIn(double step = 0.25);
+    Q_INVOKABLE void zoomOut(double step = 0.25);
+    Q_INVOKABLE void resetViewerZoom();
+
+    [[nodiscard]] int viewerRotation() const;
+    Q_INVOKABLE void setViewerRotation(int degrees);
+    Q_INVOKABLE void rotateClockwise();
+    Q_INVOKABLE void rotateCounterClockwise();
+    Q_INVOKABLE void resetViewerRotation();
+
+    [[nodiscard]] bool isFullscreen() const;
+    Q_INVOKABLE void setFullscreen(bool fullscreen);
+    Q_INVOKABLE void toggleFullscreen();
+
 signals:
     void previewModeChanged();
     void leftPaneVisibleChanged();
@@ -109,6 +129,9 @@ signals:
     void scanProgressChanged();
     void databaseStateChanged();
     void currentCollectionChanged();
+    void viewerZoomChanged();
+    void viewerRotationChanged();
+    void fullscreenChanged();
     void screenshotCompleted(const QString &path, bool success);
 
 private slots:
@@ -137,6 +160,9 @@ private:
     double m_zoomFactor = 1.0;
     int m_scanProgress = 0;
     int m_currentCollectionId = 0;
+    double m_viewerZoom = 1.0;
+    int m_viewerRotation = 0;
+    bool m_isFullscreen = false;
 };
 
 } // namespace PhotoCarta

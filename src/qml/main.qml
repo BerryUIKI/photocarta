@@ -17,16 +17,19 @@ ApplicationWindow {
     minimumWidth: 840
     minimumHeight: 560
     visible: true
+    visibility: sessionController.isFullscreen ? Window.FullScreen : Window.Windowed
     color: themeManager.background
 
     header: AppToolbar {
         id: appToolbar
+        visible: !sessionController.isFullscreen
         onRequestOpenFiles: openDialog.open()
         onRequestScanFolder: scanFolderDialog.open()
     }
 
     footer: AppStatusBar {
         id: appStatusBar
+        visible: !sessionController.isFullscreen
     }
 
     // Top Error / Warning notification banner
@@ -35,12 +38,13 @@ ApplicationWindow {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
+        visible: sessionController.hasError && !sessionController.isFullscreen
         z: 20
     }
 
     // Main 3-Pane Responsive Layout
     Item {
-        anchors.top: errorBanner.bottom
+        anchors.top: (errorBanner.visible ? errorBanner.bottom : parent.top)
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -51,7 +55,7 @@ ApplicationWindow {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            visible: sessionController.leftPaneVisible
+            visible: sessionController.leftPaneVisible && !sessionController.isFullscreen
             onRequestScanFolder: scanFolderDialog.open()
         }
 
@@ -61,7 +65,7 @@ ApplicationWindow {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            visible: sessionController.rightPaneVisible
+            visible: sessionController.rightPaneVisible && !sessionController.isFullscreen
         }
 
         // Center: Content Canvas (Grid or Preview Mode)
@@ -146,9 +150,16 @@ ApplicationWindow {
     }
 
     Shortcut {
+        sequence: "F11"
+        onActivated: sessionController.toggleFullscreen()
+    }
+
+    Shortcut {
         sequence: "Escape"
         onActivated: {
-            if (sessionController.previewMode) {
+            if (sessionController.isFullscreen) {
+                sessionController.setFullscreen(false)
+            } else if (sessionController.previewMode) {
                 sessionController.setPreviewMode(false)
             } else if (filterModel.searchQuery) {
                 filterModel.searchQuery = ""
