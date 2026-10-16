@@ -3,6 +3,7 @@
 
 #include "catalogmodel.h"
 #include "database/catalogdatabase.h"
+#include "metadata/exifparser.h"
 
 #include <QFileInfo>
 #include <QImageReader>
@@ -391,20 +392,52 @@ CatalogItem CatalogModel::inspectLocalFile(const QString &filePath)
         item.formattedDimensions = QStringLiteral("Unknown dimensions");
     }
 
-    // EXIF metadata: Unknown without EXIF in this prototype
-    // Do not fabricate fake camera or lens names
-    item.cameraModel.clear();
-    item.lensModel.clear();
-    item.focalLength.clear();
-    item.aperture.clear();
-    item.shutterSpeed.clear();
-    item.iso = 0;
     item.rating = 0;
     item.isFlagged = false;
     item.tags = {QStringLiteral("Imported")};
     item.thumbnailUrl = QUrl(QStringLiteral("image://thumbnail/") + item.filePath);
     item.previewUrl = QUrl::fromLocalFile(item.filePath);
     item.isDemoFixture = false; // Real local file!
+
+    // Parse EXIF metadata
+    const ExifData exif = ExifParser::parseFile(item.filePath);
+    if (exif.isValid)
+    {
+        if (!exif.cameraModel.isEmpty())
+        {
+            item.cameraModel = exif.cameraModel;
+        }
+        if (!exif.lensModel.isEmpty())
+        {
+            item.lensModel = exif.lensModel;
+        }
+        if (!exif.focalLength.isEmpty())
+        {
+            item.focalLength = exif.focalLength;
+        }
+        if (!exif.aperture.isEmpty())
+        {
+            item.aperture = exif.aperture;
+        }
+        if (!exif.shutterSpeed.isEmpty())
+        {
+            item.shutterSpeed = exif.shutterSpeed;
+        }
+        if (exif.iso > 0)
+        {
+            item.iso = exif.iso;
+        }
+        if (exif.dateTaken.isValid())
+        {
+            item.dateTaken = exif.dateTaken;
+            item.formattedDate = exif.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+        }
+        if (item.dimensions.isEmpty() && exif.dimensions.isValid())
+        {
+            item.dimensions = exif.dimensions;
+            item.formattedDimensions = QString::asprintf("%d × %d", exif.dimensions.width(), exif.dimensions.height());
+        }
+    }
 
     return item;
 }

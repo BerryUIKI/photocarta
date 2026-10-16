@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "directoryscanner.h"
+#include "../metadata/exifparser.h"
 
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -103,6 +104,46 @@ CatalogItem DirectoryScanner::inspectFile(const QString &filePath)
     item.previewUrl = QUrl::fromLocalFile(absPath);
     item.isDemoFixture = false;
     item.isMissing = false;
+
+    // Parse EXIF metadata (camera, lens, exposure, capture date)
+    const ExifData exif = ExifParser::parseFile(absPath);
+    if (exif.isValid)
+    {
+        if (!exif.cameraModel.isEmpty())
+        {
+            item.cameraModel = exif.cameraModel;
+        }
+        if (!exif.lensModel.isEmpty())
+        {
+            item.lensModel = exif.lensModel;
+        }
+        if (!exif.focalLength.isEmpty())
+        {
+            item.focalLength = exif.focalLength;
+        }
+        if (!exif.aperture.isEmpty())
+        {
+            item.aperture = exif.aperture;
+        }
+        if (!exif.shutterSpeed.isEmpty())
+        {
+            item.shutterSpeed = exif.shutterSpeed;
+        }
+        if (exif.iso > 0)
+        {
+            item.iso = exif.iso;
+        }
+        if (exif.dateTaken.isValid())
+        {
+            item.dateTaken = exif.dateTaken;
+            item.formattedDate = exif.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+        }
+        if (item.dimensions.isEmpty() && exif.dimensions.isValid())
+        {
+            item.dimensions = exif.dimensions;
+            item.formattedDimensions = QString::asprintf("%d × %d", exif.dimensions.width(), exif.dimensions.height());
+        }
+    }
 
     return item;
 }
