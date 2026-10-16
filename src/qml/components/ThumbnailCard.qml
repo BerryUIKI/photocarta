@@ -105,6 +105,29 @@ Rectangle {
             }
         }
 
+        // Offline / Missing Collection Badge Overlay
+        Rectangle {
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: 8
+            width: offlineText.implicitWidth + 8
+            height: 18
+            radius: 4
+            color: "#b91c1c"
+            border.color: "#fca5a5"
+            border.width: 1
+            visible: model.isMissing === true && !model.isDemoFixture
+
+            Text {
+                id: offlineText
+                anchors.centerIn: parent
+                text: qsTr("OFFLINE")
+                font.pixelSize: 9
+                font.weight: Font.Bold
+                color: "#ffffff"
+            }
+        }
+
         // Bottom Info Gradient Overlay
         Rectangle {
             anchors.left: parent.left

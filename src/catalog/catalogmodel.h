@@ -50,6 +50,7 @@ public:
         ThumbnailUrlRole,
         PreviewUrlRole,
         IsDemoFixtureRole,
+        IsMissingRole,
         ItemMapRole
     };
     Q_ENUM(CatalogRoles)
@@ -66,10 +67,19 @@ public:
     [[nodiscard]] const QList<CatalogItem> &items() const;
     [[nodiscard]] const CatalogItem *itemAt(int index) const;
 
+    void setDatabase(class CatalogDatabase *database);
+    [[nodiscard]] class CatalogDatabase *database() const;
+
     Q_INVOKABLE [[nodiscard]] QVariantMap get(int index) const;
     Q_INVOKABLE void loadDemoFixtures();
     Q_INVOKABLE void openUrls(const QList<QUrl> &urls);
     Q_INVOKABLE void addFilePaths(const QStringList &filePaths);
+    Q_INVOKABLE void addItems(const QList<CatalogItem> &items);
+    Q_INVOKABLE void updateItemRating(int index, int rating);
+    Q_INVOKABLE void updateItemFlagged(int index, bool flagged);
+    Q_INVOKABLE void updateItemTags(int index, const QStringList &tags);
+    Q_INVOKABLE void loadFromDatabase(int collectionId = 0);
+    Q_INVOKABLE void setCollectionAvailable(const QString &rootPath, bool available);
     Q_INVOKABLE void clearSession();
 
 signals:
@@ -82,6 +92,7 @@ private:
     [[nodiscard]] static CatalogItem inspectLocalFile(const QString &filePath);
 
     QList<CatalogItem> m_items;
+    class CatalogDatabase *m_database = nullptr;
 };
 
 } // namespace PhotoCarta

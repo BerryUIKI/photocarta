@@ -14,6 +14,14 @@ add_library(photocarta_catalog STATIC
     thememanager.cpp
     sessioncontroller.h
     sessioncontroller.cpp
+    database/catalogdatabase.h
+    database/catalogdatabase.cpp
+    ingestion/directoryscanner.h
+    ingestion/directoryscanner.cpp
+    thumbnails/thumbnailcache.h
+    thumbnails/thumbnailcache.cpp
+    thumbnails/thumbnailimageprovider.h
+    thumbnails/thumbnailimageprovider.cpp
 )
 
 target_include_directories(photocarta_catalog PUBLIC
@@ -25,6 +33,8 @@ target_link_libraries(photocarta_catalog PUBLIC
     Qt6::Core
     Qt6::Gui
     Qt6::Quick
+    Qt6::Sql
+    Qt6::Concurrent
 )
 
 set_target_properties(photocarta_catalog PROPERTIES

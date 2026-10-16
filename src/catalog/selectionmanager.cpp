@@ -17,6 +17,13 @@ SelectionManager::SelectionManager(CatalogFilterModel *filterModel, QObject *par
         connect(m_filterModel, &QAbstractItemModel::layoutChanged, this, &SelectionManager::onModelResetOrChanged);
         connect(m_filterModel, &QAbstractItemModel::rowsRemoved, this, &SelectionManager::onModelResetOrChanged);
         connect(m_filterModel, &QAbstractItemModel::rowsInserted, this, &SelectionManager::onModelResetOrChanged);
+        connect(m_filterModel, &QAbstractItemModel::dataChanged, this, [this](const QModelIndex &topLeft, const QModelIndex &bottomRight) {
+            const int curRow = currentIndex();
+            if (curRow >= topLeft.row() && curRow <= bottomRight.row()) {
+                updateSelectedItem();
+                emit selectionChanged();
+            }
+        });
     }
 }
 

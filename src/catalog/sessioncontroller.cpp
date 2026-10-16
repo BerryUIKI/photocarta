@@ -3,6 +3,7 @@
 
 #include "sessioncontroller.h"
 
+#include <QDir>
 #include <QFileInfo>
 #include <QImage>
 #include <QQuickWindow>
@@ -18,13 +19,27 @@ SessionController::SessionController(CatalogModel *model,
     , m_model(model)
     , m_filterModel(filterModel)
     , m_selectionManager(selectionManager)
+    , m_scanner(new DirectoryScanner(this))
 {
     if (m_model)
     {
         connect(m_model, &CatalogModel::countChanged, this, &SessionController::onModelCountChanged);
         connect(m_model, &CatalogModel::fileLoadError, this, &SessionController::onFileLoadError);
     }
+
+    connect(m_scanner, &DirectoryScanner::scanStarted, this, [this](const QString &path) {
+        m_scanProgress = 0;
+        emit isScanningChanged();
+        emit scanProgressChanged();
+        setStatusMessage(QStringLiteral("Scanning directory: ") + path);
+    });
+    connect(m_scanner, &DirectoryScanner::batchDiscovered, this, &SessionController::onBatchDiscovered);
+    connect(m_scanner, &DirectoryScanner::progress, this, &SessionController::onScanProgress);
+    connect(m_scanner, &DirectoryScanner::scanFinished, this, &SessionController::onScanFinished);
+    connect(m_scanner, &DirectoryScanner::scanCanceled, this, &SessionController::onScanCanceled);
 }
+
+SessionController::~SessionController() = default;
 
 bool SessionController::previewMode() const
 {
@@ -112,6 +127,11 @@ void SessionController::setZoomFactor(double factor)
     emit zoomFactorChanged();
 }
 
+bool SessionController::isEphemeralSession() const
+{
+    return !(m_database && m_database->isOpen());
+}
+
 QString SessionController::sessionTypeDescription() const
 {
     if (!m_model || m_model->count() == 0)
@@ -122,7 +142,57 @@ QString SessionController::sessionTypeDescription() const
     {
         return QStringLiteral("Demo Fixtures (Procedural SVGs - Display Only)");
     }
-    return QStringLiteral("Temporary Local Photos (Read-Only)");
+    if (m_database && m_database->isOpen())
+    {
+        return QStringLiteral("Persistent SQLite Catalog (%1 items)").arg(m_model->count());
+    }
+    return QStringLiteral("Temporary Local Photos (%1 items)").arg(m_model->count());
+}
+
+bool SessionController::isScanning() const
+{
+    return m_scanner && m_scanner->isScanning();
+}
+
+int SessionController::scanProgress() const
+{
+    return m_scanProgress;
+}
+
+bool SessionController::hasDatabase() const
+{
+    return m_database && m_database->isOpen();
+}
+
+int SessionController::databaseItemCount() const
+{
+    return (m_database && m_database->isOpen()) ? m_database->itemCount() : 0;
+}
+
+void SessionController::setDatabase(CatalogDatabase *database)
+{
+    m_database = database;
+    if (m_model)
+    {
+        m_model->setDatabase(database);
+    }
+    if (m_database)
+    {
+        connect(m_database, &CatalogDatabase::itemsChanged, this, &SessionController::databaseStateChanged);
+        connect(m_database, &CatalogDatabase::collectionsChanged, this, &SessionController::databaseStateChanged);
+    }
+    emit databaseStateChanged();
+    emit sessionTypeChanged();
+}
+
+CatalogDatabase *SessionController::database() const
+{
+    return m_database;
+}
+
+DirectoryScanner *SessionController::scanner() const
+{
+    return m_scanner;
 }
 
 void SessionController::togglePreviewMode()
@@ -161,6 +231,115 @@ void SessionController::openLocalFiles(const QList<QUrl> &urls)
         m_model->openUrls(urls);
         setStatusMessage(QString::asprintf("Session updated: %d photos loaded", m_model->count()));
         emit sessionTypeChanged();
+    }
+}
+
+void SessionController::scanFolder(const QUrl &folderUrl)
+{
+    if (folderUrl.isLocalFile())
+    {
+        scanDirectory(folderUrl.toLocalFile(), true);
+    }
+    else
+    {
+        scanDirectory(folderUrl.toString(QUrl::PreferLocalFile), true);
+    }
+}
+
+void SessionController::scanDirectory(const QString &directoryPath, bool recursive)
+{
+    const QString cleaned = QDir::cleanPath(directoryPath);
+    const QFileInfo fi(cleaned);
+    if (!fi.exists() || !fi.isDir())
+    {
+        showError(QStringLiteral("Cannot scan directory: %1 does not exist").arg(cleaned));
+        return;
+    }
+
+    if (m_model && m_model->hasDemoContent())
+    {
+        m_model->clearSession();
+    }
+
+    if (m_database && m_database->isOpen())
+    {
+        m_currentCollectionId = m_database->addOrGetCollection(cleaned, fi.fileName(), QStringLiteral("local"));
+    }
+    else
+    {
+        m_currentCollectionId = 0;
+    }
+
+    m_scanner->startScan(cleaned, recursive);
+}
+
+void SessionController::cancelScan()
+{
+    if (m_scanner)
+    {
+        m_scanner->cancel();
+    }
+}
+
+int SessionController::sourceRowForProxy(int proxyIndex) const
+{
+    if (m_filterModel && proxyIndex >= 0)
+    {
+        return m_filterModel->mapToSourceRow(proxyIndex);
+    }
+    return proxyIndex;
+}
+
+void SessionController::setItemRating(int proxyIndex, int rating)
+{
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (m_model)
+    {
+        m_model->updateItemRating(srcRow, rating);
+    }
+}
+
+void SessionController::toggleItemFlagged(int proxyIndex)
+{
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (m_model)
+    {
+        const CatalogItem *item = m_model->itemAt(srcRow);
+        if (item)
+        {
+            m_model->updateItemFlagged(srcRow, !item->isFlagged);
+        }
+    }
+}
+
+void SessionController::setItemTags(int proxyIndex, const QStringList &tags)
+{
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (m_model)
+    {
+        m_model->updateItemTags(srcRow, tags);
+    }
+}
+
+void SessionController::loadDatabaseCatalog(int collectionId)
+{
+    if (m_model)
+    {
+        m_model->loadFromDatabase(collectionId);
+        if (m_selectionManager && m_model->count() > 0)
+        {
+            m_selectionManager->select(0);
+        }
+        setStatusMessage(QStringLiteral("Loaded %1 photos from catalog database").arg(m_model->count()));
+        emit sessionTypeChanged();
+    }
+}
+
+void SessionController::setCollectionAvailable(const QString &rootPath, bool available)
+{
+    if (m_model)
+    {
+        m_model->setCollectionAvailable(rootPath, available);
     }
 }
 
@@ -246,6 +425,53 @@ void SessionController::onModelCountChanged()
 void SessionController::onFileLoadError(const QString &fileName, const QString &errorMsg)
 {
     showError(QStringLiteral("Error loading ") + fileName + QStringLiteral(": ") + errorMsg);
+}
+
+void SessionController::onBatchDiscovered(const QList<CatalogItem> &items)
+{
+    if (m_database && m_database->isOpen())
+    {
+        m_database->insertOrUpdateItems(items, m_currentCollectionId);
+    }
+
+    if (m_model)
+    {
+        m_model->addItems(items);
+    }
+
+    if (m_selectionManager && !m_selectionManager->hasSelection() && m_model && m_model->count() > 0)
+    {
+        m_selectionManager->select(0);
+    }
+}
+
+void SessionController::onScanProgress(int count, const QString &currentFile)
+{
+    Q_UNUSED(currentFile);
+    m_scanProgress = count;
+    emit scanProgressChanged();
+    setStatusMessage(QStringLiteral("Scanning... %1 photos indexed").arg(count));
+}
+
+void SessionController::onScanFinished(int totalFound, qint64 elapsedMs)
+{
+    if (m_database && m_database->isOpen() && m_currentCollectionId > 0)
+    {
+        m_database->updateCollectionScanTime(m_currentCollectionId);
+    }
+
+    m_scanProgress = totalFound;
+    emit scanProgressChanged();
+    emit isScanningChanged();
+    emit databaseStateChanged();
+    setStatusMessage(QStringLiteral("Scan complete: %1 photos indexed in %2 ms").arg(totalFound).arg(elapsedMs));
+    emit sessionTypeChanged();
+}
+
+void SessionController::onScanCanceled()
+{
+    emit isScanningChanged();
+    setStatusMessage(QStringLiteral("Scan canceled"));
 }
 
 } // namespace PhotoCarta

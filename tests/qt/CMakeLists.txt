@@ -30,6 +30,9 @@ add_photocarta_test(test_catalog_model)
 add_photocarta_test(test_filter_model)
 add_photocarta_test(test_selection_manager)
 add_photocarta_test(test_theme_and_session)
+add_photocarta_test(test_database)
+add_photocarta_test(test_directory_scanner)
+add_photocarta_test(test_thumbnail_cache)
 
 # Automated startup smoke tests for main application executable
 add_test(NAME app_startup_smoke_test
