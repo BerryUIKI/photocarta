@@ -289,6 +289,11 @@ def main():
     sums_path = output_dir / f"SHA256SUMS-{current_os}-{arch}.txt"
     sums_path.write_text("\n".join(checksum_lines) + "\n", encoding="utf-8")
     print(f"\nChecksums written to {sums_path}")
+
+    # Clean up staging directory to leave only package artifacts
+    if staging_dir.exists():
+        shutil.rmtree(staging_dir)
+
     print("\nPackaging completed successfully!")
     return 0
 
