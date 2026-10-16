@@ -52,6 +52,7 @@ ApplicationWindow {
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             visible: sessionController.leftPaneVisible
+            onRequestScanFolder: scanFolderDialog.open()
         }
 
         // Right: Metadata & Details Sidebar

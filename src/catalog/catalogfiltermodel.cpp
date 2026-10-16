@@ -55,6 +55,23 @@ void CatalogFilterModel::setCategoryFilter(const QString &category)
     emit countChanged();
 }
 
+int CatalogFilterModel::collectionFilter() const
+{
+    return m_collectionFilter;
+}
+
+void CatalogFilterModel::setCollectionFilter(int collectionId)
+{
+    if (m_collectionFilter == collectionId)
+    {
+        return;
+    }
+    m_collectionFilter = collectionId;
+    emit collectionFilterChanged();
+    invalidateFilter();
+    emit countChanged();
+}
+
 QString CatalogFilterModel::tagFilter() const
 {
     return m_tagFilter;
@@ -183,7 +200,17 @@ bool CatalogFilterModel::filterAcceptsRow(int sourceRow, const QModelIndex &sour
         }
     }
 
-    // 2. Category filter
+    // 2. Collection filter
+    if (m_collectionFilter > 0)
+    {
+        const int itemCollectionId = idx.data(CatalogModel::CollectionIdRole).toInt();
+        if (itemCollectionId != m_collectionFilter)
+        {
+            return false;
+        }
+    }
+
+    // 3. Category filter
     if (m_categoryFilter == QStringLiteral("demo"))
     {
         const bool isDemo = idx.data(CatalogModel::IsDemoFixtureRole).toBool();

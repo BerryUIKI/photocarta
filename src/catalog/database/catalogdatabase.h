@@ -24,6 +24,7 @@ struct CollectionRecord
     bool isAvailable = true;
     QDateTime createdAt;
     QDateTime lastScannedAt;
+    int itemCount = 0;
 };
 
 class CatalogDatabase : public QObject

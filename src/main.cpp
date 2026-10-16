@@ -3,6 +3,7 @@
 
 #include "catalog/catalogfiltermodel.h"
 #include "catalog/catalogmodel.h"
+#include "catalog/collectionmodel.h"
 #include "catalog/selectionmanager.h"
 #include "catalog/sessioncontroller.h"
 #include "catalog/thememanager.h"
@@ -108,8 +109,15 @@ int main(int argc, char *argv[])
 
     auto *selectionManager = new SelectionManager(filterModel, &app);
     auto *themeManager = new ThemeManager(isDarkTheme, &app);
+    auto *collectionModel = new CollectionModel(&app);
+    collectionModel->setDatabase(catalogDatabase);
+
     auto *sessionController = new SessionController(catalogModel, filterModel, selectionManager, &app);
     sessionController->setDatabase(catalogDatabase);
+
+    QObject::connect(sessionController, &SessionController::currentCollectionChanged, collectionModel, [sessionController, collectionModel]() {
+        collectionModel->setActiveCollectionId(sessionController->currentCollectionId());
+    });
 
     if (startInPreview)
     {
@@ -143,6 +151,7 @@ int main(int argc, char *argv[])
     QQmlContext *rootCtx = engine.rootContext();
     rootCtx->setContextProperty(QStringLiteral("catalogModel"), catalogModel);
     rootCtx->setContextProperty(QStringLiteral("filterModel"), filterModel);
+    rootCtx->setContextProperty(QStringLiteral("collectionModel"), collectionModel);
     rootCtx->setContextProperty(QStringLiteral("selectionManager"), selectionManager);
     rootCtx->setContextProperty(QStringLiteral("themeManager"), themeManager);
     rootCtx->setContextProperty(QStringLiteral("sessionController"), sessionController);

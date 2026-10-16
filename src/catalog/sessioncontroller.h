@@ -35,6 +35,7 @@ class SessionController : public QObject
     Q_PROPERTY(int scanProgress READ scanProgress NOTIFY scanProgressChanged)
     Q_PROPERTY(bool hasDatabase READ hasDatabase NOTIFY databaseStateChanged)
     Q_PROPERTY(int databaseItemCount READ databaseItemCount NOTIFY databaseStateChanged)
+    Q_PROPERTY(int currentCollectionId READ currentCollectionId NOTIFY currentCollectionChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -68,6 +69,7 @@ public:
     [[nodiscard]] int scanProgress() const;
     [[nodiscard]] bool hasDatabase() const;
     [[nodiscard]] int databaseItemCount() const;
+    [[nodiscard]] int currentCollectionId() const;
 
     void setDatabase(CatalogDatabase *database);
     [[nodiscard]] CatalogDatabase *database() const;
@@ -85,6 +87,10 @@ public:
     Q_INVOKABLE void toggleItemFlagged(int proxyIndex);
     Q_INVOKABLE void setItemTags(int proxyIndex, const QStringList &tags);
     Q_INVOKABLE void loadDatabaseCatalog(int collectionId = 0);
+    Q_INVOKABLE void selectCollection(int collectionId);
+    Q_INVOKABLE void rescanCollection(int collectionId);
+    Q_INVOKABLE void removeCollection(int collectionId);
+    Q_INVOKABLE void toggleCollectionAvailable(int collectionId);
     Q_INVOKABLE void setCollectionAvailable(const QString &rootPath, bool available);
     Q_INVOKABLE void clearSession();
     Q_INVOKABLE void dismissError();
@@ -102,6 +108,7 @@ signals:
     void isScanningChanged();
     void scanProgressChanged();
     void databaseStateChanged();
+    void currentCollectionChanged();
     void screenshotCompleted(const QString &path, bool success);
 
 private slots:

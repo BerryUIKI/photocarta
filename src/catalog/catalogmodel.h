@@ -51,6 +51,7 @@ public:
         PreviewUrlRole,
         IsDemoFixtureRole,
         IsMissingRole,
+        CollectionIdRole,
         ItemMapRole
     };
     Q_ENUM(CatalogRoles)
