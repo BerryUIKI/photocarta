@@ -1,0 +1,50 @@
+# Build trees and generated CMake/Qt files
+/build/
+/build-*/
+/out/
+/dist/
+/install/
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+*.user
+*.user.*
+*.qmlc
+*.jsc
+
+# Local tools and settings
+/.local/
+/.cache/
+/.venv/
+/.vs/
+/.vscode/
+/.idea/
+__pycache__/
+*.py[cod]
+
+# Secrets: keep sample configuration trackable
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Catalogs, photo fixtures, caches, and logs
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+/photos/
+/catalogs/
+/cache/
+/models/
+*.log
+
+# OS files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini

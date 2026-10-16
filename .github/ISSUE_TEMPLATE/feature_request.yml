@@ -1,0 +1,17 @@
+name: Feature request
+description: Propose an improvement for prioritization.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Describe the workflow and why the current behavior is insufficient.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed outcome
+      description: Describe the desired behavior and whether it affects the initial GUI scope.
+    validations:
+      required: true
