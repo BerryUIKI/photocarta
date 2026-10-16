@@ -22,6 +22,9 @@ add_library(photocarta_catalog STATIC
     thumbnails/thumbnailcache.cpp
     thumbnails/thumbnailimageprovider.h
     thumbnails/thumbnailimageprovider.cpp
+    metadata/exifdata.h
+    metadata/exifparser.h
+    metadata/exifparser.cpp
 )
 
 target_include_directories(photocarta_catalog PUBLIC
