@@ -91,6 +91,8 @@ QVariant CatalogModel::data(const QModelIndex &index, int role) const
         return item.isDemoFixture;
     case IsMissingRole:
         return item.isMissing;
+    case CollectionIdRole:
+        return item.collectionId;
     case ItemMapRole:
         return item.toVariantMap();
     case Qt::DisplayRole:
@@ -130,6 +132,7 @@ QHash<int, QByteArray> CatalogModel::roleNames() const
         {PreviewUrlRole, "previewUrl"},
         {IsDemoFixtureRole, "isDemoFixture"},
         {IsMissingRole, "isMissing"},
+        {CollectionIdRole, "collectionId"},
         {ItemMapRole, "itemMap"}
     };
 }

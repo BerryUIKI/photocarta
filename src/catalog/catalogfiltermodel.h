@@ -15,6 +15,7 @@ class CatalogFilterModel : public QSortFilterProxyModel
     Q_OBJECT
     Q_PROPERTY(QString searchQuery READ searchQuery WRITE setSearchQuery NOTIFY searchQueryChanged)
     Q_PROPERTY(QString categoryFilter READ categoryFilter WRITE setCategoryFilter NOTIFY categoryFilterChanged)
+    Q_PROPERTY(int collectionFilter READ collectionFilter WRITE setCollectionFilter NOTIFY collectionFilterChanged)
     Q_PROPERTY(QString tagFilter READ tagFilter WRITE setTagFilter NOTIFY tagFilterChanged)
     Q_PROPERTY(int minRating READ minRating WRITE setMinRating NOTIFY minRatingChanged)
     Q_PROPERTY(QString sortCriterion READ sortCriterion WRITE setSortCriterion NOTIFY sortCriterionChanged)
@@ -30,6 +31,9 @@ public:
 
     [[nodiscard]] QString categoryFilter() const;
     void setCategoryFilter(const QString &category);
+
+    [[nodiscard]] int collectionFilter() const;
+    void setCollectionFilter(int collectionId);
 
     [[nodiscard]] QString tagFilter() const;
     void setTagFilter(const QString &tag);
@@ -52,6 +56,7 @@ public:
 signals:
     void searchQueryChanged();
     void categoryFilterChanged();
+    void collectionFilterChanged();
     void tagFilterChanged();
     void minRatingChanged();
     void sortCriterionChanged();
@@ -67,6 +72,7 @@ private:
 
     QString m_searchQuery;
     QString m_categoryFilter = QStringLiteral("all"); // "all", "demo", "imported", "favorites"
+    int m_collectionFilter = 0; // 0 = all collections
     QString m_tagFilter;
     int m_minRating = 0;
     QString m_sortCriterion = QStringLiteral("date"); // "date", "name", "size", "rating"

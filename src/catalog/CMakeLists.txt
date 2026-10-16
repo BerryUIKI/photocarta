@@ -8,6 +8,8 @@ add_library(photocarta_catalog STATIC
     catalogmodel.cpp
     catalogfiltermodel.h
     catalogfiltermodel.cpp
+    collectionmodel.h
+    collectionmodel.cpp
     selectionmanager.h
     selectionmanager.cpp
     thememanager.h

@@ -260,8 +260,11 @@ QList<CollectionRecord> CatalogDatabase::getCollections() const
 
     QSqlDatabase db = QSqlDatabase::database(m_connectionName);
     QSqlQuery query(QStringLiteral(
-        "SELECT id, root_path, name, collection_type, is_available, created_at, last_scanned_at "
-        "FROM collections ORDER BY name ASC;"
+        "SELECT c.id, c.root_path, c.name, c.collection_type, c.is_available, c.created_at, c.last_scanned_at, COUNT(i.id) "
+        "FROM collections c "
+        "LEFT JOIN items i ON c.id = i.collection_id "
+        "GROUP BY c.id, c.root_path, c.name, c.collection_type, c.is_available, c.created_at, c.last_scanned_at "
+        "ORDER BY c.name ASC;"
     ), db);
 
     while (query.next())
@@ -274,6 +277,7 @@ QList<CollectionRecord> CatalogDatabase::getCollections() const
         rec.isAvailable = query.value(4).toBool();
         rec.createdAt = query.value(5).toDateTime();
         rec.lastScannedAt = query.value(6).toDateTime();
+        rec.itemCount = query.value(7).toInt();
         list.append(rec);
     }
     return list;
@@ -291,8 +295,12 @@ CollectionRecord CatalogDatabase::getCollectionByPath(const QString &rootPath) c
     QSqlDatabase db = QSqlDatabase::database(m_connectionName);
     QSqlQuery query(db);
     query.prepare(QStringLiteral(
-        "SELECT id, root_path, name, collection_type, is_available, created_at, last_scanned_at "
-        "FROM collections WHERE root_path = :path LIMIT 1;"
+        "SELECT c.id, c.root_path, c.name, c.collection_type, c.is_available, c.created_at, c.last_scanned_at, COUNT(i.id) "
+        "FROM collections c "
+        "LEFT JOIN items i ON c.id = i.collection_id "
+        "WHERE c.root_path = :path "
+        "GROUP BY c.id, c.root_path, c.name, c.collection_type, c.is_available, c.created_at, c.last_scanned_at "
+        "LIMIT 1;"
     ));
     query.bindValue(QStringLiteral(":path"), normalized);
 
@@ -305,6 +313,7 @@ CollectionRecord CatalogDatabase::getCollectionByPath(const QString &rootPath) c
         rec.isAvailable = query.value(4).toBool();
         rec.createdAt = query.value(5).toDateTime();
         rec.lastScannedAt = query.value(6).toDateTime();
+        rec.itemCount = query.value(7).toInt();
     }
     return rec;
 }
@@ -374,17 +383,36 @@ bool CatalogDatabase::removeCollection(int collectionId)
     }
 
     QSqlDatabase db = QSqlDatabase::database(m_connectionName);
-    QSqlQuery query(db);
-    query.prepare(QStringLiteral("DELETE FROM collections WHERE id = :id;"));
-    query.bindValue(QStringLiteral(":id"), collectionId);
-    if (query.exec())
+    if (!db.transaction())
     {
-        emit collectionsChanged();
-        emit itemsChanged();
-        return true;
+        m_lastError = db.lastError().text();
+        return false;
     }
-    m_lastError = query.lastError().text();
-    return false;
+
+    QSqlQuery itemQuery(db);
+    itemQuery.prepare(QStringLiteral("DELETE FROM items WHERE collection_id = :id;"));
+    itemQuery.bindValue(QStringLiteral(":id"), collectionId);
+    if (!itemQuery.exec())
+    {
+        m_lastError = itemQuery.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    QSqlQuery collQuery(db);
+    collQuery.prepare(QStringLiteral("DELETE FROM collections WHERE id = :id;"));
+    collQuery.bindValue(QStringLiteral(":id"), collectionId);
+    if (!collQuery.exec())
+    {
+        m_lastError = collQuery.lastError().text();
+        db.rollback();
+        return false;
+    }
+
+    db.commit();
+    emit collectionsChanged();
+    emit itemsChanged();
+    return true;
 }
 
 bool CatalogDatabase::insertOrUpdateItems(const QList<CatalogItem> &items, int collectionId)
@@ -518,6 +546,7 @@ CatalogItem parseItemRow(const QSqlQuery &query, QSqlDatabase &db)
     CatalogItem item;
     const int itemId = query.value(0).toInt();
     item.id = QString::number(itemId);
+    item.collectionId = query.value(1).toInt();
     item.filePath = query.value(2).toString();
     item.fileName = query.value(3).toString();
     item.title = query.value(4).toString();

@@ -169,6 +169,11 @@ int SessionController::databaseItemCount() const
     return (m_database && m_database->isOpen()) ? m_database->itemCount() : 0;
 }
 
+int SessionController::currentCollectionId() const
+{
+    return m_currentCollectionId;
+}
+
 void SessionController::setDatabase(CatalogDatabase *database)
 {
     m_database = database;
@@ -332,6 +337,112 @@ void SessionController::loadDatabaseCatalog(int collectionId)
         }
         setStatusMessage(QStringLiteral("Loaded %1 photos from catalog database").arg(m_model->count()));
         emit sessionTypeChanged();
+    }
+}
+
+void SessionController::selectCollection(int collectionId)
+{
+    m_currentCollectionId = collectionId;
+    emit currentCollectionChanged();
+
+    if (m_filterModel)
+    {
+        m_filterModel->setCollectionFilter(collectionId);
+    }
+
+    if (m_selectionManager)
+    {
+        if (m_filterModel && m_filterModel->count() > 0)
+        {
+            m_selectionManager->select(0);
+        }
+        else
+        {
+            m_selectionManager->clearSelection();
+        }
+    }
+
+    if (collectionId > 0 && m_database && m_database->isOpen())
+    {
+        const auto collections = m_database->getCollections();
+        for (const auto &c : collections)
+        {
+            if (c.id == collectionId)
+            {
+                setStatusMessage(QStringLiteral("Collection: %1 (%2 photo%3)")
+                                     .arg(c.name)
+                                     .arg(c.itemCount)
+                                     .arg(c.itemCount == 1 ? QString() : QStringLiteral("s")));
+                return;
+            }
+        }
+    }
+    else if (collectionId == 0)
+    {
+        setStatusMessage(QStringLiteral("All collections (%1 photo%2)")
+                             .arg(m_model ? m_model->count() : 0)
+                             .arg((m_model && m_model->count() == 1) ? QString() : QStringLiteral("s")));
+    }
+}
+
+void SessionController::rescanCollection(int collectionId)
+{
+    if (!m_database || !m_database->isOpen() || collectionId <= 0)
+    {
+        return;
+    }
+
+    const auto collections = m_database->getCollections();
+    for (const auto &c : collections)
+    {
+        if (c.id == collectionId)
+        {
+            setStatusMessage(QStringLiteral("Rescanning collection: %1...").arg(c.name));
+            scanDirectory(c.rootPath, true);
+            return;
+        }
+    }
+}
+
+void SessionController::removeCollection(int collectionId)
+{
+    if (!m_database || !m_database->isOpen() || collectionId <= 0)
+    {
+        return;
+    }
+
+    if (m_currentCollectionId == collectionId)
+    {
+        selectCollection(0);
+    }
+
+    m_database->removeCollection(collectionId);
+
+    if (m_model)
+    {
+        m_model->loadFromDatabase(0);
+    }
+    setStatusMessage(QStringLiteral("Removed album from catalog"));
+}
+
+void SessionController::toggleCollectionAvailable(int collectionId)
+{
+    if (!m_database || !m_database->isOpen() || collectionId <= 0)
+    {
+        return;
+    }
+
+    const auto collections = m_database->getCollections();
+    for (const auto &c : collections)
+    {
+        if (c.id == collectionId)
+        {
+            const bool newAvail = !c.isAvailable;
+            setCollectionAvailable(c.rootPath, newAvail);
+            setStatusMessage(newAvail ? QStringLiteral("Album '%1' marked as online").arg(c.name)
+                                      : QStringLiteral("Album '%1' marked as offline").arg(c.name));
+            return;
+        }
     }
 }
 
