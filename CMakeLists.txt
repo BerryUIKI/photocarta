@@ -21,6 +21,14 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# Workaround for missing AGL framework in macOS SDK 15+ / Xcode 16 (QTBUG-137687)
+if(APPLE AND NOT TARGET WrapOpenGL::WrapOpenGL)
+    add_library(WrapOpenGL::WrapOpenGL INTERFACE IMPORTED)
+    set_target_properties(WrapOpenGL::WrapOpenGL PROPERTIES
+        INTERFACE_LINK_LIBRARIES "-framework OpenGL"
+    )
+endif()
+
 # Find Qt 6 dependencies
 find_package(Qt6 6.5 REQUIRED COMPONENTS
     Core
