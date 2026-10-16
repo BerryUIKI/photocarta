@@ -6,6 +6,8 @@
 #include "catalogfiltermodel.h"
 #include "catalogmodel.h"
 #include "selectionmanager.h"
+#include "database/catalogdatabase.h"
+#include "ingestion/directoryscanner.h"
 
 #include <QList>
 #include <QObject>
@@ -27,15 +29,19 @@ class SessionController : public QObject
     Q_PROPERTY(bool hasError READ hasError NOTIFY errorStateChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorStateChanged)
     Q_PROPERTY(double zoomFactor READ zoomFactor WRITE setZoomFactor NOTIFY zoomFactorChanged)
-    Q_PROPERTY(bool isEphemeralSession READ isEphemeralSession CONSTANT)
+    Q_PROPERTY(bool isEphemeralSession READ isEphemeralSession NOTIFY databaseStateChanged)
     Q_PROPERTY(QString sessionTypeDescription READ sessionTypeDescription NOTIFY sessionTypeChanged)
+    Q_PROPERTY(bool isScanning READ isScanning NOTIFY isScanningChanged)
+    Q_PROPERTY(int scanProgress READ scanProgress NOTIFY scanProgressChanged)
+    Q_PROPERTY(bool hasDatabase READ hasDatabase NOTIFY databaseStateChanged)
+    Q_PROPERTY(int databaseItemCount READ databaseItemCount NOTIFY databaseStateChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
                                CatalogFilterModel *filterModel,
                                SelectionManager *selectionManager,
                                QObject *parent = nullptr);
-    ~SessionController() override = default;
+    ~SessionController() override;
 
     [[nodiscard]] bool previewMode() const;
     Q_INVOKABLE void setPreviewMode(bool active);
@@ -55,14 +61,31 @@ public:
     [[nodiscard]] double zoomFactor() const;
     void setZoomFactor(double factor);
 
-    [[nodiscard]] static constexpr bool isEphemeralSession() { return true; }
+    [[nodiscard]] bool isEphemeralSession() const;
     [[nodiscard]] QString sessionTypeDescription() const;
+
+    [[nodiscard]] bool isScanning() const;
+    [[nodiscard]] int scanProgress() const;
+    [[nodiscard]] bool hasDatabase() const;
+    [[nodiscard]] int databaseItemCount() const;
+
+    void setDatabase(CatalogDatabase *database);
+    [[nodiscard]] CatalogDatabase *database() const;
+    [[nodiscard]] DirectoryScanner *scanner() const;
 
     Q_INVOKABLE void togglePreviewMode();
     Q_INVOKABLE void toggleLeftPane();
     Q_INVOKABLE void toggleRightPane();
     Q_INVOKABLE void loadDemoSamples();
     Q_INVOKABLE void openLocalFiles(const QList<QUrl> &urls);
+    Q_INVOKABLE void scanFolder(const QUrl &folderUrl);
+    Q_INVOKABLE void scanDirectory(const QString &directoryPath, bool recursive = true);
+    Q_INVOKABLE void cancelScan();
+    Q_INVOKABLE void setItemRating(int proxyIndex, int rating);
+    Q_INVOKABLE void toggleItemFlagged(int proxyIndex);
+    Q_INVOKABLE void setItemTags(int proxyIndex, const QStringList &tags);
+    Q_INVOKABLE void loadDatabaseCatalog(int collectionId = 0);
+    Q_INVOKABLE void setCollectionAvailable(const QString &rootPath, bool available);
     Q_INVOKABLE void clearSession();
     Q_INVOKABLE void dismissError();
     Q_INVOKABLE void showError(const QString &message);
@@ -76,24 +99,37 @@ signals:
     void errorStateChanged();
     void zoomFactorChanged();
     void sessionTypeChanged();
+    void isScanningChanged();
+    void scanProgressChanged();
+    void databaseStateChanged();
     void screenshotCompleted(const QString &path, bool success);
 
 private slots:
     void onModelCountChanged();
     void onFileLoadError(const QString &fileName, const QString &errorMsg);
+    void onBatchDiscovered(const QList<CatalogItem> &items);
+    void onScanProgress(int count, const QString &currentFile);
+    void onScanFinished(int totalFound, qint64 elapsedMs);
+    void onScanCanceled();
 
 private:
+    [[nodiscard]] int sourceRowForProxy(int proxyIndex) const;
+
     CatalogModel *m_model = nullptr;
     CatalogFilterModel *m_filterModel = nullptr;
     SelectionManager *m_selectionManager = nullptr;
+    CatalogDatabase *m_database = nullptr;
+    DirectoryScanner *m_scanner = nullptr;
 
     bool m_previewMode = false;
     bool m_leftPaneVisible = true;
     bool m_rightPaneVisible = true;
-    QString m_statusMessage = QStringLiteral("Ready • PhotoCarta GUI Shell Prototype");
+    QString m_statusMessage = QStringLiteral("Ready • PhotoCarta");
     bool m_hasError = false;
     QString m_errorMessage;
     double m_zoomFactor = 1.0;
+    int m_scanProgress = 0;
+    int m_currentCollectionId = 0;
 };
 
 } // namespace PhotoCarta

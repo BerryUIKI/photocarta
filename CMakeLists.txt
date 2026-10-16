@@ -38,6 +38,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     Quick
     QuickControls2
     Concurrent
+    Sql
     Test
 )
 

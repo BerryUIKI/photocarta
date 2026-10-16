@@ -13,6 +13,8 @@ Row {
     property bool interactive: false
     property color starColor: "#f59e0b"
 
+    signal ratingSelected(int rating)
+
     spacing: 3
 
     Repeater {
@@ -31,13 +33,19 @@ Row {
             opacity: (index < root.rating) ? 1.0 : 0.35
 
             ToolTip.visible: starMouseArea.containsMouse
-            ToolTip.text: qsTr("Rating: %1 / 5 (Display-only fixture)").arg(root.rating)
+            ToolTip.text: qsTr("Rating: %1 / 5").arg(root.rating)
 
             MouseArea {
                 id: starMouseArea
                 anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.ArrowCursor
+                hoverEnabled: root.interactive
+                cursorShape: root.interactive ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: {
+                    if (root.interactive) {
+                        const newRating = (index + 1 === root.rating) ? 0 : (index + 1);
+                        root.ratingSelected(newRating);
+                    }
+                }
             }
         }
     }

@@ -22,6 +22,7 @@ ApplicationWindow {
     header: AppToolbar {
         id: appToolbar
         onRequestOpenFiles: openDialog.open()
+        onRequestScanFolder: scanFolderDialog.open()
     }
 
     footer: AppStatusBar {
@@ -102,10 +103,25 @@ ApplicationWindow {
         }
     }
 
+    // Native Directory Dialog for Recursive Catalog Scanning
+    FolderDialog {
+        id: scanFolderDialog
+        title: qsTr("Scan Photo Directory into Catalog")
+        currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
+        onAccepted: {
+            sessionController.scanFolder(selectedFolder)
+        }
+    }
+
     // Global Application Shortcuts
     Shortcut {
         sequence: "Ctrl+O"
         onActivated: openDialog.open()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Shift+O"
+        onActivated: scanFolderDialog.open()
     }
 
     Shortcut {

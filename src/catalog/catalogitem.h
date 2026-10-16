@@ -40,6 +40,7 @@ struct CatalogItem
     QUrl thumbnailUrl;
     QUrl previewUrl;
     bool isDemoFixture = false; // Clearly identifies demo content vs user-opened files
+    bool isMissing = false;     // Identifies items whose collection is temporarily offline/unmounted
 
     [[nodiscard]] QVariantMap toVariantMap() const;
     static QString formatBytes(qint64 bytes);

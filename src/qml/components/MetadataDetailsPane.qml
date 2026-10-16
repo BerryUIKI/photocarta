@@ -245,7 +245,7 @@ Rectangle {
 
                 // RATING & TAGS SECTION
                 Text {
-                    text: qsTr("RATING & TAGS (DISPLAY FIXTURES)")
+                    text: qsTr("RATING & TAGS")
                     font.pixelSize: themeManager.fontXs
                     font.weight: Font.Bold
                     color: themeManager.textMuted
@@ -268,6 +268,9 @@ Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             rating: root.item.rating ? root.item.rating : 0
                             interactive: true
+                            onRatingSelected: (newRating) => {
+                                sessionController.setItemRating(selectionManager.currentIndex, newRating)
+                            }
                         }
                     }
 
@@ -285,7 +288,7 @@ Rectangle {
                     }
                 }
 
-                // Non-persistent fixture notice
+                // Persistence status notice
                 Rectangle {
                     width: parent.width
                     implicitHeight: fixNoticeText.implicitHeight + 14
@@ -299,7 +302,9 @@ Rectangle {
                         anchors.fill: parent
                         anchors.margins: 8
                         wrapMode: Text.Wrap
-                        text: qsTr("Ratings and tags in this temporary session are read-only. Database persistence will connect in upcoming releases.")
+                        text: sessionController.hasDatabase
+                              ? qsTr("Metadata, star ratings, and tags are persisted in your local SQLite catalog.")
+                              : qsTr("Ratings and tags are stored in temporary session memory.")
                         font.pixelSize: 10
                         lineHeight: 1.2
                         color: themeManager.textMuted

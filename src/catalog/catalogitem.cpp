@@ -63,6 +63,7 @@ QVariantMap CatalogItem::toVariantMap() const
     map.insert(QStringLiteral("thumbnailUrl"), thumbnailUrl);
     map.insert(QStringLiteral("previewUrl"), previewUrl);
     map.insert(QStringLiteral("isDemoFixture"), isDemoFixture);
+    map.insert(QStringLiteral("isMissing"), isMissing);
     return map;
 }
 

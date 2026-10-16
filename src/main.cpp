@@ -6,6 +6,8 @@
 #include "catalog/selectionmanager.h"
 #include "catalog/sessioncontroller.h"
 #include "catalog/thememanager.h"
+#include "catalog/database/catalogdatabase.h"
+#include "catalog/thumbnails/thumbnailimageprovider.h"
 
 #include <QApplication>
 #include <QCommandLineOption>
@@ -93,24 +95,35 @@ int main(int argc, char *argv[])
     const int customHeight = parser.value(heightOption).toInt();
     const QStringList positionalFiles = parser.positionalArguments();
 
+    // Initialize SQLite Catalog Database
+    auto *catalogDatabase = new CatalogDatabase(QStringLiteral("main_app_connection"), &app);
+    catalogDatabase->open();
+
     // Initialize C++ Presentation Models and Controllers
     auto *catalogModel = new CatalogModel(&app);
+    catalogModel->setDatabase(catalogDatabase);
+
     auto *filterModel = new CatalogFilterModel(&app);
     filterModel->setSourceModel(catalogModel);
 
     auto *selectionManager = new SelectionManager(filterModel, &app);
     auto *themeManager = new ThemeManager(isDarkTheme, &app);
     auto *sessionController = new SessionController(catalogModel, filterModel, selectionManager, &app);
+    sessionController->setDatabase(catalogDatabase);
 
     if (startInPreview)
     {
         sessionController->setPreviewMode(true);
     }
 
-    // Populate session: load given files if any, otherwise load procedural demo fixtures
+    // Populate session: load given files if any, or existing database items, otherwise load procedural demo fixtures
     if (!positionalFiles.isEmpty())
     {
         catalogModel->addFilePaths(positionalFiles);
+    }
+    else if (catalogDatabase->isOpen() && catalogDatabase->itemCount() > 0 && !isSmokeTest)
+    {
+        catalogModel->loadFromDatabase();
     }
     else
     {
@@ -124,6 +137,7 @@ int main(int argc, char *argv[])
 
     // QQmlApplicationEngine setup
     QQmlApplicationEngine engine;
+    engine.addImageProvider(QStringLiteral("thumbnail"), new ThumbnailImageProvider());
 
     // Register context properties
     QQmlContext *rootCtx = engine.rootContext();

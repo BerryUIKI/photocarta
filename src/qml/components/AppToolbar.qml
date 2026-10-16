@@ -8,6 +8,7 @@ Rectangle {
     id: root
 
     signal requestOpenFiles()
+    signal requestScanFolder()
 
     implicitHeight: 52
     color: themeManager.surface
@@ -134,7 +135,7 @@ Rectangle {
             }
 
             ToolTip.visible: openMouse.containsMouse
-            ToolTip.text: qsTr("Add local photos to temporary session (Ctrl+O)")
+            ToolTip.text: qsTr("Add local photos to session (Ctrl+O)")
 
             MouseArea {
                 id: openMouse
@@ -142,6 +143,59 @@ Rectangle {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.requestOpenFiles()
+            }
+        }
+
+        // Scan Directory Button
+        Rectangle {
+            width: scanRow.implicitWidth + 16
+            height: 32
+            radius: themeManager.radiusMd
+            anchors.verticalCenter: parent.verticalCenter
+            color: sessionController.isScanning
+                   ? themeManager.surfaceSelected
+                   : (scanMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated)
+            border.color: sessionController.isScanning ? themeManager.accent : themeManager.border
+            border.width: 1
+
+            Row {
+                id: scanRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: sessionController.isScanning ? "⏳" : "🔍"
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: sessionController.isScanning ? qsTr("Scanning...") : qsTr("Scan Folder...")
+                    font.pixelSize: themeManager.fontSm
+                    font.weight: Font.Medium
+                    color: themeManager.textPrimary
+                    visible: root.width > 960
+                }
+            }
+
+            ToolTip.visible: scanMouse.containsMouse
+            ToolTip.text: sessionController.isScanning
+                          ? qsTr("Scanning in progress... Click to cancel")
+                          : qsTr("Scan directory recursively and import into SQLite catalog (Ctrl+Shift+O)")
+
+            MouseArea {
+                id: scanMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (sessionController.isScanning) {
+                        sessionController.cancelScan();
+                    } else {
+                        root.requestScanFolder();
+                    }
+                }
             }
         }
 

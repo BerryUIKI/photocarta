@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "catalogmodel.h"
+#include "database/catalogdatabase.h"
 
 #include <QFileInfo>
 #include <QImageReader>
@@ -87,6 +88,8 @@ QVariant CatalogModel::data(const QModelIndex &index, int role) const
         return item.previewUrl;
     case IsDemoFixtureRole:
         return item.isDemoFixture;
+    case IsMissingRole:
+        return item.isMissing;
     case ItemMapRole:
         return item.toVariantMap();
     case Qt::DisplayRole:
@@ -125,6 +128,7 @@ QHash<int, QByteArray> CatalogModel::roleNames() const
         {ThumbnailUrlRole, "thumbnailUrl"},
         {PreviewUrlRole, "previewUrl"},
         {IsDemoFixtureRole, "isDemoFixture"},
+        {IsMissingRole, "isMissing"},
         {ItemMapRole, "itemMap"}
     };
 }
@@ -398,11 +402,21 @@ CatalogItem CatalogModel::inspectLocalFile(const QString &filePath)
     item.rating = 0;
     item.isFlagged = false;
     item.tags = {QStringLiteral("Imported")};
-    item.thumbnailUrl = QUrl::fromLocalFile(item.filePath);
+    item.thumbnailUrl = QUrl(QStringLiteral("image://thumbnail/") + item.filePath);
     item.previewUrl = QUrl::fromLocalFile(item.filePath);
     item.isDemoFixture = false; // Real local file!
 
     return item;
+}
+
+void CatalogModel::setDatabase(CatalogDatabase *database)
+{
+    m_database = database;
+}
+
+CatalogDatabase *CatalogModel::database() const
+{
+    return m_database;
 }
 
 void CatalogModel::openUrls(const QList<QUrl> &urls)
@@ -417,6 +431,29 @@ void CatalogModel::openUrls(const QList<QUrl> &urls)
         }
     }
     addFilePaths(paths);
+}
+
+void CatalogModel::addItems(const QList<CatalogItem> &items)
+{
+    if (items.isEmpty())
+    {
+        return;
+    }
+
+    const int firstRow = static_cast<int>(m_items.size());
+    const int lastRow = firstRow + static_cast<int>(items.size()) - 1;
+
+    beginInsertRows(QModelIndex(), firstRow, lastRow);
+    m_items.append(items);
+    endInsertRows();
+
+    if (m_database && m_database->isOpen())
+    {
+        m_database->insertOrUpdateItems(items);
+    }
+
+    emit countChanged();
+    emit sessionLoaded(static_cast<int>(m_items.size()));
 }
 
 void CatalogModel::addFilePaths(const QStringList &filePaths)
@@ -442,20 +479,108 @@ void CatalogModel::addFilePaths(const QStringList &filePaths)
         newItems.append(item);
     }
 
-    if (newItems.isEmpty())
+    addItems(newItems);
+}
+
+void CatalogModel::updateItemRating(int index, int rating)
+{
+    if (index < 0 || index >= m_items.size())
     {
         return;
     }
 
-    const int firstRow = static_cast<int>(m_items.size());
-    const int lastRow = firstRow + static_cast<int>(newItems.size()) - 1;
+    if (m_items[index].rating == rating)
+    {
+        return;
+    }
 
-    beginInsertRows(QModelIndex(), firstRow, lastRow);
-    m_items.append(newItems);
-    endInsertRows();
+    m_items[index].rating = rating;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {RatingRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemRating(m_items[index].filePath, rating);
+    }
+}
+
+void CatalogModel::updateItemFlagged(int index, bool flagged)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    if (m_items[index].isFlagged == flagged)
+    {
+        return;
+    }
+
+    m_items[index].isFlagged = flagged;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {IsFlaggedRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemFlagged(m_items[index].filePath, flagged);
+    }
+}
+
+void CatalogModel::updateItemTags(int index, const QStringList &tags)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    m_items[index].tags = tags;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {TagsRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->setItemTags(m_items[index].filePath, tags);
+    }
+}
+
+void CatalogModel::loadFromDatabase(int collectionId)
+{
+    if (!m_database || !m_database->isOpen())
+    {
+        return;
+    }
+
+    const QList<CatalogItem> dbItems = (collectionId > 0)
+                                           ? m_database->fetchItemsByCollection(collectionId)
+                                           : m_database->fetchAllItems();
+
+    beginResetModel();
+    m_items = dbItems;
+    endResetModel();
 
     emit countChanged();
     emit sessionLoaded(static_cast<int>(m_items.size()));
+}
+
+void CatalogModel::setCollectionAvailable(const QString &rootPath, bool available)
+{
+    if (m_database && m_database->isOpen())
+    {
+        m_database->setCollectionAvailable(rootPath, available);
+    }
+
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        if (m_items[i].filePath.startsWith(rootPath))
+        {
+            if (m_items[i].isMissing == available)
+            {
+                m_items[i].isMissing = !available;
+                const QModelIndex idx = index(i, 0);
+                emit dataChanged(idx, idx, {IsMissingRole, ItemMapRole});
+            }
+        }
+    }
 }
 
 void CatalogModel::clearSession()
