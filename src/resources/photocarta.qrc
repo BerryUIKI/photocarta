@@ -1,0 +1,22 @@
+<RCC>
+    <qresource prefix="/">
+        <file>assets/icons/app_icon.svg</file>
+        <file>assets/icons/grid_view.svg</file>
+        <file>assets/icons/loupe_view.svg</file>
+        <file>assets/icons/sidebar_toggle.svg</file>
+        <file>assets/icons/details_toggle.svg</file>
+        <file>assets/icons/search.svg</file>
+        <file>assets/icons/clear.svg</file>
+        <file>assets/icons/folder_open.svg</file>
+        <file>assets/icons/theme_toggle.svg</file>
+        <file>assets/icons/star_filled.svg</file>
+        <file>assets/icons/star_outline.svg</file>
+        <file>assets/icons/info.svg</file>
+        <file>assets/demo/demo_landscape.svg</file>
+        <file>assets/demo/demo_portrait.svg</file>
+        <file>assets/demo/demo_architecture.svg</file>
+        <file>assets/demo/demo_street.svg</file>
+        <file>assets/demo/demo_macro.svg</file>
+        <file>assets/demo/demo_astro.svg</file>
+    </qresource>
+</RCC>

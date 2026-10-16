@@ -1,0 +1,155 @@
+name: Repository CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository:
+    name: Repository checks (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Check repository files
+        run: python scripts/check_repository.py
+      - name: Test GitFlow and configuration behavior
+        run: python -m unittest discover -s tests -v
+      - name: Check patch whitespace
+        run: git diff --check
+
+  gitflow:
+    name: GitFlow policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Validate PR routing
+        run: python scripts/check_gitflow.py
+
+  native-build:
+    name: Native build & test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ninja-build xvfb \
+            libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-0 \
+            libegl1-mesa-dev libfontconfig1-dev libfreetype6-dev \
+            libx11-xcb1 libxrender1 libxi6 libxcursor1 libvulkan-dev
+
+      - name: Install Ninja on Windows/macOS
+        if: runner.os != 'Linux'
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            brew install ninja
+          elif [ "${{ runner.os }}" = "Windows" ]; then
+            choco install ninja
+          fi
+
+      - name: Set up Qt 6
+        uses: jurplel/install-qt-action@a9c63c7c123f3069cff414e7e482d95dfa9d8125 # v4.4.1
+        with:
+          version: '6.8.3'
+          cache: true
+          setup-python: false
+
+      - name: Patch Qt 6 AGL framework for macOS SDK 15+ (QTBUG-137687)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          find "${RUNNER_WORKSPACE}" -type f \( -name "*.cmake" -o -name "*.prl" \) -exec sed -i '' 's/-framework AGL//g' {} + 2>/dev/null || true
+
+      - name: Set up MSVC environment on Windows
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=ON
+
+      - name: Build PhotoCarta
+        shell: bash
+        run: cmake --build build --config Release
+
+      - name: Run Qt behavioral tests & startup smoke tests (Linux xvfb)
+        if: runner.os == 'Linux'
+        run: |
+          xvfb-run --auto-servernum ctest --test-dir build --output-on-failure --build-config Release
+
+      - name: Run Qt behavioral tests & startup smoke tests
+        if: runner.os != 'Linux'
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          ctest --test-dir build --output-on-failure --build-config Release
+
+      - name: Upload prototype screenshot artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: screenshot-${{ matrix.os }}
+          path: build/tests/qt/smoke_screenshot.png
+          if-no-files-found: ignore
+
+  required:
+    name: ${{ github.event_name == 'pull_request' && 'Required checks' || 'Branch checks' }}
+    if: ${{ always() }}
+    needs: [repository, gitflow, native-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require successful validation
+        env:
+          REPOSITORY_RESULT: ${{ needs.repository.result }}
+          GITFLOW_RESULT: ${{ needs.gitflow.result }}
+          BUILD_RESULT: ${{ needs.native-build.result }}
+        run: |
+          test "$REPOSITORY_RESULT" = success
+          test "$GITFLOW_RESULT" = success
+          test "$BUILD_RESULT" = success

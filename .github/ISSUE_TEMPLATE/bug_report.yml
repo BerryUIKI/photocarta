@@ -1,0 +1,22 @@
+name: Bug report
+description: Report a reproducible PhotoCarta problem.
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS/version, PhotoCarta revision, and relevant storage/database type.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction and expected behavior
+      description: Provide steps, actual behavior, and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or screenshots
+      description: Remove private photo data, credentials, and personal paths.

@@ -1,0 +1,476 @@
+// SPDX-FileCopyrightText: 2026 PhotoCarta contributors
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "catalogmodel.h"
+
+#include <QFileInfo>
+#include <QImageReader>
+#include <QMimeDatabase>
+#include <QUuid>
+
+namespace PhotoCarta
+{
+
+CatalogModel::CatalogModel(QObject *parent)
+    : QAbstractListModel(parent)
+{
+}
+
+int CatalogModel::rowCount(const QModelIndex &parent) const
+{
+    if (parent.isValid())
+    {
+        return 0;
+    }
+    return static_cast<int>(m_items.size());
+}
+
+QVariant CatalogModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size())
+    {
+        return {};
+    }
+
+    const auto &item = m_items.at(index.row());
+    switch (role)
+    {
+    case IdRole:
+        return item.id;
+    case FilePathRole:
+        return item.filePath;
+    case FileNameRole:
+        return item.fileName;
+    case TitleRole:
+        return item.title;
+    case FileSizeRole:
+        return item.fileSizeBytes;
+    case FormattedFileSizeRole:
+        return item.formattedFileSize;
+    case MimeTypeRole:
+        return item.mimeType;
+    case DateTakenRole:
+        return item.dateTaken;
+    case FormattedDateRole:
+        return item.formattedDate;
+    case FileLastModifiedRole:
+        return item.fileLastModified;
+    case FormattedLastModifiedRole:
+        return item.formattedLastModified;
+    case WidthRole:
+        return item.dimensions.width();
+    case HeightRole:
+        return item.dimensions.height();
+    case DimensionsRole:
+        return item.formattedDimensions;
+    case CameraModelRole:
+        return item.cameraModel;
+    case LensModelRole:
+        return item.lensModel;
+    case FocalLengthRole:
+        return item.focalLength;
+    case ApertureRole:
+        return item.aperture;
+    case ShutterSpeedRole:
+        return item.shutterSpeed;
+    case IsoRole:
+        return item.iso;
+    case RatingRole:
+        return item.rating;
+    case IsFlaggedRole:
+        return item.isFlagged;
+    case TagsRole:
+        return item.tags;
+    case ThumbnailUrlRole:
+        return item.thumbnailUrl;
+    case PreviewUrlRole:
+        return item.previewUrl;
+    case IsDemoFixtureRole:
+        return item.isDemoFixture;
+    case ItemMapRole:
+        return item.toVariantMap();
+    case Qt::DisplayRole:
+        return item.title.isEmpty() ? item.fileName : item.title;
+    default:
+        return {};
+    }
+}
+
+QHash<int, QByteArray> CatalogModel::roleNames() const
+{
+    return {
+        {IdRole, "id"},
+        {FilePathRole, "filePath"},
+        {FileNameRole, "fileName"},
+        {TitleRole, "title"},
+        {FileSizeRole, "fileSizeBytes"},
+        {FormattedFileSizeRole, "formattedFileSize"},
+        {MimeTypeRole, "mimeType"},
+        {DateTakenRole, "dateTaken"},
+        {FormattedDateRole, "formattedDate"},
+        {FileLastModifiedRole, "fileLastModified"},
+        {FormattedLastModifiedRole, "formattedLastModified"},
+        {WidthRole, "width"},
+        {HeightRole, "height"},
+        {DimensionsRole, "formattedDimensions"},
+        {CameraModelRole, "cameraModel"},
+        {LensModelRole, "lensModel"},
+        {FocalLengthRole, "focalLength"},
+        {ApertureRole, "aperture"},
+        {ShutterSpeedRole, "shutterSpeed"},
+        {IsoRole, "iso"},
+        {RatingRole, "rating"},
+        {IsFlaggedRole, "isFlagged"},
+        {TagsRole, "tags"},
+        {ThumbnailUrlRole, "thumbnailUrl"},
+        {PreviewUrlRole, "previewUrl"},
+        {IsDemoFixtureRole, "isDemoFixture"},
+        {ItemMapRole, "itemMap"}
+    };
+}
+
+int CatalogModel::count() const
+{
+    return static_cast<int>(m_items.size());
+}
+
+bool CatalogModel::hasDemoContent() const
+{
+    for (const auto &item : m_items)
+    {
+        if (item.isDemoFixture)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+const QList<CatalogItem> &CatalogModel::items() const
+{
+    return m_items;
+}
+
+const CatalogItem *CatalogModel::itemAt(int index) const
+{
+    if (index >= 0 && index < m_items.size())
+    {
+        return &m_items.at(index);
+    }
+    return nullptr;
+}
+
+QVariantMap CatalogModel::get(int index) const
+{
+    if (index >= 0 && index < m_items.size())
+    {
+        return m_items.at(index).toVariantMap();
+    }
+    return {};
+}
+
+void CatalogModel::appendItem(const CatalogItem &item)
+{
+    const int newRow = static_cast<int>(m_items.size());
+    beginInsertRows(QModelIndex(), newRow, newRow);
+    m_items.append(item);
+    endInsertRows();
+}
+
+void CatalogModel::loadDemoFixtures()
+{
+    beginResetModel();
+    m_items.clear();
+
+    CatalogItem item1;
+    item1.id = QStringLiteral("demo-001");
+    item1.filePath = QStringLiteral("qrc:/assets/demo/demo_landscape.svg");
+    item1.fileName = QStringLiteral("Alpine_Sunrise_Oeschinen.jpg");
+    item1.title = QStringLiteral("Alpine Sunrise at Lake Oeschinen");
+    item1.fileSizeBytes = 28430000;
+    item1.formattedFileSize = CatalogItem::formatBytes(item1.fileSizeBytes);
+    item1.mimeType = QStringLiteral("image/jpeg");
+    item1.dateTaken = QDateTime::fromString(QStringLiteral("2026-10-12 06:45:10"), QStringLiteral("yyyy-MM-dd HH:mm:ss"));
+    item1.formattedDate = item1.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+    item1.dimensions = QSize(7008, 4672);
+    item1.formattedDimensions = QStringLiteral("7008 x 4672 (32.7 MP)");
+    item1.cameraModel = QStringLiteral("Sony Alpha 7 IV");
+    item1.lensModel = QStringLiteral("FE 24-70mm F2.8 GM II");
+    item1.focalLength = QStringLiteral("28 mm");
+    item1.aperture = QStringLiteral("f/8.0");
+    item1.shutterSpeed = QStringLiteral("1/250s");
+    item1.iso = 100;
+    item1.rating = 5;
+    item1.isFlagged = true;
+    item1.tags = {QStringLiteral("Landscape"), QStringLiteral("Mountain"), QStringLiteral("Sunrise"), QStringLiteral("Demo")};
+    item1.thumbnailUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_landscape.svg"));
+    item1.previewUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_landscape.svg"));
+    item1.isDemoFixture = true;
+    m_items.append(item1);
+
+    CatalogItem item2;
+    item2.id = QStringLiteral("demo-002");
+    item2.filePath = QStringLiteral("qrc:/assets/demo/demo_portrait.svg");
+    item2.fileName = QStringLiteral("Studio_Profile_AmberRim.jpg");
+    item2.title = QStringLiteral("Studio Portrait in Amber & Cyan");
+    item2.fileSizeBytes = 35120000;
+    item2.formattedFileSize = CatalogItem::formatBytes(item2.fileSizeBytes);
+    item2.mimeType = QStringLiteral("image/jpeg");
+    item2.dateTaken = QDateTime::fromString(QStringLiteral("2026-10-13 14:15:32"), QStringLiteral("yyyy-MM-dd HH:mm:ss"));
+    item2.formattedDate = item2.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+    item2.dimensions = QSize(8192, 5464);
+    item2.formattedDimensions = QStringLiteral("8192 x 5464 (44.8 MP)");
+    item2.cameraModel = QStringLiteral("Canon EOS R5");
+    item2.lensModel = QStringLiteral("RF 85mm F1.2 L USM");
+    item2.focalLength = QStringLiteral("85 mm");
+    item2.aperture = QStringLiteral("f/1.4");
+    item2.shutterSpeed = QStringLiteral("1/500s");
+    item2.iso = 100;
+    item2.rating = 5;
+    item2.isFlagged = false;
+    item2.tags = {QStringLiteral("Portrait"), QStringLiteral("Studio"), QStringLiteral("Silhouette"), QStringLiteral("Demo")};
+    item2.thumbnailUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_portrait.svg"));
+    item2.previewUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_portrait.svg"));
+    item2.isDemoFixture = true;
+    m_items.append(item2);
+
+    CatalogItem item3;
+    item3.id = QStringLiteral("demo-003");
+    item3.filePath = QStringLiteral("qrc:/assets/demo/demo_architecture.svg");
+    item3.fileName = QStringLiteral("Geometric_Concrete_Pavilion.jpg");
+    item3.title = QStringLiteral("Geometric Concrete Pavilion");
+    item3.fileSizeBytes = 42680000;
+    item3.formattedFileSize = CatalogItem::formatBytes(item3.fileSizeBytes);
+    item3.mimeType = QStringLiteral("image/jpeg");
+    item3.dateTaken = QDateTime::fromString(QStringLiteral("2026-10-14 11:20:45"), QStringLiteral("yyyy-MM-dd HH:mm:ss"));
+    item3.formattedDate = item3.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+    item3.dimensions = QSize(8256, 5504);
+    item3.formattedDimensions = QStringLiteral("8256 x 5504 (45.4 MP)");
+    item3.cameraModel = QStringLiteral("Nikon Z8");
+    item3.lensModel = QStringLiteral("NIKKOR Z 14-30mm f/4 S");
+    item3.focalLength = QStringLiteral("18 mm");
+    item3.aperture = QStringLiteral("f/11.0");
+    item3.shutterSpeed = QStringLiteral("1/160s");
+    item3.iso = 64;
+    item3.rating = 4;
+    item3.isFlagged = true;
+    item3.tags = {QStringLiteral("Architecture"), QStringLiteral("Minimalism"), QStringLiteral("Urban"), QStringLiteral("Demo")};
+    item3.thumbnailUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_architecture.svg"));
+    item3.previewUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_architecture.svg"));
+    item3.isDemoFixture = true;
+    m_items.append(item3);
+
+    CatalogItem item4;
+    item4.id = QStringLiteral("demo-004");
+    item4.filePath = QStringLiteral("qrc:/assets/demo/demo_street.svg");
+    item4.fileName = QStringLiteral("Neon_Rain_Alleyway.jpg");
+    item4.title = QStringLiteral("Neon Rain in Shinjuku Alleyway");
+    item4.fileSizeBytes = 22840000;
+    item4.formattedFileSize = CatalogItem::formatBytes(item4.fileSizeBytes);
+    item4.mimeType = QStringLiteral("image/jpeg");
+    item4.dateTaken = QDateTime::fromString(QStringLiteral("2026-10-14 21:05:19"), QStringLiteral("yyyy-MM-dd HH:mm:ss"));
+    item4.formattedDate = item4.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+    item4.dimensions = QSize(7728, 5152);
+    item4.formattedDimensions = QStringLiteral("7728 x 5152 (39.8 MP)");
+    item4.cameraModel = QStringLiteral("Fujifilm X-T5");
+    item4.lensModel = QStringLiteral("XF 33mm F1.4 R LM WR");
+    item4.focalLength = QStringLiteral("33 mm");
+    item4.aperture = QStringLiteral("f/1.4");
+    item4.shutterSpeed = QStringLiteral("1/125s");
+    item4.iso = 1600;
+    item4.rating = 4;
+    item4.isFlagged = false;
+    item4.tags = {QStringLiteral("Street"), QStringLiteral("Night"), QStringLiteral("Rain"), QStringLiteral("Demo")};
+    item4.thumbnailUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_street.svg"));
+    item4.previewUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_street.svg"));
+    item4.isDemoFixture = true;
+    m_items.append(item4);
+
+    CatalogItem item5;
+    item5.id = QStringLiteral("demo-005");
+    item5.filePath = QStringLiteral("qrc:/assets/demo/demo_macro.svg");
+    item5.fileName = QStringLiteral("Monstera_Dew_Drops_Macro.jpg");
+    item5.title = QStringLiteral("Monstera Dew Drops Macro");
+    item5.fileSizeBytes = 54200000;
+    item5.formattedFileSize = CatalogItem::formatBytes(item5.fileSizeBytes);
+    item5.mimeType = QStringLiteral("image/jpeg");
+    item5.dateTaken = QDateTime::fromString(QStringLiteral("2026-10-15 09:12:04"), QStringLiteral("yyyy-MM-dd HH:mm:ss"));
+    item5.formattedDate = item5.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+    item5.dimensions = QSize(9504, 6336);
+    item5.formattedDimensions = QStringLiteral("9504 x 6336 (60.2 MP)");
+    item5.cameraModel = QStringLiteral("Sony Alpha 7R V");
+    item5.lensModel = QStringLiteral("FE 90mm F2.8 Macro G OSS");
+    item5.focalLength = QStringLiteral("90 mm");
+    item5.aperture = QStringLiteral("f/5.6");
+    item5.shutterSpeed = QStringLiteral("1/200s");
+    item5.iso = 200;
+    item5.rating = 3;
+    item5.isFlagged = false;
+    item5.tags = {QStringLiteral("Macro"), QStringLiteral("Nature"), QStringLiteral("Botanical"), QStringLiteral("Demo")};
+    item5.thumbnailUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_macro.svg"));
+    item5.previewUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_macro.svg"));
+    item5.isDemoFixture = true;
+    m_items.append(item5);
+
+    CatalogItem item6;
+    item6.id = QStringLiteral("demo-006");
+    item6.filePath = QStringLiteral("qrc:/assets/demo/demo_astro.svg");
+    item6.fileName = QStringLiteral("Milky_Way_Arc_Canyon.jpg");
+    item6.title = QStringLiteral("Milky Way Arc over Arch Canyon");
+    item6.fileSizeBytes = 18950000;
+    item6.formattedFileSize = CatalogItem::formatBytes(item6.fileSizeBytes);
+    item6.mimeType = QStringLiteral("image/jpeg");
+    item6.dateTaken = QDateTime::fromString(QStringLiteral("2026-10-15 23:48:12"), QStringLiteral("yyyy-MM-dd HH:mm:ss"));
+    item6.formattedDate = item6.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+    item6.dimensions = QSize(4240, 2832);
+    item6.formattedDimensions = QStringLiteral("4240 x 2832 (12.0 MP)");
+    item6.cameraModel = QStringLiteral("Sony Alpha 7S III");
+    item6.lensModel = QStringLiteral("FE 20mm F1.8 G");
+    item6.focalLength = QStringLiteral("20 mm");
+    item6.aperture = QStringLiteral("f/1.8");
+    item6.shutterSpeed = QStringLiteral("20s");
+    item6.iso = 3200;
+    item6.rating = 5;
+    item6.isFlagged = true;
+    item6.tags = {QStringLiteral("Astro"), QStringLiteral("Night"), QStringLiteral("Landscape"), QStringLiteral("Demo")};
+    item6.thumbnailUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_astro.svg"));
+    item6.previewUrl = QUrl(QStringLiteral("qrc:/assets/demo/demo_astro.svg"));
+    item6.isDemoFixture = true;
+    m_items.append(item6);
+
+    for (auto &item : m_items)
+    {
+        item.fileLastModified = item.dateTaken;
+        item.formattedLastModified = item.formattedDate;
+    }
+
+    endResetModel();
+    emit countChanged();
+    emit sessionLoaded(static_cast<int>(m_items.size()));
+}
+
+CatalogItem CatalogModel::inspectLocalFile(const QString &filePath)
+{
+    CatalogItem item;
+    QFileInfo info(filePath);
+    item.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    item.filePath = info.absoluteFilePath();
+    item.fileName = info.fileName();
+    item.title = info.completeBaseName();
+    item.fileSizeBytes = info.size();
+    item.formattedFileSize = CatalogItem::formatBytes(item.fileSizeBytes);
+
+    QMimeDatabase mimeDb;
+    item.mimeType = mimeDb.mimeTypeForFile(info).name();
+
+    item.fileLastModified = info.lastModified();
+    item.formattedLastModified = item.fileLastModified.isValid()
+        ? item.fileLastModified.toString(QStringLiteral("yyyy-MM-dd HH:mm"))
+        : QStringLiteral("-");
+
+    // Capture date: Unknown without EXIF parser in prototype
+    item.dateTaken = QDateTime();
+    item.formattedDate = QString();
+
+    // Bounded header-only reading without full image decoding on GUI thread
+    QImageReader reader(item.filePath);
+    const QSize sz = reader.size();
+    if (sz.isValid() && sz.width() > 0 && sz.height() > 0)
+    {
+        item.dimensions = sz;
+        const double megapixels = (static_cast<double>(sz.width()) * static_cast<double>(sz.height())) / 1000000.0;
+        item.formattedDimensions = QString::asprintf("%d x %d (%.1f MP)", sz.width(), sz.height(), megapixels);
+    }
+    else
+    {
+        item.dimensions = QSize(0, 0);
+        item.formattedDimensions = QStringLiteral("Unknown dimensions");
+    }
+
+    // EXIF metadata: Unknown without EXIF in this prototype
+    // Do not fabricate fake camera or lens names
+    item.cameraModel.clear();
+    item.lensModel.clear();
+    item.focalLength.clear();
+    item.aperture.clear();
+    item.shutterSpeed.clear();
+    item.iso = 0;
+    item.rating = 0;
+    item.isFlagged = false;
+    item.tags = {QStringLiteral("Imported")};
+    item.thumbnailUrl = QUrl::fromLocalFile(item.filePath);
+    item.previewUrl = QUrl::fromLocalFile(item.filePath);
+    item.isDemoFixture = false; // Real local file!
+
+    return item;
+}
+
+void CatalogModel::openUrls(const QList<QUrl> &urls)
+{
+    QStringList paths;
+    paths.reserve(urls.size());
+    for (const auto &url : urls)
+    {
+        if (url.isLocalFile())
+        {
+            paths.append(url.toLocalFile());
+        }
+    }
+    addFilePaths(paths);
+}
+
+void CatalogModel::addFilePaths(const QStringList &filePaths)
+{
+    if (filePaths.isEmpty())
+    {
+        return;
+    }
+
+    QList<CatalogItem> newItems;
+    newItems.reserve(filePaths.size());
+
+    for (const auto &path : filePaths)
+    {
+        QFileInfo fi(path);
+        if (!fi.exists() || !fi.isFile())
+        {
+            emit fileLoadError(path, QStringLiteral("File not found or inaccessible"));
+            continue;
+        }
+
+        CatalogItem item = inspectLocalFile(path);
+        newItems.append(item);
+    }
+
+    if (newItems.isEmpty())
+    {
+        return;
+    }
+
+    const int firstRow = static_cast<int>(m_items.size());
+    const int lastRow = firstRow + static_cast<int>(newItems.size()) - 1;
+
+    beginInsertRows(QModelIndex(), firstRow, lastRow);
+    m_items.append(newItems);
+    endInsertRows();
+
+    emit countChanged();
+    emit sessionLoaded(static_cast<int>(m_items.size()));
+}
+
+void CatalogModel::clearSession()
+{
+    if (m_items.isEmpty())
+    {
+        return;
+    }
+
+    beginResetModel();
+    m_items.clear();
+    endResetModel();
+
+    emit countChanged();
+    emit sessionLoaded(0);
+}
+
+} // namespace PhotoCarta

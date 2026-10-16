@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#090a0f"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#1f2937"/>
+    </linearGradient>
+    <radialGradient id="neonPink" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.9"/>
+      <stop offset="60%" stop-color="#ec4899" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="neonCyan" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.9"/>
+      <stop offset="60%" stop-color="#0ea5e9" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wetAsphalt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="30%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+  </defs>
+  <!-- Rainy Night Background -->
+  <rect width="800" height="600" fill="url(#nightSky)"/>
+  <!-- Street Perspective / Buildings -->
+  <polygon points="0,0 260,350 0,600" fill="#0f172a"/>
+  <polygon points="800,0 540,350 800,600" fill="#0b1120"/>
+  <!-- Wet Asphalt Road Surface -->
+  <polygon points="260,350 540,350 780,600 20,600" fill="url(#wetAsphalt)"/>
+  <!-- Glowing Neon Signs -->
+  <rect x="60" y="160" width="12" height="180" fill="#f43f5e"/>
+  <circle cx="66" cy="250" r="80" fill="url(#neonPink)"/>
+  <rect x="680" y="140" width="14" height="200" fill="#06b6d4"/>
+  <circle cx="687" cy="240" r="90" fill="url(#neonCyan)"/>
+  <!-- Road Neon Reflections (Rain Puddles) -->
+  <ellipse cx="320" cy="460" rx="40" ry="8" fill="#f43f5e" opacity="0.6"/>
+  <ellipse cx="300" cy="510" rx="70" ry="12" fill="#ec4899" opacity="0.4"/>
+  <ellipse cx="480" cy="470" rx="50" ry="10" fill="#06b6d4" opacity="0.6"/>
+  <ellipse cx="500" cy="520" rx="80" ry="14" fill="#0ea5e9" opacity="0.4"/>
+  <!-- Bokeh Circles (Rain on Lens) -->
+  <circle cx="210" cy="180" r="28" fill="#f43f5e" opacity="0.25"/>
+  <circle cx="400" cy="220" r="42" fill="#eab308" opacity="0.2"/>
+  <circle cx="580" cy="190" r="34" fill="#06b6d4" opacity="0.3"/>
+  <circle cx="360" cy="380" r="18" fill="#ffffff" opacity="0.35"/>
+  <circle cx="440" cy="420" r="24" fill="#f43f5e" opacity="0.25"/>
+  <!-- Lone Pedestrian with Umbrella Silhouette -->
+  <circle cx="400" cy="360" r="8" fill="#000000"/>
+  <path d="M 380 372 Q 400 355 420 372 Z" fill="#000000"/>
+  <rect x="394" y="372" width="12" height="35" rx="3" fill="#000000"/>
+  <line x1="397" y1="407" x2="395" y2="430" stroke="#000000" stroke-width="3"/>
+  <line x1="403" y1="407" x2="405" y2="430" stroke="#000000" stroke-width="3"/>
+</svg>

@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/photocarta/qml">
+        <file alias="main.qml">../qml/main.qml</file>
+        <file alias="components/AppToolbar.qml">../qml/components/AppToolbar.qml</file>
+        <file alias="components/AppStatusBar.qml">../qml/components/AppStatusBar.qml</file>
+        <file alias="components/CollectionNavigationPane.qml">../qml/components/CollectionNavigationPane.qml</file>
+        <file alias="components/MetadataDetailsPane.qml">../qml/components/MetadataDetailsPane.qml</file>
+        <file alias="components/ThumbnailCard.qml">../qml/components/ThumbnailCard.qml</file>
+        <file alias="components/ThumbnailGridView.qml">../qml/components/ThumbnailGridView.qml</file>
+        <file alias="components/ImagePreviewView.qml">../qml/components/ImagePreviewView.qml</file>
+        <file alias="components/EmptyStateView.qml">../qml/components/EmptyStateView.qml</file>
+        <file alias="components/ErrorBanner.qml">../qml/components/ErrorBanner.qml</file>
+        <file alias="components/RatingStars.qml">../qml/components/RatingStars.qml</file>
+        <file alias="components/TagChip.qml">../qml/components/TagChip.qml</file>
+        <file alias="styles/Theme.qml">../qml/styles/Theme.qml</file>
+        <file alias="styles/qmldir">../qml/styles/qmldir</file>
+    </qresource>
+</RCC>
