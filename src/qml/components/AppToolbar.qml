@@ -48,6 +48,7 @@ Rectangle {
                 height: 18
                 radius: 4
                 color: themeManager.badgeDemoBg
+                visible: root.width > 920
 
                 Text {
                     id: prototypeText
@@ -128,6 +129,7 @@ Rectangle {
                     font.pixelSize: themeManager.fontSm
                     font.weight: Font.Medium
                     color: themeManager.textPrimary
+                    visible: root.width > 860
                 }
             }
 
@@ -223,7 +225,7 @@ Rectangle {
 
         // Search Field
         Rectangle {
-            width: 220
+            width: root.width > 1080 ? 220 : (root.width > 920 ? 160 : 130)
             height: 32
             radius: themeManager.radiusMd
             anchors.verticalCenter: parent.verticalCenter
@@ -258,9 +260,10 @@ Rectangle {
                     Text {
                         anchors.fill: parent
                         visible: !searchInput.text && !searchInput.activeFocus
-                        text: qsTr("Search photos, tags, cameras...")
+                        text: root.width > 1000 ? qsTr("Search photos, tags...") : qsTr("Search...")
                         font.pixelSize: themeManager.fontSm
                         color: themeManager.textMuted
+                        elide: Text.ElideRight
                     }
 
                     onTextChanged: filterModel.searchQuery = text
@@ -292,7 +295,7 @@ Rectangle {
         // Sort Criterion Selector
         ComboBox {
             id: sortCombo
-            width: 110
+            width: root.width > 920 ? 100 : 80
             height: 32
             anchors.verticalCenter: parent.verticalCenter
             model: [

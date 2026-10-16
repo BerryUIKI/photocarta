@@ -44,40 +44,42 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
 
-        Row {
-            anchors.fill: parent
+        // Left: Collections / Navigation Sidebar
+        CollectionNavigationPane {
+            id: leftPane
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            visible: sessionController.leftPaneVisible
+        }
 
-            // Left: Collections / Navigation Sidebar
-            CollectionNavigationPane {
-                id: leftPane
-                height: parent.height
-                visible: sessionController.leftPaneVisible
+        // Right: Metadata & Details Sidebar
+        MetadataDetailsPane {
+            id: rightPane
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            visible: sessionController.rightPaneVisible
+        }
+
+        // Center: Content Canvas (Grid or Preview Mode)
+        Item {
+            id: centerContent
+            anchors.left: leftPane.visible ? leftPane.right : parent.left
+            anchors.right: rightPane.visible ? rightPane.left : parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            clip: true
+
+            ThumbnailGridView {
+                anchors.fill: parent
+                visible: !sessionController.previewMode
+                onRequestOpenFiles: openDialog.open()
             }
 
-            // Center: Content Canvas (Grid or Preview Mode)
-            Item {
-                id: centerContent
-                width: parent.width - (leftPane.visible ? leftPane.width : 0) - (rightPane.visible ? rightPane.width : 0)
-                height: parent.height
-                clip: true
-
-                ThumbnailGridView {
-                    anchors.fill: parent
-                    visible: !sessionController.previewMode
-                    onRequestOpenFiles: openDialog.open()
-                }
-
-                ImagePreviewView {
-                    anchors.fill: parent
-                    visible: sessionController.previewMode
-                }
-            }
-
-            // Right: Metadata & Details Sidebar
-            MetadataDetailsPane {
-                id: rightPane
-                height: parent.height
-                visible: sessionController.rightPaneVisible
+            ImagePreviewView {
+                anchors.fill: parent
+                visible: sessionController.previewMode
             }
         }
     }

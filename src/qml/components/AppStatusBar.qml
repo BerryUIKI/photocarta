@@ -35,7 +35,7 @@ Rectangle {
         text: qsTr("Enter: Preview  •  Esc: Grid  •  Space: Select  •  Arrows: Navigate  •  Ctrl+O: Open")
         font.pixelSize: 10
         color: themeManager.textMuted
-        visible: parent.width > 780
+        visible: parent.width > 880
     }
 
     Row {
@@ -65,6 +65,37 @@ Rectangle {
                 to: 1.8
                 value: sessionController.zoomFactor
                 onMoved: sessionController.zoomFactor = value
+
+                background: Rectangle {
+                    x: zoomSlider.leftPadding
+                    y: zoomSlider.topPadding + Math.round((zoomSlider.availableHeight - height) / 2)
+                    implicitWidth: 70
+                    implicitHeight: 4
+                    width: zoomSlider.availableWidth
+                    height: implicitHeight
+                    radius: 2
+                    color: themeManager.surfaceElevated
+                    border.color: themeManager.border
+                    border.width: 1
+
+                    Rectangle {
+                        width: zoomSlider.visualPosition * parent.width
+                        height: parent.height
+                        color: themeManager.accent
+                        radius: 2
+                    }
+                }
+
+                handle: Rectangle {
+                    x: zoomSlider.leftPadding + Math.round(zoomSlider.visualPosition * (zoomSlider.availableWidth - width))
+                    y: zoomSlider.topPadding + Math.round((zoomSlider.availableHeight - height) / 2)
+                    implicitWidth: 12
+                    implicitHeight: 12
+                    radius: 6
+                    color: zoomSlider.pressed ? themeManager.accentHover : (zoomSlider.hovered ? themeManager.accent : "#ffffff")
+                    border.color: themeManager.accent
+                    border.width: 1.5
+                }
             }
 
             Text {

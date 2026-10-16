@@ -17,14 +17,23 @@ Rectangle {
         anchors.fill: parent
         contentWidth: availableWidth
         clip: true
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
+        }
 
-        Column {
-            width: parent.width
-            spacing: 16
-            topPadding: 16
-            bottomPadding: 16
-            leftPadding: 12
-            rightPadding: 12
+        Item {
+            width: root.width
+            implicitHeight: navContentCol.implicitHeight + 32
+
+            Column {
+                id: navContentCol
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                topPadding: 16
+                bottomPadding: 16
+                spacing: 16
 
             // SECTION 1: LIBRARY COLLECTIONS
             Text {
@@ -49,9 +58,8 @@ Rectangle {
                            : (allNavMouse.containsMouse ? themeManager.surfaceHover : "transparent")
 
                     Row {
-                        anchors.fill: parent
+                        anchors.left: parent.left
                         anchors.leftMargin: 10
-                        anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 8
 
@@ -68,24 +76,24 @@ Rectangle {
                             font.weight: Font.Medium
                             color: themeManager.textPrimary
                         }
+                    }
 
-                        Item { Layout.fillWidth: true; width: 1; height: 1 }
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: allCountText.implicitWidth + 12
+                        height: 18
+                        radius: 9
+                        color: themeManager.surfaceElevated
 
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: allCountText.implicitWidth + 12
-                            height: 18
-                            radius: 9
-                            color: themeManager.surfaceElevated
-
-                            Text {
-                                id: allCountText
-                                anchors.centerIn: parent
-                                text: catalogModel.count
-                                font.pixelSize: 10
-                                font.weight: Font.DemiBold
-                                color: themeManager.textSecondary
-                            }
+                        Text {
+                            id: allCountText
+                            anchors.centerIn: parent
+                            text: catalogModel.count
+                            font.pixelSize: 10
+                            font.weight: Font.DemiBold
+                            color: themeManager.textSecondary
                         }
                     }
 
@@ -112,9 +120,8 @@ Rectangle {
                            : (demoNavMouse.containsMouse ? themeManager.surfaceHover : "transparent")
 
                     Row {
-                        anchors.fill: parent
+                        anchors.left: parent.left
                         anchors.leftMargin: 10
-                        anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 8
 
@@ -131,24 +138,24 @@ Rectangle {
                             font.weight: Font.Medium
                             color: themeManager.textPrimary
                         }
+                    }
 
-                        Item { Layout.fillWidth: true; width: 1; height: 1 }
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: demoTagText.implicitWidth + 8
+                        height: 16
+                        radius: 4
+                        color: themeManager.badgeDemoBg
 
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: demoTagText.implicitWidth + 8
-                            height: 16
-                            radius: 4
-                            color: themeManager.badgeDemoBg
-
-                            Text {
-                                id: demoTagText
-                                anchors.centerIn: parent
-                                text: qsTr("DEMO")
-                                font.pixelSize: 9
-                                font.weight: Font.Bold
-                                color: themeManager.badgeDemoText
-                            }
+                        Text {
+                            id: demoTagText
+                            anchors.centerIn: parent
+                            text: qsTr("DEMO")
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                            color: themeManager.badgeDemoText
                         }
                     }
 
@@ -423,11 +430,11 @@ Rectangle {
                 color: themeManager.border
             }
 
-            // SECTION 4: PROTOTYPE NOTICE CARD
+            // SECTION 4: SESSION STATUS NOTE
             Rectangle {
                 width: parent.width
-                implicitHeight: noticeCol.implicitHeight + 20
-                radius: themeManager.radiusMd
+                implicitHeight: noticeCol.implicitHeight + 14
+                radius: themeManager.radiusSm
                 color: themeManager.surfaceElevated
                 border.color: themeManager.border
                 border.width: 1
@@ -435,33 +442,27 @@ Rectangle {
                 Column {
                     id: noticeCol
                     anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 6
+                    anchors.margins: 8
+                    spacing: 4
 
-                    Row {
-                        spacing: 6
-                        Text {
-                            text: "ℹ️"
-                            font.pixelSize: 12
-                        }
-                        Text {
-                            text: qsTr("Prototype Boundary")
-                            font.pixelSize: 11
-                            font.weight: Font.Bold
-                            color: themeManager.textPrimary
-                        }
+                    Text {
+                        text: qsTr("Temporary Session")
+                        font.pixelSize: 10
+                        font.weight: Font.DemiBold
+                        color: themeManager.textSecondary
                     }
 
                     Text {
                         width: parent.width
                         wrapMode: Text.Wrap
-                        text: qsTr("This prototype operates on a temporary session without copying originals or modifying production databases. Backend digiKam integration will connect in subsequent milestones.")
-                        font.pixelSize: 10
-                        lineHeight: 1.3
+                        text: qsTr("Safe, read-only inspection. Originals and production catalogs remain untouched.")
+                        font.pixelSize: 9
+                        lineHeight: 1.2
                         color: themeManager.textMuted
                     }
                 }
             }
         }
+    }
     }
 }

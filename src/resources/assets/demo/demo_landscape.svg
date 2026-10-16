@@ -43,7 +43,4 @@
   <polygon points="40,580 40,410 20,460 40,430 15,490 40,460 10,530 40,500 0,580" fill="#020617"/>
   <polygon points="760,590 760,430 745,470 760,450 735,510 760,480 730,550 760,520 720,590" fill="#020617"/>
   <polygon points="785,600 785,460 770,500 785,480 765,540 785,510 760,570 785,540 750,600" fill="#020617"/>
-  <!-- Demo watermark badge -->
-  <rect x="24" y="24" width="130" height="30" rx="6" fill="#090a0f" fill-opacity="0.75" stroke="#475569" stroke-width="1"/>
-  <text x="89" y="44" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" text-anchor="middle" letter-spacing="1.5">DEMO FIXTURE</text>
 </svg>

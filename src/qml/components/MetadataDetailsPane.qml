@@ -18,14 +18,23 @@ Rectangle {
         anchors.fill: parent
         contentWidth: availableWidth
         clip: true
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
+        }
 
-        Column {
-            width: parent.width
-            spacing: 16
-            topPadding: 16
-            bottomPadding: 16
-            leftPadding: 14
-            rightPadding: 14
+        Item {
+            width: root.width
+            implicitHeight: contentCol.implicitHeight + 36
+
+            Column {
+                id: contentCol
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 14
+                anchors.rightMargin: 14
+                topPadding: 16
+                bottomPadding: 20
+                spacing: 16
 
             // Empty selection placeholder
             Column {
@@ -279,8 +288,8 @@ Rectangle {
                 // Non-persistent fixture notice
                 Rectangle {
                     width: parent.width
-                    implicitHeight: fixNoticeText.implicitHeight + 16
-                    radius: themeManager.radiusMd
+                    implicitHeight: fixNoticeText.implicitHeight + 14
+                    radius: themeManager.radiusSm
                     color: themeManager.surfaceElevated
                     border.color: themeManager.border
                     border.width: 1
@@ -290,13 +299,14 @@ Rectangle {
                         anchors.fill: parent
                         anchors.margins: 8
                         wrapMode: Text.Wrap
-                        text: qsTr("Notice: In this prototype, ratings and tags are display-only fixtures. Metadata write operations will connect to digiKam database engines in subsequent releases.")
+                        text: qsTr("Ratings and tags in this temporary session are read-only. Database persistence will connect in upcoming releases.")
                         font.pixelSize: 10
-                        lineHeight: 1.3
+                        lineHeight: 1.2
                         color: themeManager.textMuted
                     }
                 }
             }
         }
+    }
     }
 }

@@ -9,11 +9,11 @@ Item {
 
     signal requestOpenFiles()
 
+    readonly property real availableGridWidth: Math.max(100, width - 16)
     readonly property real baseWidth: 220 * sessionController.zoomFactor
-    readonly property real baseHeight: 200 * sessionController.zoomFactor
-    readonly property int columns: Math.max(1, Math.floor(width / baseWidth))
-    readonly property real dynamicCellWidth: Math.floor(width / columns)
-    readonly property real dynamicCellHeight: Math.floor(dynamicCellWidth * (baseHeight / baseWidth))
+    readonly property int columns: Math.max(1, Math.floor(availableGridWidth / baseWidth))
+    readonly property real dynamicCellWidth: Math.floor(availableGridWidth / columns)
+    readonly property real dynamicCellHeight: Math.floor(dynamicCellWidth * 0.85)
 
     GridView {
         id: grid
