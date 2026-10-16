@@ -63,6 +63,18 @@ int main(int argc, char *argv[])
         QStringLiteral("Launch directly into single-image preview mode."));
     parser.addOption(previewOption);
 
+    QCommandLineOption widthOption(
+        QStringList() << QStringLiteral("width"),
+        QStringLiteral("Set initial window width in pixels."),
+        QStringLiteral("pixels"));
+    parser.addOption(widthOption);
+
+    QCommandLineOption heightOption(
+        QStringList() << QStringLiteral("height"),
+        QStringLiteral("Set initial window height in pixels."),
+        QStringLiteral("pixels"));
+    parser.addOption(heightOption);
+
     parser.addPositionalArgument(QStringLiteral("files"),
                                 QStringLiteral("Initial image files to load into session."),
                                 QStringLiteral("[files...]"));
@@ -73,6 +85,8 @@ int main(int argc, char *argv[])
     const QString screenshotPath = parser.value(screenshotOption);
     const bool isDarkTheme = (parser.value(themeOption).toLower() != QStringLiteral("light"));
     const bool startInPreview = parser.isSet(previewOption);
+    const int customWidth = parser.value(widthOption).toInt();
+    const int customHeight = parser.value(heightOption).toInt();
     const QStringList positionalFiles = parser.positionalArguments();
 
     // Initialize C++ Presentation Models and Controllers
@@ -147,6 +161,15 @@ int main(int argc, char *argv[])
     {
         qCritical() << "Fatal: Root object is not a QQuickWindow.";
         return 1;
+    }
+
+    if (customWidth > 0)
+    {
+        window->setWidth(customWidth);
+    }
+    if (customHeight > 0)
+    {
+        window->setHeight(customHeight);
     }
 
     // Handle automated startup smoke test

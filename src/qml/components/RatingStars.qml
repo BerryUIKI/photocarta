@@ -31,22 +31,13 @@ Row {
             opacity: (index < root.rating) ? 1.0 : 0.35
 
             ToolTip.visible: starMouseArea.containsMouse
-            ToolTip.text: root.interactive
-                          ? qsTr("Rating: %1 / 5 (Prototype: Display-only fixture)").arg(root.rating)
-                          : qsTr("Rating: %1 / 5").arg(root.rating)
+            ToolTip.text: qsTr("Rating: %1 / 5 (Display-only fixture)").arg(root.rating)
 
             MouseArea {
                 id: starMouseArea
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: root.interactive ? Qt.PointingHandCursor : Qt.ArrowCursor
-                onClicked: {
-                    if (root.interactive) {
-                        sessionController.setStatusMessage(
-                            qsTr("Rating changed to %1 stars (Display-only fixture; write unpersisted)").arg(index + 1)
-                        );
-                    }
-                }
+                cursorShape: Qt.ArrowCursor
             }
         }
     }

@@ -82,10 +82,10 @@ ApplicationWindow {
         }
     }
 
-    // Real Native File Dialog for Ephemeral Session
+    // Real Native File Dialog for Temporary Session
     FileDialog {
         id: openDialog
-        title: qsTr("Open Local Photos into Ephemeral Session")
+        title: qsTr("Open Local Photos into Temporary Session")
         currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
         fileMode: FileDialog.OpenFiles
         nameFilters: [

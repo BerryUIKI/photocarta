@@ -52,7 +52,7 @@ Rectangle {
                 Text {
                     id: prototypeText
                     anchors.centerIn: parent
-                    text: qsTr("GUI SLICE")
+                    text: qsTr("PROTOTYPE")
                     font.pixelSize: 10
                     font.weight: Font.Bold
                     color: themeManager.badgeDemoText
@@ -132,7 +132,7 @@ Rectangle {
             }
 
             ToolTip.visible: openMouse.containsMouse
-            ToolTip.text: qsTr("Add local photos to ephemeral session (Ctrl+O)")
+            ToolTip.text: qsTr("Add local photos to temporary session (Ctrl+O)")
 
             MouseArea {
                 id: openMouse
