@@ -637,6 +637,51 @@ void CatalogModel::removeTagFromItem(int index, const QString &tag)
     }
 }
 
+void CatalogModel::updateItemsRating(const QList<int> &indices, int rating)
+{
+    const int clamped = qBound(0, rating, 5);
+    for (int idx : indices)
+    {
+        updateItemRating(idx, clamped);
+    }
+}
+
+void CatalogModel::updateItemsFlagged(const QList<int> &indices, bool flagged)
+{
+    for (int idx : indices)
+    {
+        updateItemFlagged(idx, flagged);
+    }
+}
+
+void CatalogModel::addTagToItems(const QList<int> &indices, const QString &tag)
+{
+    const QString trimmed = tag.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return;
+    }
+
+    for (int idx : indices)
+    {
+        addTagToItem(idx, trimmed);
+    }
+}
+
+void CatalogModel::removeTagFromItems(const QList<int> &indices, const QString &tag)
+{
+    const QString trimmed = tag.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return;
+    }
+
+    for (int idx : indices)
+    {
+        removeTagFromItem(idx, trimmed);
+    }
+}
+
 QStringList CatalogModel::availableTags() const
 {
     QSet<QString> unique;

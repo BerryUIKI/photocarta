@@ -22,6 +22,7 @@ private slots:
     void testFileLoadError();
     void testAvailableTags();
     void testAddAndRemoveTag();
+    void testBatchOperations();
 };
 
 void TestCatalogModel::testFormatBytes()
@@ -192,6 +193,38 @@ void TestCatalogModel::testAddAndRemoveTag()
     model.addTagToItem(-1, QStringLiteral("Invalid"));
     model.removeTagFromItem(999, QStringLiteral("Invalid"));
     QCOMPARE(tagsSpy.count(), 2);
+}
+
+void TestCatalogModel::testBatchOperations()
+{
+    CatalogModel model;
+    model.loadDemoFixtures();
+
+    const QList<int> batch = {0, 1, 2};
+
+    // Batch Rating
+    model.updateItemsRating(batch, 1);
+    QCOMPARE(model.itemAt(0)->rating, 1);
+    QCOMPARE(model.itemAt(1)->rating, 1);
+    QCOMPARE(model.itemAt(2)->rating, 1);
+
+    // Batch Flagging
+    model.updateItemsFlagged(batch, true);
+    QCOMPARE(model.itemAt(0)->isFlagged, true);
+    QCOMPARE(model.itemAt(1)->isFlagged, true);
+    QCOMPARE(model.itemAt(2)->isFlagged, true);
+
+    // Batch Tag Addition
+    model.addTagToItems(batch, QStringLiteral("BatchTag"));
+    QVERIFY(model.itemAt(0)->tags.contains(QStringLiteral("BatchTag")));
+    QVERIFY(model.itemAt(1)->tags.contains(QStringLiteral("BatchTag")));
+    QVERIFY(model.itemAt(2)->tags.contains(QStringLiteral("BatchTag")));
+
+    // Batch Tag Removal
+    model.removeTagFromItems(batch, QStringLiteral("BatchTag"));
+    QVERIFY(!model.itemAt(0)->tags.contains(QStringLiteral("BatchTag")));
+    QVERIFY(!model.itemAt(1)->tags.contains(QStringLiteral("BatchTag")));
+    QVERIFY(!model.itemAt(2)->tags.contains(QStringLiteral("BatchTag")));
 }
 
 QTEST_MAIN(TestCatalogModel)

@@ -155,12 +155,32 @@ ApplicationWindow {
     }
 
     Shortcut {
+        sequence: StandardKey.SelectAll
+        onActivated: {
+            if (!sessionController.previewMode) {
+                selectionManager.selectAll()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: StandardKey.Copy
+        onActivated: {
+            if (selectionManager.hasSelection) {
+                sessionController.copySelectedPathsToClipboard()
+            }
+        }
+    }
+
+    Shortcut {
         sequence: "Escape"
         onActivated: {
             if (sessionController.isFullscreen) {
                 sessionController.setFullscreen(false)
             } else if (sessionController.previewMode) {
                 sessionController.setPreviewMode(false)
+            } else if (selectionManager.selectedCount > 1) {
+                selectionManager.clearSelection()
             } else if (filterModel.searchQuery) {
                 filterModel.searchQuery = ""
             }

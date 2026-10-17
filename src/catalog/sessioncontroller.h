@@ -96,6 +96,13 @@ public:
     Q_INVOKABLE void setRatingFilter(int minRating);
     Q_INVOKABLE void clearRatingFilter();
     Q_INVOKABLE void clearAllFilters();
+    Q_INVOKABLE void setRatingForSelected(int rating);
+    Q_INVOKABLE void setFlaggedForSelected(bool flagged);
+    Q_INVOKABLE void toggleFlaggedForSelected();
+    Q_INVOKABLE void addTagToSelected(const QString &tag);
+    Q_INVOKABLE void removeTagFromSelected(const QString &tag);
+    Q_INVOKABLE void copySelectedPathsToClipboard();
+    Q_INVOKABLE void revealInFileManager(int proxyIndex = -1);
     Q_INVOKABLE void loadDatabaseCatalog(int collectionId = 0);
     Q_INVOKABLE void openDatabase(const QString &databasePath);
     Q_INVOKABLE void importDigikamDatabase(const QString &databasePath);

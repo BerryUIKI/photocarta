@@ -83,6 +83,10 @@ public:
     Q_INVOKABLE void updateItemTags(int index, const QStringList &tags);
     Q_INVOKABLE void addTagToItem(int index, const QString &tag);
     Q_INVOKABLE void removeTagFromItem(int index, const QString &tag);
+    Q_INVOKABLE void updateItemsRating(const QList<int> &indices, int rating);
+    Q_INVOKABLE void updateItemsFlagged(const QList<int> &indices, bool flagged);
+    Q_INVOKABLE void addTagToItems(const QList<int> &indices, const QString &tag);
+    Q_INVOKABLE void removeTagFromItems(const QList<int> &indices, const QString &tag);
     Q_INVOKABLE void loadFromDatabase(int collectionId = 0);
     Q_INVOKABLE void setCollectionAvailable(const QString &rootPath, bool available);
     Q_INVOKABLE void clearSession();
