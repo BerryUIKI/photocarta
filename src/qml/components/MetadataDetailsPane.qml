@@ -544,6 +544,53 @@ Rectangle {
                     color: themeManager.border
                 }
 
+                // HISTOGRAM SECTION
+                Row {
+                    width: parent.width
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("HISTOGRAM")
+                        font.pixelSize: themeManager.fontXs
+                        font.weight: Font.Bold
+                        color: themeManager.textMuted
+                        font.letterSpacing: 1.2
+                    }
+
+                    Item {
+                        width: 1
+                        height: 1
+                        Layout.fillWidth: true
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        text: sessionController.histogramVisible ? qsTr("Hide") : qsTr("Show")
+                        font.pixelSize: 10
+                        font.weight: Font.Medium
+                        color: themeManager.accent
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: sessionController.toggleHistogramVisible()
+                        }
+                    }
+                }
+
+                HistogramView {
+                    width: parent.width
+                    visible: sessionController.histogramVisible
+                    compact: false
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: themeManager.border
+                }
+
                 // FILE DETAILS SECTION
                 Text {
                     text: qsTr("FILE DETAILS")

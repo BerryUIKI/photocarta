@@ -20,6 +20,7 @@ namespace PhotoCarta
 {
 
 class ImageExporter;
+class HistogramCalculator;
 
 class SessionController : public QObject
 {
@@ -53,6 +54,10 @@ class SessionController : public QObject
     Q_PROPERTY(double comparePanY READ comparePanY WRITE setComparePanY NOTIFY comparePanChanged)
     Q_PROPERTY(int activeCompareSlot READ activeCompareSlot WRITE setActiveCompareSlot NOTIFY activeCompareSlotChanged)
     Q_PROPERTY(QString winnerId READ winnerId NOTIFY winnerIdChanged)
+    Q_PROPERTY(QVariantMap currentHistogram READ currentHistogram NOTIFY currentHistogramChanged)
+    Q_PROPERTY(QString histogramChannel READ histogramChannel WRITE setHistogramChannel NOTIFY histogramChannelChanged)
+    Q_PROPERTY(bool histogramLogScale READ histogramLogScale WRITE setHistogramLogScale NOTIFY histogramLogScaleChanged)
+    Q_PROPERTY(bool histogramVisible READ histogramVisible WRITE setHistogramVisible NOTIFY histogramVisibleChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -198,6 +203,19 @@ public:
     Q_INVOKABLE void toggleCompareFlagged(int slotIndex);
     Q_INVOKABLE void addAdjacentToCompare(bool next = true);
 
+    // Image Histogram Service
+    [[nodiscard]] QVariantMap currentHistogram() const;
+    [[nodiscard]] QString histogramChannel() const;
+    Q_INVOKABLE void setHistogramChannel(const QString &channel);
+    [[nodiscard]] bool histogramLogScale() const;
+    Q_INVOKABLE void setHistogramLogScale(bool logScale);
+    Q_INVOKABLE void toggleHistogramLogScale();
+    [[nodiscard]] bool histogramVisible() const;
+    Q_INVOKABLE void setHistogramVisible(bool visible);
+    Q_INVOKABLE void toggleHistogramVisible();
+    Q_INVOKABLE void requestHistogram(const QString &filePath);
+    [[nodiscard]] HistogramCalculator *histogramCalculator() const;
+
 signals:
     void previewModeChanged();
     void leftPaneVisibleChanged();
@@ -224,6 +242,10 @@ signals:
     void comparePanChanged();
     void activeCompareSlotChanged();
     void winnerIdChanged();
+    void currentHistogramChanged();
+    void histogramChannelChanged();
+    void histogramLogScaleChanged();
+    void histogramVisibleChanged();
 
 private slots:
     void onModelCountChanged();
@@ -267,6 +289,13 @@ private:
     int m_activeCompareSlot = 0;
     QString m_winnerId;
     QList<int> m_compareProxyRows;
+
+    // Image Histogram Service
+    HistogramCalculator *m_histogramCalculator = nullptr;
+    QVariantMap m_currentHistogram;
+    QString m_histogramChannel = QStringLiteral("rgb");
+    bool m_histogramLogScale = false;
+    bool m_histogramVisible = true;
 };
 
 } // namespace PhotoCarta
