@@ -65,6 +65,12 @@ int main(int argc, char *argv[])
         QStringLiteral("dark"));
     parser.addOption(themeOption);
 
+    QCommandLineOption databaseOption(
+        QStringList() << QStringLiteral("d") << QStringLiteral("database"),
+        QStringLiteral("Path to SQLite catalog database or digiKam database (digikam4.db) to open."),
+        QStringLiteral("path"));
+    parser.addOption(databaseOption);
+
     QCommandLineOption previewOption(
         QStringLiteral("preview"),
         QStringLiteral("Launch directly into single-image preview mode."));
@@ -83,8 +89,8 @@ int main(int argc, char *argv[])
     parser.addOption(heightOption);
 
     parser.addPositionalArgument(QStringLiteral("files"),
-                                QStringLiteral("Initial image files to load into session."),
-                                QStringLiteral("[files...]"));
+                                 QStringLiteral("Initial image files or .db database file to load into session."),
+                                 QStringLiteral("[files...]"));
 
     parser.process(app);
 
@@ -94,11 +100,33 @@ int main(int argc, char *argv[])
     const bool startInPreview = parser.isSet(previewOption);
     const int customWidth = parser.value(widthOption).toInt();
     const int customHeight = parser.value(heightOption).toInt();
+    const QString customDbPath = parser.value(databaseOption);
     const QStringList positionalFiles = parser.positionalArguments();
 
     // Initialize SQLite Catalog Database
     auto *catalogDatabase = new CatalogDatabase(QStringLiteral("main_app_connection"), &app);
-    catalogDatabase->open();
+    if (!customDbPath.isEmpty())
+    {
+        catalogDatabase->open(customDbPath);
+    }
+    else
+    {
+        catalogDatabase->open();
+    }
+
+    // Inspect positional arguments for any .db database files
+    QStringList imageFiles;
+    for (const auto &fileArg : positionalFiles)
+    {
+        if (fileArg.endsWith(QStringLiteral(".db"), Qt::CaseInsensitive))
+        {
+            catalogDatabase->open(fileArg);
+        }
+        else
+        {
+            imageFiles.append(fileArg);
+        }
+    }
 
     // Initialize C++ Presentation Models and Controllers
     auto *catalogModel = new CatalogModel(&app);
@@ -125,9 +153,9 @@ int main(int argc, char *argv[])
     }
 
     // Populate session: load given files if any, or existing database items, otherwise load procedural demo fixtures
-    if (!positionalFiles.isEmpty())
+    if (!imageFiles.isEmpty())
     {
-        catalogModel->addFilePaths(positionalFiles);
+        catalogModel->addFilePaths(imageFiles);
     }
     else if (catalogDatabase->isOpen() && catalogDatabase->itemCount() > 0 && !isSmokeTest)
     {

@@ -67,10 +67,12 @@ Preserve these boundaries while building the GUI:
 - Request previews on demand and avoid unbounded background queues.
 - Avoid adding full-catalog loads, sorts, or rescans to routine UI actions.
 
-View virtualization alone does not bound backend memory use. Profile upstream
-models and query paths before introducing pagination, query pushdown, indexing,
-or scheduler changes. Make those changes incrementally where evidence justifies
-them, without turning the first release into a backend rewrite.
+View virtualization alone does not bound backend memory use. PhotoCarta applies
+`fetchItemsPaged(offset, limit)` for bounded chunked retrieval, composite expression
+indexes (`idx_items_sort_date`, `idx_items_coll_sort_date`) to prevent temporary B-tree
+sorting, in-memory tag caching, and single-pass tag aggregation to eliminate N+1 queries
+across both native and digiKam catalogs. Make further backend changes incrementally where
+evidence justifies them, without turning the first release into a backend rewrite.
 
 ## Validation and deferred capabilities
 

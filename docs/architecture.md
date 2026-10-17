@@ -86,8 +86,16 @@ upstream schema version. Use separate test catalog copies during development.
 The initial runnable GUI slice is implemented with CMake, C++ presentation models
 (`CatalogModel`, `CatalogFilterModel`, `SelectionManager`, `SessionController`, `ThemeManager`),
 and a Qt Quick interface. It provides an ephemeral, non-destructive session for browsing
-demo fixtures and local images while preserving clean boundaries for subsequent digiKam
-database and engine integration.
+demo fixtures and local images.
+
+`DigikamDatabaseAdapter` provides seamless schema detection and interoperability with
+upstream digiKam 4.x databases (`digikam4.db`), translating `AlbumRoots` and `Albums`
+into `CollectionRecord` structures and mapping normalized image, EXIF, and tag tables
+into `CatalogItem` models without copying files.
+
+Database performance is hardened through WAL mode, a 64MB page cache, 256MB memory-mapped I/O,
+composite expression indexes (`idx_items_sort_date`), in-memory tag caching, and single-pass
+`GROUP_CONCAT` queries that eliminate N+1 round-trips.
 
 ## References
 
