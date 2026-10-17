@@ -553,6 +553,12 @@ Rectangle {
             ]
             textRole: "text"
             valueRole: "value"
+            currentIndex: {
+                for (var i = 0; i < model.length; ++i) {
+                    if (model[i].value === filterModel.sortCriterion) return i;
+                }
+                return 0;
+            }
             font.pixelSize: themeManager.fontSm
 
             background: Rectangle {
