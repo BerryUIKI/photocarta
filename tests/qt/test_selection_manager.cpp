@@ -220,7 +220,7 @@ void TestSelectionManager::testSelectRange()
 void TestSelectionManager::testCommonAndAllTags()
 {
     // Demo fixtures:
-    // Item 0 (demo-001): Landscape, Switzerland, Mountains, Alps, Demo
+    // Item 0 (demo-001): Landscape, Mountain, Sunrise, Demo
     // Item 5 (demo-006): Astro, Night, Landscape, Demo
     m_selectionManager->clearSelection();
     m_selectionManager->select(0);
@@ -231,13 +231,15 @@ void TestSelectionManager::testCommonAndAllTags()
     QVERIFY(common.contains(QStringLiteral("Landscape")));
     QVERIFY(common.contains(QStringLiteral("Demo")));
     QVERIFY(!common.contains(QStringLiteral("Astro")));
-    QVERIFY(!common.contains(QStringLiteral("Switzerland")));
+    QVERIFY(!common.contains(QStringLiteral("Mountain")));
 
     const QStringList allTags = m_selectionManager->allSelectedTags();
     QVERIFY(allTags.contains(QStringLiteral("Landscape")));
     QVERIFY(allTags.contains(QStringLiteral("Demo")));
     QVERIFY(allTags.contains(QStringLiteral("Astro")));
-    QVERIFY(allTags.contains(QStringLiteral("Switzerland")));
+    QVERIFY(allTags.contains(QStringLiteral("Mountain")));
+    QVERIFY(allTags.contains(QStringLiteral("Sunrise")));
+    QVERIFY(allTags.contains(QStringLiteral("Night")));
 }
 
 void TestSelectionManager::testSelectedProxyRowsAndSummary()
