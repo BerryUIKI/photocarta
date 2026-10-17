@@ -5,6 +5,7 @@
 #include "catalog/catalogitem.h"
 #include "catalog/catalogmodel.h"
 #include "catalog/database/catalogdatabase.h"
+#include "catalog/selectionmanager.h"
 #include "catalog/sessioncontroller.h"
 
 #include <QDir>
@@ -32,6 +33,8 @@ private slots:
 private:
     CatalogModel *m_catalogModel = nullptr;
     CatalogFilterModel *m_filterModel = nullptr;
+    SelectionManager *m_selectionManager = nullptr;
+    SessionController *m_sessionController = nullptr;
 };
 
 void TestMetadataEditing::init()
@@ -41,10 +44,17 @@ void TestMetadataEditing::init()
 
     m_filterModel = new CatalogFilterModel(this);
     m_filterModel->setSourceModel(m_catalogModel);
+
+    m_selectionManager = new SelectionManager(m_filterModel, this);
+    m_sessionController = new SessionController(m_catalogModel, m_filterModel, m_selectionManager, this);
 }
 
 void TestMetadataEditing::cleanup()
 {
+    delete m_sessionController;
+    m_sessionController = nullptr;
+    delete m_selectionManager;
+    m_selectionManager = nullptr;
     delete m_filterModel;
     m_filterModel = nullptr;
     delete m_catalogModel;
@@ -64,13 +74,14 @@ void TestMetadataEditing::testItemTitleAndCaptionEditing()
     const QString newTitle = QStringLiteral("Sunset Over Snowy Alpine Peaks");
     m_catalogModel->updateItemTitle(0, newTitle);
     QCOMPARE(m_catalogModel->data(idx0, CatalogModel::TitleRole).toString(), newTitle);
-    QCOMPARE(m_catalogModel->itemAt(0).title, newTitle);
+    QVERIFY(m_catalogModel->itemAt(0) != nullptr);
+    QCOMPARE(m_catalogModel->itemAt(0)->title, newTitle);
 
     // Update caption
     const QString newCaption = QStringLiteral("Golden hour shot captured with ND filter. ISO 100, f/8, 1/125s.");
     m_catalogModel->updateItemCaption(0, newCaption);
     QCOMPARE(m_catalogModel->data(idx0, CatalogModel::CaptionRole).toString(), newCaption);
-    QCOMPARE(m_catalogModel->itemAt(0).caption, newCaption);
+    QCOMPARE(m_catalogModel->itemAt(0)->caption, newCaption);
 }
 
 void TestMetadataEditing::testItemColorLabelEditing()
@@ -81,39 +92,35 @@ void TestMetadataEditing::testItemColorLabelEditing()
     // Set to Red (1)
     m_catalogModel->updateItemColorLabel(0, 1);
     QCOMPARE(m_catalogModel->data(idx0, CatalogModel::ColorLabelRole).toInt(), 1);
-    QCOMPARE(m_catalogModel->itemAt(0).colorLabel, 1);
+    QVERIFY(m_catalogModel->itemAt(0) != nullptr);
+    QCOMPARE(m_catalogModel->itemAt(0)->colorLabel, 1);
 
     // Set to Green (3)
     m_catalogModel->updateItemColorLabel(0, 3);
     QCOMPARE(m_catalogModel->data(idx0, CatalogModel::ColorLabelRole).toInt(), 3);
-    QCOMPARE(m_catalogModel->itemAt(0).colorLabel, 3);
+    QCOMPARE(m_catalogModel->itemAt(0)->colorLabel, 3);
 
     // Clear (0)
     m_catalogModel->updateItemColorLabel(0, 0);
     QCOMPARE(m_catalogModel->data(idx0, CatalogModel::ColorLabelRole).toInt(), 0);
-    QCOMPARE(m_catalogModel->itemAt(0).colorLabel, 0);
+    QCOMPARE(m_catalogModel->itemAt(0)->colorLabel, 0);
 }
 
 void TestMetadataEditing::testBatchColorLabelEditing()
 {
     QVERIFY(m_catalogModel->rowCount() >= 3);
-    const QString id0 = m_catalogModel->itemAt(0).id;
-    const QString id1 = m_catalogModel->itemAt(1).id;
-    const QString id2 = m_catalogModel->itemAt(2).id;
 
     // Batch set color label to Blue (4)
-    m_catalogModel->updateItemsColorLabel({id0, id2}, 4);
-    QCOMPARE(m_catalogModel->itemAt(0).colorLabel, 4);
-    QCOMPARE(m_catalogModel->itemAt(2).colorLabel, 4);
-
-    // id1 should remain unchanged
-    const int id1Color = m_catalogModel->itemAt(1).colorLabel;
-    QVERIFY(id1Color != 4 || id1Color == m_catalogModel->itemAt(1).colorLabel);
+    m_catalogModel->updateItemsColorLabel({0, 2}, 4);
+    QVERIFY(m_catalogModel->itemAt(0) != nullptr);
+    QVERIFY(m_catalogModel->itemAt(2) != nullptr);
+    QCOMPARE(m_catalogModel->itemAt(0)->colorLabel, 4);
+    QCOMPARE(m_catalogModel->itemAt(2)->colorLabel, 4);
 
     // Batch set title
-    m_catalogModel->updateItemsTitle({id0, id1}, QStringLiteral("Batch Edited Title"));
-    QCOMPARE(m_catalogModel->itemAt(0).title, QStringLiteral("Batch Edited Title"));
-    QCOMPARE(m_catalogModel->itemAt(1).title, QStringLiteral("Batch Edited Title"));
+    m_catalogModel->updateItemsTitle({0, 1}, QStringLiteral("Batch Edited Title"));
+    QCOMPARE(m_catalogModel->itemAt(0)->title, QStringLiteral("Batch Edited Title"));
+    QCOMPARE(m_catalogModel->itemAt(1)->title, QStringLiteral("Batch Edited Title"));
 }
 
 void TestMetadataEditing::testFilterByColorLabel()
@@ -182,8 +189,8 @@ void TestMetadataEditing::testDatabasePersistence()
     item.caption = QStringLiteral("Captured during summer solstice with telephoto lens.");
     item.colorLabel = 2; // Yellow
     item.rating = 5;
-    item.flag = 1;
-    item.fileSize = 10485760;
+    item.isFlagged = true;
+    item.fileSizeBytes = 10485760;
 
     {
         CatalogDatabase db(QStringLiteral("test_meta_conn"));
@@ -231,42 +238,38 @@ void TestMetadataEditing::testDatabasePersistence()
 
 void TestMetadataEditing::testSessionControllerIntegration()
 {
-    SessionController controller;
-    controller.initialize();
-    controller.loadDemoFixtures();
-
-    QVERIFY(controller.catalogModel()->rowCount() > 0);
+    QVERIFY(m_catalogModel->rowCount() > 0);
 
     // Select the first item
-    const QString firstId = controller.catalogModel()->itemAt(0).id;
-    controller.selectItem(firstId);
-    QCOMPARE(controller.selectedId(), firstId);
+    m_selectionManager->select(0);
+    QCOMPARE(m_selectionManager->currentIndex(), 0);
 
     // Edit Title via controller
-    controller.setTitleForSelected(QStringLiteral("Controller Assigned Title"));
-    QCOMPARE(controller.catalogModel()->itemAt(0).title, QStringLiteral("Controller Assigned Title"));
+    m_sessionController->setTitleForSelected(QStringLiteral("Controller Assigned Title"));
+    QVERIFY(m_catalogModel->itemAt(0) != nullptr);
+    QCOMPARE(m_catalogModel->itemAt(0)->title, QStringLiteral("Controller Assigned Title"));
 
     // Edit Caption via controller
-    controller.setCaptionForSelected(QStringLiteral("Controller Assigned Caption"));
-    QCOMPARE(controller.catalogModel()->itemAt(0).caption, QStringLiteral("Controller Assigned Caption"));
+    m_sessionController->setCaptionForSelected(QStringLiteral("Controller Assigned Caption"));
+    QCOMPARE(m_catalogModel->itemAt(0)->caption, QStringLiteral("Controller Assigned Caption"));
 
     // Set Color Label via controller
-    controller.setColorLabelForSelected(3); // Green
-    QCOMPARE(controller.catalogModel()->itemAt(0).colorLabel, 3);
+    m_sessionController->setColorLabelForSelected(3); // Green
+    QCOMPARE(m_catalogModel->itemAt(0)->colorLabel, 3);
 
     // Test Color Label Filter in controller
-    controller.setColorLabelFilter(3);
-    QCOMPARE(controller.filterModel()->colorLabelFilter(), 3);
+    m_sessionController->setColorLabelFilter(3);
+    QCOMPARE(m_filterModel->colorLabelFilter(), 3);
 
     // Test Clear Color Label Filter
-    controller.clearColorLabelFilter();
-    QCOMPARE(controller.filterModel()->colorLabelFilter(), 0);
+    m_sessionController->clearColorLabelFilter();
+    QCOMPARE(m_filterModel->colorLabelFilter(), 0);
 
     // Test Clear All Filters
-    controller.setColorLabelFilter(2);
-    QCOMPARE(controller.filterModel()->colorLabelFilter(), 2);
-    controller.clearAllFilters();
-    QCOMPARE(controller.filterModel()->colorLabelFilter(), 0);
+    m_sessionController->setColorLabelFilter(2);
+    QCOMPARE(m_filterModel->colorLabelFilter(), 2);
+    m_sessionController->clearAllFilters();
+    QCOMPARE(m_filterModel->colorLabelFilter(), 0);
 }
 
 QTEST_MAIN(TestMetadataEditing)
