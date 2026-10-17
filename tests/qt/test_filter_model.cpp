@@ -106,15 +106,18 @@ void TestFilterModel::testRatingFilter()
 
 void TestFilterModel::testTagFilter()
 {
-    // Tag filter matching one item
-    m_filterModel->setTagFilter(QStringLiteral("Landscape"));
+    // Tag filter matching single item (Macro is only on demo-005)
+    m_filterModel->setTagFilter(QStringLiteral("Macro"));
     QCOMPARE(m_filterModel->count(), 1);
 
     // Case-insensitivity check
-    m_filterModel->setTagFilter(QStringLiteral("landscape"));
+    m_filterModel->setTagFilter(QStringLiteral("macro"));
     QCOMPARE(m_filterModel->count(), 1);
 
-    // Multiple items sharing a tag ("Night" is on demo-004 and demo-006)
+    // Multiple items sharing a tag (Landscape is on demo-001 and demo-006; Night is on demo-004 and demo-006)
+    m_filterModel->setTagFilter(QStringLiteral("Landscape"));
+    QCOMPARE(m_filterModel->count(), 2);
+
     m_filterModel->setTagFilter(QStringLiteral("Night"));
     QCOMPARE(m_filterModel->count(), 2);
 
