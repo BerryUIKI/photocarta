@@ -20,6 +20,8 @@ private slots:
     void testGetVariantMap();
     void testClearSession();
     void testFileLoadError();
+    void testAvailableTags();
+    void testAddAndRemoveTag();
 };
 
 void TestCatalogModel::testFormatBytes()
@@ -133,6 +135,63 @@ void TestCatalogModel::testFileLoadError()
 
     QCOMPARE(errorSpy.count(), 1);
     QCOMPARE(model.count(), 0);
+}
+
+void TestCatalogModel::testAvailableTags()
+{
+    CatalogModel model;
+    QSignalSpy tagsSpy(&model, &CatalogModel::availableTagsChanged);
+
+    QCOMPARE(model.availableTags().size(), 0);
+
+    model.loadDemoFixtures();
+    QCOMPARE(tagsSpy.count(), 1);
+
+    const QStringList tags = model.availableTags();
+    QVERIFY(tags.contains(QStringLiteral("Landscape")));
+    QVERIFY(tags.contains(QStringLiteral("Portrait")));
+    QVERIFY(tags.contains(QStringLiteral("Architecture")));
+    QVERIFY(tags.contains(QStringLiteral("Street")));
+    QVERIFY(tags.contains(QStringLiteral("Macro")));
+    QVERIFY(tags.contains(QStringLiteral("Astro")));
+}
+
+void TestCatalogModel::testAddAndRemoveTag()
+{
+    CatalogModel model;
+    model.loadDemoFixtures();
+
+    QSignalSpy tagsSpy(&model, &CatalogModel::availableTagsChanged);
+
+    const CatalogItem *item0 = model.itemAt(0);
+    QVERIFY(item0 != nullptr);
+    QVERIFY(!item0->tags.contains(QStringLiteral("Travel")));
+
+    // Add tag
+    model.addTagToItem(0, QStringLiteral("Travel"));
+    QVERIFY(model.itemAt(0)->tags.contains(QStringLiteral("Travel")));
+    QVERIFY(model.availableTags().contains(QStringLiteral("Travel")));
+    QCOMPARE(tagsSpy.count(), 1);
+
+    // Duplicate add should be ignored (case-insensitive)
+    model.addTagToItem(0, QStringLiteral("travel"));
+    QCOMPARE(model.itemAt(0)->tags.count(QStringLiteral("Travel")), 1);
+    QCOMPARE(tagsSpy.count(), 1);
+
+    // Empty or whitespace tag should be ignored
+    model.addTagToItem(0, QStringLiteral("   "));
+    QCOMPARE(tagsSpy.count(), 1);
+
+    // Remove tag
+    model.removeTagFromItem(0, QStringLiteral("Travel"));
+    QVERIFY(!model.itemAt(0)->tags.contains(QStringLiteral("Travel")));
+    QVERIFY(!model.availableTags().contains(QStringLiteral("Travel")));
+    QCOMPARE(tagsSpy.count(), 2);
+
+    // Out-of-bounds safety
+    model.addTagToItem(-1, QStringLiteral("Invalid"));
+    model.removeTagFromItem(999, QStringLiteral("Invalid"));
+    QCOMPARE(tagsSpy.count(), 2);
 }
 
 QTEST_MAIN(TestCatalogModel)

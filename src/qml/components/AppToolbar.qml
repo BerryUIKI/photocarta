@@ -346,6 +346,152 @@ Rectangle {
             }
         }
 
+        // Active Tag Filter Chip
+        Rectangle {
+            visible: filterModel.tagFilter.length > 0
+            height: 28
+            radius: 14
+            anchors.verticalCenter: parent.verticalCenter
+            color: themeManager.surfaceSelected
+            border.color: themeManager.accent
+            border.width: 1
+            implicitWidth: tagFilterRow.implicitWidth + 16
+
+            Row {
+                id: tagFilterRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "#" + filterModel.tagFilter
+                    font.pixelSize: themeManager.fontXs
+                    font.weight: Font.DemiBold
+                    color: themeManager.accent
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                }
+
+                Rectangle {
+                    width: 14
+                    height: 14
+                    radius: 7
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: activeTagMouse.containsMouse ? themeManager.danger : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        font.pixelSize: 8
+                        font.weight: Font.Bold
+                        color: activeTagMouse.containsMouse ? "#ffffff" : themeManager.accent
+                    }
+                }
+            }
+
+            ToolTip.visible: activeTagMouse.containsMouse
+            ToolTip.text: qsTr("Clear tag filter '%1'").arg(filterModel.tagFilter)
+
+            MouseArea {
+                id: activeTagMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: sessionController.clearTagFilter()
+            }
+        }
+
+        // Rating Filter Selector
+        ComboBox {
+            id: ratingCombo
+            width: root.width > 1020 ? 94 : 80
+            height: 32
+            anchors.verticalCenter: parent.verticalCenter
+            model: [
+                { text: qsTr("Rating"), value: 0 },
+                { text: "★ 5", value: 5 },
+                { text: "★ 4+", value: 4 },
+                { text: "★ 3+", value: 3 },
+                { text: "★ 2+", value: 2 },
+                { text: "★ 1+", value: 1 }
+            ]
+            textRole: "text"
+            valueRole: "value"
+            currentIndex: {
+                for (var i = 0; i < model.length; ++i) {
+                    if (model[i].value === filterModel.minRating) return i;
+                }
+                return 0;
+            }
+            font.pixelSize: themeManager.fontSm
+
+            background: Rectangle {
+                radius: themeManager.radiusMd
+                color: filterModel.minRating > 0 ? themeManager.surfaceSelected : themeManager.surfaceElevated
+                border.color: filterModel.minRating > 0 ? themeManager.accent : themeManager.border
+                border.width: 1
+            }
+
+            contentItem: Text {
+                leftPadding: 8
+                text: ratingCombo.displayText
+                font.pixelSize: themeManager.fontSm
+                color: filterModel.minRating > 0 ? themeManager.accent : themeManager.textPrimary
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+
+            onActivated: {
+                sessionController.setRatingFilter(currentValue)
+            }
+        }
+
+        // Reset All Filters Button
+        Rectangle {
+            visible: filterModel.tagFilter.length > 0 || filterModel.minRating > 0 || filterModel.categoryFilter !== "all" || searchInput.text.length > 0
+            width: resetFiltersRow.implicitWidth + 14
+            height: 28
+            radius: themeManager.radiusSm
+            anchors.verticalCenter: parent.verticalCenter
+            color: resetFiltersMouse.containsMouse ? themeManager.surfaceHover : "transparent"
+            border.color: themeManager.border
+            border.width: 1
+
+            Row {
+                id: resetFiltersRow
+                anchors.centerIn: parent
+                spacing: 4
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "✕"
+                    font.pixelSize: 10
+                    color: themeManager.textSecondary
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Reset")
+                    font.pixelSize: 11
+                    color: themeManager.textSecondary
+                }
+            }
+
+            ToolTip.visible: resetFiltersMouse.containsMouse
+            ToolTip.text: qsTr("Clear all filters and search query")
+
+            MouseArea {
+                id: resetFiltersMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    searchInput.text = ""
+                    sessionController.clearAllFilters()
+                }
+            }
+        }
+
         // Sort Criterion Selector
         ComboBox {
             id: sortCombo

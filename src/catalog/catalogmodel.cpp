@@ -8,6 +8,7 @@
 #include <QFileInfo>
 #include <QImageReader>
 #include <QMimeDatabase>
+#include <QSet>
 #include <QUuid>
 
 namespace PhotoCarta
@@ -354,6 +355,7 @@ void CatalogModel::loadDemoFixtures()
 
     endResetModel();
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(static_cast<int>(m_items.size()));
 }
 
@@ -489,6 +491,7 @@ void CatalogModel::addItems(const QList<CatalogItem> &items)
     }
 
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(static_cast<int>(m_items.size()));
 }
 
@@ -572,11 +575,99 @@ void CatalogModel::updateItemTags(int index, const QStringList &tags)
     m_items[index].tags = tags;
     const QModelIndex modelIdx = this->index(index, 0);
     emit dataChanged(modelIdx, modelIdx, {TagsRole, ItemMapRole});
+    emit availableTagsChanged();
 
     if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
     {
         m_database->setItemTags(m_items[index].filePath, tags);
     }
+}
+
+void CatalogModel::addTagToItem(int index, const QString &tag)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    const QString trimmed = tag.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return;
+    }
+
+    for (const auto &existing : m_items[index].tags)
+    {
+        if (existing.compare(trimmed, Qt::CaseInsensitive) == 0)
+        {
+            return;
+        }
+    }
+
+    QStringList updated = m_items[index].tags;
+    updated.append(trimmed);
+    updateItemTags(index, updated);
+}
+
+void CatalogModel::removeTagFromItem(int index, const QString &tag)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    const QString trimmed = tag.trimmed();
+    QStringList updated;
+    bool found = false;
+    for (const auto &existing : m_items[index].tags)
+    {
+        if (existing.compare(trimmed, Qt::CaseInsensitive) == 0)
+        {
+            found = true;
+        }
+        else
+        {
+            updated.append(existing);
+        }
+    }
+
+    if (found)
+    {
+        updateItemTags(index, updated);
+    }
+}
+
+QStringList CatalogModel::availableTags() const
+{
+    QSet<QString> unique;
+    for (const auto &item : m_items)
+    {
+        for (const auto &t : item.tags)
+        {
+            const QString trimmed = t.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                unique.insert(trimmed);
+            }
+        }
+    }
+
+    if (m_database && m_database->isOpen())
+    {
+        const QStringList dbTags = m_database->allTags();
+        for (const auto &t : dbTags)
+        {
+            const QString trimmed = t.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                unique.insert(trimmed);
+            }
+        }
+    }
+
+    QStringList list = unique.values();
+    list.sort(Qt::CaseInsensitive);
+    return list;
 }
 
 void CatalogModel::loadFromDatabase(int collectionId)
@@ -595,6 +686,7 @@ void CatalogModel::loadFromDatabase(int collectionId)
     endResetModel();
 
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(static_cast<int>(m_items.size()));
 }
 
@@ -631,6 +723,7 @@ void CatalogModel::clearSession()
     endResetModel();
 
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(0);
 }
 

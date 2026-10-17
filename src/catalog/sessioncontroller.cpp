@@ -341,6 +341,80 @@ void SessionController::setItemTags(int proxyIndex, const QStringList &tags)
     }
 }
 
+void SessionController::addTagToItem(int proxyIndex, const QString &tag)
+{
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (m_model)
+    {
+        m_model->addTagToItem(srcRow, tag);
+    }
+}
+
+void SessionController::removeTagFromItem(int proxyIndex, const QString &tag)
+{
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (m_model)
+    {
+        m_model->removeTagFromItem(srcRow, tag);
+    }
+}
+
+void SessionController::setTagFilter(const QString &tag)
+{
+    if (m_filterModel)
+    {
+        m_filterModel->setTagFilter(tag);
+        if (!tag.isEmpty())
+        {
+            setStatusMessage(QStringLiteral("Filtered by tag: %1 (%2 photos)").arg(tag).arg(m_filterModel->count()));
+        }
+        else
+        {
+            setStatusMessage(QStringLiteral("Tag filter cleared (%1 photos)").arg(m_filterModel->count()));
+        }
+    }
+}
+
+void SessionController::clearTagFilter()
+{
+    setTagFilter(QString());
+}
+
+void SessionController::setRatingFilter(int minRating)
+{
+    if (m_filterModel)
+    {
+        m_filterModel->setMinRating(minRating);
+        if (minRating > 0)
+        {
+            setStatusMessage(QStringLiteral("Filtered by rating: %1★+ (%2 photos)").arg(minRating).arg(m_filterModel->count()));
+        }
+        else
+        {
+            setStatusMessage(QStringLiteral("Rating filter reset (%1 photos)").arg(m_filterModel->count()));
+        }
+    }
+}
+
+void SessionController::clearRatingFilter()
+{
+    setRatingFilter(0);
+}
+
+void SessionController::clearAllFilters()
+{
+    if (m_filterModel)
+    {
+        m_filterModel->setSearchQuery(QString());
+        m_filterModel->setCategoryFilter(QStringLiteral("all"));
+        m_filterModel->setTagFilter(QString());
+        m_filterModel->setMinRating(0);
+        m_filterModel->setCollectionFilter(0);
+    }
+    selectCollection(0);
+    setStatusMessage(QStringLiteral("All filters cleared (%1 photos)").arg(m_filterModel ? m_filterModel->count() : 0));
+}
+
 void SessionController::loadDatabaseCatalog(int collectionId)
 {
     if (m_model)

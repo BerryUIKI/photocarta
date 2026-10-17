@@ -19,6 +19,8 @@ private slots:
     void testSearchQuery();
     void testCategoryFilter();
     void testRatingFilter();
+    void testTagFilter();
+    void testCombinedFiltering();
     void testSorting();
     void testRowMapping();
 
@@ -99,6 +101,54 @@ void TestFilterModel::testRatingFilter()
     QCOMPARE(m_filterModel->count(), 5); // 5 demo items have rating >= 4
 
     m_filterModel->setMinRating(0);
+    QCOMPARE(m_filterModel->count(), 6);
+}
+
+void TestFilterModel::testTagFilter()
+{
+    // Tag filter matching one item
+    m_filterModel->setTagFilter(QStringLiteral("Landscape"));
+    QCOMPARE(m_filterModel->count(), 1);
+
+    // Case-insensitivity check
+    m_filterModel->setTagFilter(QStringLiteral("landscape"));
+    QCOMPARE(m_filterModel->count(), 1);
+
+    // Multiple items sharing a tag ("Night" is on demo-004 and demo-006)
+    m_filterModel->setTagFilter(QStringLiteral("Night"));
+    QCOMPARE(m_filterModel->count(), 2);
+
+    // Non-existent tag
+    m_filterModel->setTagFilter(QStringLiteral("UnmatchedTagXYZ"));
+    QCOMPARE(m_filterModel->count(), 0);
+
+    // Clear tag filter
+    m_filterModel->setTagFilter(QString());
+    QCOMPARE(m_filterModel->count(), 6);
+}
+
+void TestFilterModel::testCombinedFiltering()
+{
+    // Filter by tag "Night" (items 4 and 6)
+    m_filterModel->setTagFilter(QStringLiteral("Night"));
+    QCOMPARE(m_filterModel->count(), 2);
+
+    // Combine with rating filter: minRating 5 (only item 6 has 5 stars)
+    m_filterModel->setMinRating(5);
+    QCOMPARE(m_filterModel->count(), 1);
+
+    // Combine with search query "Astro" -> item 6 matches
+    m_filterModel->setSearchQuery(QStringLiteral("Astro"));
+    QCOMPARE(m_filterModel->count(), 1);
+
+    // Search query "Street" -> item 4 had "Street", but its rating is 4, not 5
+    m_filterModel->setSearchQuery(QStringLiteral("Street"));
+    QCOMPARE(m_filterModel->count(), 0);
+
+    // Reset filters
+    m_filterModel->setSearchQuery(QString());
+    m_filterModel->setMinRating(0);
+    m_filterModel->setTagFilter(QString());
     QCOMPARE(m_filterModel->count(), 6);
 }
 

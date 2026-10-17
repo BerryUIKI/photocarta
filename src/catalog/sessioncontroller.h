@@ -89,6 +89,13 @@ public:
     Q_INVOKABLE void setItemRating(int proxyIndex, int rating);
     Q_INVOKABLE void toggleItemFlagged(int proxyIndex);
     Q_INVOKABLE void setItemTags(int proxyIndex, const QStringList &tags);
+    Q_INVOKABLE void addTagToItem(int proxyIndex, const QString &tag);
+    Q_INVOKABLE void removeTagFromItem(int proxyIndex, const QString &tag);
+    Q_INVOKABLE void setTagFilter(const QString &tag);
+    Q_INVOKABLE void clearTagFilter();
+    Q_INVOKABLE void setRatingFilter(int minRating);
+    Q_INVOKABLE void clearRatingFilter();
+    Q_INVOKABLE void clearAllFilters();
     Q_INVOKABLE void loadDatabaseCatalog(int collectionId = 0);
     Q_INVOKABLE void openDatabase(const QString &databasePath);
     Q_INVOKABLE void importDigikamDatabase(const QString &databasePath);
