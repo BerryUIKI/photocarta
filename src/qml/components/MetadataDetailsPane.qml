@@ -545,10 +545,12 @@ Rectangle {
                 }
 
                 // HISTOGRAM SECTION
-                Row {
+                Item {
                     width: parent.width
+                    height: 16
 
                     Text {
+                        anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
                         text: qsTr("HISTOGRAM")
                         font.pixelSize: themeManager.fontXs
@@ -557,15 +559,9 @@ Rectangle {
                         font.letterSpacing: 1.2
                     }
 
-                    Item {
-                        width: 1
-                        height: 1
-                        Layout.fillWidth: true
-                    }
-
                     Text {
-                        anchors.verticalCenter: parent.verticalCenter
                         anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
                         text: sessionController.histogramVisible ? qsTr("Hide") : qsTr("Show")
                         font.pixelSize: 10
                         font.weight: Font.Medium

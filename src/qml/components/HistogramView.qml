@@ -36,13 +36,15 @@ Rectangle {
         spacing: 6
 
         // Header: Channel Selector & Scale Toggle
-        Row {
+        Item {
             width: parent.width
+            height: 20
 
             // Channel Selector Pills
             Row {
-                spacing: 2
+                anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
+                spacing: 2
 
                 Repeater {
                     model: [
@@ -79,12 +81,6 @@ Rectangle {
                         }
                     }
                 }
-            }
-
-            Item {
-                width: 1
-                height: 1
-                Layout.fillWidth: true
             }
 
             // Linear / Logarithmic Scale Toggle Button
@@ -224,14 +220,15 @@ Rectangle {
         }
 
         // Footer: Clipping Indicators & Exposure Stats
-        Row {
+        Item {
             width: parent.width
-            spacing: 8
+            height: 14
 
             // Shadow Clipping (Blacks)
             Row {
-                spacing: 4
+                anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
 
                 Rectangle {
                     width: 7
@@ -249,31 +246,20 @@ Rectangle {
                 }
             }
 
-            Item {
-                width: 1
-                height: 1
-                Layout.fillWidth: true
-            }
-
             // Mean Luminance
             Text {
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.centerIn: parent
                 visible: !root.compact
                 text: root.hasData ? qsTr("Mean: %1%").arg(Math.round(root.meanLuma * 100)) : ""
                 font.pixelSize: 9
                 color: "#94a3b8"
             }
 
-            Item {
-                width: 1
-                height: 1
-                Layout.fillWidth: true
-            }
-
             // Highlight Clipping (Whites)
             Row {
-                spacing: 4
+                anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
