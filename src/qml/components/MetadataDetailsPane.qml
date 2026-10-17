@@ -456,6 +456,30 @@ Rectangle {
                         onClicked: sessionController.copySelectedPathsToClipboard()
                     }
                 }
+
+                Rectangle {
+                    width: parent.width
+                    height: 32
+                    radius: themeManager.radiusSm
+                    color: exportBatchMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
+                    border.color: themeManager.border
+                    border.width: 1
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Text { text: "📤"; font.pixelSize: 12 }
+                        Text { text: qsTr("Export Selected... (Ctrl+E)"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
+                    }
+
+                    MouseArea {
+                        id: exportBatchMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: sessionController.openExportDialog()
+                    }
+                }
             }
 
             // Populated Single Photo Metadata Pane
@@ -790,6 +814,31 @@ Rectangle {
                         font.pixelSize: 10
                         lineHeight: 1.2
                         color: themeManager.textMuted
+                    }
+                }
+
+                // Quick Export Button
+                Rectangle {
+                    width: parent.width
+                    height: 32
+                    radius: themeManager.radiusSm
+                    color: exportSingleMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
+                    border.color: themeManager.border
+                    border.width: 1
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Text { text: "📤"; font.pixelSize: 12 }
+                        Text { text: qsTr("Export Photo... (Ctrl+E)"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
+                    }
+
+                    MouseArea {
+                        id: exportSingleMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: sessionController.openExportDialog()
                     }
                 }
             }

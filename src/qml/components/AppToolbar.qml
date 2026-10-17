@@ -199,6 +199,53 @@ Rectangle {
             }
         }
 
+        // Export Photos Button
+        Rectangle {
+            width: exportBtnRow.implicitWidth + 16
+            height: 32
+            radius: themeManager.radiusMd
+            anchors.verticalCenter: parent.verticalCenter
+            color: sessionController.isExporting
+                   ? themeManager.surfaceSelected
+                   : (exportToolbarMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated)
+            border.color: sessionController.isExporting ? themeManager.accent : themeManager.border
+            border.width: 1
+            opacity: (selectionManager.hasSelection || selectionManager.selectedCount > 0) ? 1.0 : 0.5
+
+            Row {
+                id: exportBtnRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "📤"
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Export...")
+                    font.pixelSize: themeManager.fontSm
+                    font.weight: Font.Medium
+                    color: themeManager.textPrimary
+                    visible: root.width > 1060
+                }
+            }
+
+            ToolTip.visible: exportToolbarMouse.containsMouse
+            ToolTip.text: qsTr("Export selected photos with format conversion and resizing (Ctrl+E)")
+
+            MouseArea {
+                id: exportToolbarMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                enabled: (selectionManager.hasSelection || selectionManager.selectedCount > 0) && !sessionController.isExporting
+                onClicked: sessionController.openExportDialog()
+            }
+        }
+
         // View Mode Switcher: Grid vs Loupe
         Rectangle {
             width: 68

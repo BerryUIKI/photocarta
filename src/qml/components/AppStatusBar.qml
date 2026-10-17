@@ -128,6 +128,36 @@ Rectangle {
             color: themeManager.textSecondary
         }
 
+        // Exporting progress indicator badge
+        Rectangle {
+            visible: sessionController.isExporting
+            anchors.verticalCenter: parent.verticalCenter
+            width: exportStatusRow.implicitWidth + 12
+            height: 18
+            radius: 9
+            color: themeManager.accent
+
+            Row {
+                id: exportStatusRow
+                anchors.centerIn: parent
+                spacing: 4
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "📤"
+                    font.pixelSize: 9
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Exporting %1/%2").arg(sessionController.exportProgress).arg(sessionController.exportTotal)
+                    font.pixelSize: 10
+                    font.weight: Font.Bold
+                    color: "#ffffff"
+                }
+            }
+        }
+
         // Session mode badge
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
