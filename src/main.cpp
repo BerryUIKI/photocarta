@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     filterModel->setSortAscending(settingsManager->sortAscending());
 
     // Connect auto-save bindings
-    QObject::connect(themeManager, &ThemeManager::isDarkChanged, settingsManager, [themeManager, settingsManager]() {
+    QObject::connect(themeManager, &ThemeManager::themeChanged, settingsManager, [themeManager, settingsManager]() {
         settingsManager->setTheme(themeManager->isDark() ? QStringLiteral("dark") : QStringLiteral("light"));
     });
     QObject::connect(sessionController, &SessionController::leftPaneVisibleChanged, settingsManager, [sessionController, settingsManager]() {
