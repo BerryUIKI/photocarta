@@ -282,7 +282,100 @@ Rectangle {
                             model: root.item.tags ? root.item.tags : []
                             TagChip {
                                 text: modelData
-                                interactive: false
+                                interactive: true
+                                removable: true
+                                active: filterModel.tagFilter.toLowerCase() === modelData.toLowerCase()
+                                onClicked: {
+                                    if (filterModel.tagFilter.toLowerCase() === modelData.toLowerCase()) {
+                                        sessionController.clearTagFilter()
+                                    } else {
+                                        sessionController.setTagFilter(modelData)
+                                    }
+                                }
+                                onRemoveRequested: {
+                                    sessionController.removeTagFromItem(selectionManager.currentIndex, modelData)
+                                }
+                            }
+                        }
+
+                        Text {
+                            visible: !root.item.tags || root.item.tags.length === 0
+                            text: qsTr("No tags assigned")
+                            font.pixelSize: 11
+                            color: themeManager.textMuted
+                        }
+                    }
+
+                    // Add Tag Input Row
+                    Row {
+                        width: parent.width
+                        spacing: 6
+
+                        Rectangle {
+                            id: tagInputBox
+                            width: parent.width - addTagBtn.width - 6
+                            height: 28
+                            radius: themeManager.radiusSm
+                            color: themeManager.surfaceElevated
+                            border.color: tagInput.activeFocus ? themeManager.accent : themeManager.border
+                            border.width: 1
+
+                            TextInput {
+                                id: tagInput
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 8
+                                verticalAlignment: TextInput.AlignVCenter
+                                font.pixelSize: 11
+                                color: themeManager.textPrimary
+                                selectByMouse: true
+
+                                Text {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: qsTr("Add a tag...")
+                                    font.pixelSize: 11
+                                    color: themeManager.textMuted
+                                    visible: !tagInput.text && !tagInput.activeFocus
+                                }
+
+                                onAccepted: {
+                                    const trimmed = tagInput.text.trim()
+                                    if (trimmed.length > 0) {
+                                        sessionController.addTagToItem(selectionManager.currentIndex, trimmed)
+                                        tagInput.text = ""
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            id: addTagBtn
+                            width: 52
+                            height: 28
+                            radius: themeManager.radiusSm
+                            color: addTagMouseArea.containsMouse ? themeManager.accentHover : themeManager.accent
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: qsTr("+ Add")
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                                color: themeManager.accentText
+                            }
+
+                            MouseArea {
+                                id: addTagMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    const trimmed = tagInput.text.trim()
+                                    if (trimmed.length > 0) {
+                                        sessionController.addTagToItem(selectionManager.currentIndex, trimmed)
+                                        tagInput.text = ""
+                                    }
+                                }
                             }
                         }
                     }

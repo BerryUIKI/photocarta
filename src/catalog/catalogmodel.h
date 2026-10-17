@@ -20,6 +20,7 @@ class CatalogModel : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(bool hasDemoContent READ hasDemoContent NOTIFY countChanged)
+    Q_PROPERTY(QStringList availableTags READ availableTags NOTIFY availableTagsChanged)
 
 public:
     enum CatalogRoles
@@ -67,6 +68,7 @@ public:
     [[nodiscard]] bool hasDemoContent() const;
     [[nodiscard]] const QList<CatalogItem> &items() const;
     [[nodiscard]] const CatalogItem *itemAt(int index) const;
+    [[nodiscard]] QStringList availableTags() const;
 
     void setDatabase(class CatalogDatabase *database);
     [[nodiscard]] class CatalogDatabase *database() const;
@@ -79,12 +81,15 @@ public:
     Q_INVOKABLE void updateItemRating(int index, int rating);
     Q_INVOKABLE void updateItemFlagged(int index, bool flagged);
     Q_INVOKABLE void updateItemTags(int index, const QStringList &tags);
+    Q_INVOKABLE void addTagToItem(int index, const QString &tag);
+    Q_INVOKABLE void removeTagFromItem(int index, const QString &tag);
     Q_INVOKABLE void loadFromDatabase(int collectionId = 0);
     Q_INVOKABLE void setCollectionAvailable(const QString &rootPath, bool available);
     Q_INVOKABLE void clearSession();
 
 signals:
     void countChanged();
+    void availableTagsChanged();
     void sessionLoaded(int itemCount);
     void fileLoadError(const QString &fileName, const QString &errorMessage);
 

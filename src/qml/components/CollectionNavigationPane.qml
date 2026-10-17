@@ -598,64 +598,91 @@ Rectangle {
                 color: themeManager.border
             }
 
-            // SECTION 3: POPULAR TAGS
+            // SECTION 3: POPULAR TAGS & RATINGS
             Text {
-                text: qsTr("CATEGORIES & TAGS")
+                text: qsTr("RATING & TAG FILTERS")
                 font.pixelSize: themeManager.fontXs
                 font.weight: Font.Bold
                 color: themeManager.textMuted
                 font.letterSpacing: 1.2
             }
 
+            // Rating Filter Row
+            Row {
+                width: parent.width
+                spacing: 4
+
+                Repeater {
+                    model: [
+                        { text: qsTr("All"), val: 0 },
+                        { text: "5★", val: 5 },
+                        { text: "4★+", val: 4 },
+                        { text: "3★+", val: 3 },
+                        { text: "2★+", val: 2 }
+                    ]
+
+                    delegate: Rectangle {
+                        id: rChip
+                        required property var modelData
+
+                        width: Math.floor((parent.width - 16) / 5)
+                        height: 24
+                        radius: themeManager.radiusSm
+                        color: filterModel.minRating === modelData.val
+                               ? themeManager.surfaceSelected
+                               : (rChipMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated)
+                        border.color: filterModel.minRating === modelData.val
+                                      ? themeManager.accent
+                                      : themeManager.border
+                        border.width: 1
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: rChip.modelData.text
+                            font.pixelSize: 10
+                            font.weight: filterModel.minRating === rChip.modelData.val ? Font.Bold : Font.Normal
+                            color: filterModel.minRating === rChip.modelData.val
+                                   ? themeManager.accent
+                                   : themeManager.textSecondary
+                        }
+
+                        MouseArea {
+                            id: rChipMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (filterModel.minRating === rChip.modelData.val && rChip.modelData.val > 0) {
+                                    sessionController.clearRatingFilter()
+                                } else {
+                                    sessionController.setRatingFilter(rChip.modelData.val)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Flow {
                 width: parent.width
                 spacing: 6
 
-                TagChip {
-                    text: qsTr("Landscape")
-                    active: filterModel.tagFilter === "Landscape"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Landscape") ? "" : "Landscape"
-                    }
-                }
+                Repeater {
+                    model: catalogModel.availableTags.length > 0
+                           ? catalogModel.availableTags
+                           : ["Landscape", "Portrait", "Architecture", "Street", "Macro", "Astro"]
 
-                TagChip {
-                    text: qsTr("Portrait")
-                    active: filterModel.tagFilter === "Portrait"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Portrait") ? "" : "Portrait"
-                    }
-                }
-
-                TagChip {
-                    text: qsTr("Architecture")
-                    active: filterModel.tagFilter === "Architecture"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Architecture") ? "" : "Architecture"
-                    }
-                }
-
-                TagChip {
-                    text: qsTr("Street")
-                    active: filterModel.tagFilter === "Street"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Street") ? "" : "Street"
-                    }
-                }
-
-                TagChip {
-                    text: qsTr("Macro")
-                    active: filterModel.tagFilter === "Macro"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Macro") ? "" : "Macro"
-                    }
-                }
-
-                TagChip {
-                    text: qsTr("Astro")
-                    active: filterModel.tagFilter === "Astro"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Astro") ? "" : "Astro"
+                    delegate: TagChip {
+                        required property var modelData
+                        text: modelData
+                        active: filterModel.tagFilter.toLowerCase() === modelData.toLowerCase()
+                        onClicked: {
+                            if (filterModel.tagFilter.toLowerCase() === modelData.toLowerCase()) {
+                                sessionController.clearTagFilter()
+                            } else {
+                                sessionController.setTagFilter(modelData)
+                            }
+                        }
                     }
                 }
             }
