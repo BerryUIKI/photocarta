@@ -214,10 +214,10 @@ void TestMetadataEditing::testDatabasePersistence()
         QCOMPARE(fetched.caption, item.caption);
         QCOMPARE(fetched.colorLabel, 2);
 
-        // Update single fields using assigned DB id
-        QVERIFY(db.updateItemTitle(assignedDbId, QStringLiteral("Updated Mountain Sunset")));
-        QVERIFY(db.updateItemCaption(assignedDbId, QStringLiteral("Updated caption text.")));
-        QVERIFY(db.updateItemColorLabel(assignedDbId, 5)); // Purple
+        // Update single fields using file path
+        QVERIFY(db.updateItemTitle(item.filePath, QStringLiteral("Updated Mountain Sunset")));
+        QVERIFY(db.updateItemCaption(item.filePath, QStringLiteral("Updated caption text.")));
+        QVERIFY(db.updateItemColorLabel(item.filePath, 5)); // Purple
 
         const CatalogItem updated = db.fetchItemByPath(item.filePath);
         QCOMPARE(updated.title, QStringLiteral("Updated Mountain Sunset"));
