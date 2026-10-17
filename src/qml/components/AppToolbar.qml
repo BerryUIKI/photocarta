@@ -526,9 +526,54 @@ Rectangle {
             }
         }
 
+        // Color Label Filter Selector
+        ComboBox {
+            id: colorLabelCombo
+            width: root.width > 1020 ? 94 : 80
+            height: 32
+            anchors.verticalCenter: parent.verticalCenter
+            model: [
+                { text: qsTr("Color"), value: 0 },
+                { text: "🔴 Red", value: 1 },
+                { text: "🟡 Yellow", value: 2 },
+                { text: "🟢 Green", value: 3 },
+                { text: "🔵 Blue", value: 4 },
+                { text: "🟣 Purple", value: 5 }
+            ]
+            textRole: "text"
+            valueRole: "value"
+            currentIndex: {
+                for (var i = 0; i < model.length; ++i) {
+                    if (model[i].value === filterModel.colorLabelFilter) return i;
+                }
+                return 0;
+            }
+            font.pixelSize: themeManager.fontSm
+
+            background: Rectangle {
+                radius: themeManager.radiusMd
+                color: filterModel.colorLabelFilter > 0 ? themeManager.surfaceSelected : themeManager.surfaceElevated
+                border.color: filterModel.colorLabelFilter > 0 ? themeManager.accent : themeManager.border
+                border.width: 1
+            }
+
+            contentItem: Text {
+                leftPadding: 8
+                text: colorLabelCombo.displayText
+                font.pixelSize: themeManager.fontSm
+                color: filterModel.colorLabelFilter > 0 ? themeManager.accent : themeManager.textPrimary
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+
+            onActivated: {
+                sessionController.setColorLabelFilter(currentValue)
+            }
+        }
+
         // Reset All Filters Button
         Rectangle {
-            visible: filterModel.tagFilter.length > 0 || filterModel.minRating > 0 || filterModel.categoryFilter !== "all" || searchInput.text.length > 0
+            visible: filterModel.tagFilter.length > 0 || filterModel.minRating > 0 || filterModel.colorLabelFilter > 0 || filterModel.categoryFilter !== "all" || searchInput.text.length > 0
             width: resetFiltersRow.implicitWidth + 14
             height: 28
             radius: themeManager.radiusSm

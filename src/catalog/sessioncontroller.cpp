@@ -386,6 +386,33 @@ void SessionController::toggleItemFlagged(int proxyIndex)
     }
 }
 
+void SessionController::setItemTitle(int proxyIndex, const QString &title)
+{
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (m_model && srcRow >= 0)
+    {
+        m_model->updateItemTitle(srcRow, title);
+    }
+}
+
+void SessionController::setItemCaption(int proxyIndex, const QString &caption)
+{
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (m_model && srcRow >= 0)
+    {
+        m_model->updateItemCaption(srcRow, caption);
+    }
+}
+
+void SessionController::setItemColorLabel(int proxyIndex, int colorLabel)
+{
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (m_model && srcRow >= 0)
+    {
+        m_model->updateItemColorLabel(srcRow, colorLabel);
+    }
+}
+
 void SessionController::setItemTags(int proxyIndex, const QStringList &tags)
 {
     const int srcRow = sourceRowForProxy(proxyIndex);
@@ -455,6 +482,33 @@ void SessionController::clearRatingFilter()
     setRatingFilter(0);
 }
 
+void SessionController::setColorLabelFilter(int colorLabel)
+{
+    if (m_filterModel)
+    {
+        m_filterModel->setColorLabelFilter(colorLabel);
+        const QString labelName = (colorLabel == 1) ? QStringLiteral("Red")
+                                : (colorLabel == 2) ? QStringLiteral("Yellow")
+                                : (colorLabel == 3) ? QStringLiteral("Green")
+                                : (colorLabel == 4) ? QStringLiteral("Blue")
+                                : (colorLabel == 5) ? QStringLiteral("Purple")
+                                : QStringLiteral("All");
+        if (colorLabel > 0)
+        {
+            setStatusMessage(QStringLiteral("Filtered by color label: %1 (%2 photos)").arg(labelName).arg(m_filterModel->count()));
+        }
+        else
+        {
+            setStatusMessage(QStringLiteral("Color label filter reset (%1 photos)").arg(m_filterModel->count()));
+        }
+    }
+}
+
+void SessionController::clearColorLabelFilter()
+{
+    setColorLabelFilter(0);
+}
+
 void SessionController::clearAllFilters()
 {
     if (m_filterModel)
@@ -463,10 +517,101 @@ void SessionController::clearAllFilters()
         m_filterModel->setCategoryFilter(QStringLiteral("all"));
         m_filterModel->setTagFilter(QString());
         m_filterModel->setMinRating(0);
+        m_filterModel->setColorLabelFilter(0);
         m_filterModel->setCollectionFilter(0);
     }
     selectCollection(0);
     setStatusMessage(QStringLiteral("All filters cleared (%1 photos)").arg(m_filterModel ? m_filterModel->count() : 0));
+}
+
+void SessionController::setTitleForSelected(const QString &title)
+{
+    if (!m_selectionManager || !m_model)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        return;
+    }
+
+    QList<int> srcRows;
+    srcRows.reserve(proxyRows.size());
+    for (int proxyRow : proxyRows)
+    {
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (srcRow >= 0)
+        {
+            srcRows.append(srcRow);
+        }
+    }
+
+    m_model->updateItemsTitle(srcRows, title);
+    setStatusMessage(QStringLiteral("Updated title for %1 photo(s)").arg(srcRows.size()));
+}
+
+void SessionController::setCaptionForSelected(const QString &caption)
+{
+    if (!m_selectionManager || !m_model)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        return;
+    }
+
+    QList<int> srcRows;
+    srcRows.reserve(proxyRows.size());
+    for (int proxyRow : proxyRows)
+    {
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (srcRow >= 0)
+        {
+            srcRows.append(srcRow);
+        }
+    }
+
+    m_model->updateItemsCaption(srcRows, caption);
+    setStatusMessage(QStringLiteral("Updated caption for %1 photo(s)").arg(srcRows.size()));
+}
+
+void SessionController::setColorLabelForSelected(int colorLabel)
+{
+    if (!m_selectionManager || !m_model)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        return;
+    }
+
+    QList<int> srcRows;
+    srcRows.reserve(proxyRows.size());
+    for (int proxyRow : proxyRows)
+    {
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (srcRow >= 0)
+        {
+            srcRows.append(srcRow);
+        }
+    }
+
+    m_model->updateItemsColorLabel(srcRows, colorLabel);
+    const QString labelName = (colorLabel == 1) ? QStringLiteral("Red")
+                            : (colorLabel == 2) ? QStringLiteral("Yellow")
+                            : (colorLabel == 3) ? QStringLiteral("Green")
+                            : (colorLabel == 4) ? QStringLiteral("Blue")
+                            : (colorLabel == 5) ? QStringLiteral("Purple")
+                            : QStringLiteral("None");
+    setStatusMessage(QStringLiteral("Color label '%1' applied to %2 photo(s)").arg(labelName).arg(srcRows.size()));
 }
 
 void SessionController::setRatingForSelected(int rating)
@@ -1523,6 +1668,17 @@ void SessionController::toggleCompareFlagged(int slotIndex)
     }
     const int proxyRow = m_compareProxyRows.at(slotIndex);
     toggleItemFlagged(proxyRow);
+    emit compareItemsChanged();
+}
+
+void SessionController::setCompareColorLabel(int slotIndex, int colorLabel)
+{
+    if (slotIndex < 0 || slotIndex >= m_compareProxyRows.size())
+    {
+        return;
+    }
+    const int proxyRow = m_compareProxyRows.at(slotIndex);
+    setItemColorLabel(proxyRow, colorLabel);
     emit compareItemsChanged();
 }
 
