@@ -87,6 +87,11 @@ void SessionController::setPreviewMode(bool active)
         return;
     }
     m_previewMode = active;
+    if (active && m_compareMode)
+    {
+        m_compareMode = false;
+        emit compareModeChanged();
+    }
     if (!active && m_isFullscreen)
     {
         setFullscreen(false);
@@ -1160,6 +1165,386 @@ void SessionController::startExportSelected(const QVariantMap &options)
     if (m_exporter->startExport(itemsToExport, settings))
     {
         setStatusMessage(QStringLiteral("Exporting %1 photo(s)...").arg(itemsToExport.size()));
+    }
+}
+
+bool SessionController::compareMode() const
+{
+    return m_compareMode;
+}
+
+void SessionController::setCompareMode(bool active)
+{
+    if (m_compareMode == active)
+    {
+        return;
+    }
+
+    m_compareMode = active;
+
+    if (m_compareMode)
+    {
+        if (m_previewMode)
+        {
+            m_previewMode = false;
+            emit previewModeChanged();
+        }
+
+        m_compareProxyRows.clear();
+        m_winnerId.clear();
+        m_compareZoom = 1.0;
+        m_comparePanX = 0.0;
+        m_comparePanY = 0.0;
+        m_activeCompareSlot = 0;
+
+        if (m_filterModel && m_filterModel->rowCount() > 0)
+        {
+            const QList<int> selRows = m_selectionManager ? m_selectionManager->selectedProxyRows() : QList<int>();
+            if (selRows.size() >= 2)
+            {
+                // Take up to 4 selected photos
+                const int count = std::min(4, static_cast<int>(selRows.size()));
+                for (int i = 0; i < count; ++i)
+                {
+                    m_compareProxyRows.append(selRows[i]);
+                }
+            }
+            else if (selRows.size() == 1)
+            {
+                const int first = selRows.first();
+                m_compareProxyRows.append(first);
+                // Pair with next item, or previous if at end
+                if (first + 1 < m_filterModel->rowCount())
+                {
+                    m_compareProxyRows.append(first + 1);
+                }
+                else if (first - 1 >= 0)
+                {
+                    m_compareProxyRows.append(first - 1);
+                }
+            }
+            else
+            {
+                // No selection, take first 2 photos if available
+                m_compareProxyRows.append(0);
+                if (m_filterModel->rowCount() > 1)
+                {
+                    m_compareProxyRows.append(1);
+                }
+            }
+        }
+    }
+    else
+    {
+        m_compareProxyRows.clear();
+        m_winnerId.clear();
+    }
+
+    emit compareModeChanged();
+    emit compareItemsChanged();
+    emit compareZoomChanged();
+    emit comparePanChanged();
+    emit activeCompareSlotChanged();
+    emit winnerIdChanged();
+}
+
+void SessionController::toggleCompareMode()
+{
+    setCompareMode(!m_compareMode);
+}
+
+bool SessionController::syncZoomPan() const
+{
+    return m_syncZoomPan;
+}
+
+void SessionController::setSyncZoomPan(bool sync)
+{
+    if (m_syncZoomPan == sync)
+    {
+        return;
+    }
+    m_syncZoomPan = sync;
+    emit syncZoomPanChanged();
+}
+
+void SessionController::toggleSyncZoomPan()
+{
+    setSyncZoomPan(!m_syncZoomPan);
+}
+
+QVariantList SessionController::compareItems() const
+{
+    QVariantList items;
+    if (!m_filterModel)
+    {
+        return items;
+    }
+
+    static const QStringList slotLabels = {
+        QStringLiteral("A"), QStringLiteral("B"), QStringLiteral("C"), QStringLiteral("D")
+    };
+
+    for (int i = 0; i < m_compareProxyRows.size(); ++i)
+    {
+        const int proxyRow = m_compareProxyRows.at(i);
+        if (proxyRow >= 0 && proxyRow < m_filterModel->rowCount())
+        {
+            QVariantMap item = m_filterModel->get(proxyRow);
+            item.insert(QStringLiteral("proxyRow"), proxyRow);
+            item.insert(QStringLiteral("slotIndex"), i);
+            item.insert(QStringLiteral("slotLabel"), (i < slotLabels.size()) ? slotLabels[i] : QString::number(i + 1));
+            const QString id = item.value(QStringLiteral("id")).toString();
+            item.insert(QStringLiteral("isWinner"), (!m_winnerId.isEmpty() && m_winnerId == id));
+            items.append(item);
+        }
+    }
+    return items;
+}
+
+int SessionController::compareCount() const
+{
+    return static_cast<int>(m_compareProxyRows.size());
+}
+
+double SessionController::compareZoom() const
+{
+    return m_compareZoom;
+}
+
+void SessionController::setCompareZoom(double zoom)
+{
+    const double clamped = std::clamp(zoom, 0.2, 8.0);
+    if (qFuzzyCompare(m_compareZoom, clamped))
+    {
+        return;
+    }
+    m_compareZoom = clamped;
+    emit compareZoomChanged();
+}
+
+void SessionController::zoomInCompare(double step)
+{
+    setCompareZoom(m_compareZoom + step);
+}
+
+void SessionController::zoomOutCompare(double step)
+{
+    setCompareZoom(m_compareZoom - step);
+}
+
+void SessionController::resetCompareZoom()
+{
+    setCompareZoom(1.0);
+    setComparePan(0.0, 0.0);
+}
+
+double SessionController::comparePanX() const
+{
+    return m_comparePanX;
+}
+
+void SessionController::setComparePanX(double x)
+{
+    if (qFuzzyCompare(m_comparePanX, x))
+    {
+        return;
+    }
+    m_comparePanX = x;
+    emit comparePanChanged();
+}
+
+double SessionController::comparePanY() const
+{
+    return m_comparePanY;
+}
+
+void SessionController::setComparePanY(double y)
+{
+    if (qFuzzyCompare(m_comparePanY, y))
+    {
+        return;
+    }
+    m_comparePanY = y;
+    emit comparePanChanged();
+}
+
+void SessionController::setComparePan(double x, double y)
+{
+    if (qFuzzyCompare(m_comparePanX, x) && qFuzzyCompare(m_comparePanY, y))
+    {
+        return;
+    }
+    m_comparePanX = x;
+    m_comparePanY = y;
+    emit comparePanChanged();
+}
+
+int SessionController::activeCompareSlot() const
+{
+    return m_activeCompareSlot;
+}
+
+void SessionController::setActiveCompareSlot(int slot)
+{
+    if (m_activeCompareSlot == slot || slot < 0 || slot >= m_compareProxyRows.size())
+    {
+        return;
+    }
+    m_activeCompareSlot = slot;
+    emit activeCompareSlotChanged();
+}
+
+QString SessionController::winnerId() const
+{
+    return m_winnerId;
+}
+
+void SessionController::setAsWinner(int slotIndex)
+{
+    if (slotIndex < 0 || slotIndex >= m_compareProxyRows.size() || !m_filterModel)
+    {
+        return;
+    }
+
+    const int proxyRow = m_compareProxyRows.at(slotIndex);
+    if (proxyRow < 0 || proxyRow >= m_filterModel->rowCount())
+    {
+        return;
+    }
+
+    const QString id = m_filterModel->index(proxyRow, 0).data(CatalogModel::IdRole).toString();
+    if (m_winnerId == id)
+    {
+        m_winnerId.clear();
+    }
+    else
+    {
+        m_winnerId = id;
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (m_model)
+        {
+            const CatalogItem *item = m_model->itemAt(srcRow);
+            if (item && !item->isFlagged)
+            {
+                m_model->updateItemFlagged(srcRow, true);
+            }
+        }
+    }
+
+    emit winnerIdChanged();
+    emit compareItemsChanged();
+}
+
+void SessionController::clearWinner()
+{
+    if (m_winnerId.isEmpty())
+    {
+        return;
+    }
+    m_winnerId.clear();
+    emit winnerIdChanged();
+    emit compareItemsChanged();
+}
+
+void SessionController::removeCompareItem(int slotIndex)
+{
+    if (slotIndex < 0 || slotIndex >= m_compareProxyRows.size())
+    {
+        return;
+    }
+
+    m_compareProxyRows.removeAt(slotIndex);
+    if (m_activeCompareSlot >= m_compareProxyRows.size())
+    {
+        m_activeCompareSlot = std::max(0, static_cast<int>(m_compareProxyRows.size()) - 1);
+        emit activeCompareSlotChanged();
+    }
+
+    if (m_compareProxyRows.size() < 2)
+    {
+        setCompareMode(false);
+        return;
+    }
+
+    emit compareItemsChanged();
+}
+
+void SessionController::swapCompareItems(int slotA, int slotB)
+{
+    if (slotA >= 0 && slotA < m_compareProxyRows.size() &&
+        slotB >= 0 && slotB < m_compareProxyRows.size() && slotA != slotB)
+    {
+        m_compareProxyRows.swapItemsAt(slotA, slotB);
+        emit compareItemsChanged();
+    }
+}
+
+void SessionController::setCompareRating(int slotIndex, int rating)
+{
+    if (slotIndex < 0 || slotIndex >= m_compareProxyRows.size())
+    {
+        return;
+    }
+    const int proxyRow = m_compareProxyRows.at(slotIndex);
+    setItemRating(proxyRow, rating);
+    emit compareItemsChanged();
+}
+
+void SessionController::toggleCompareFlagged(int slotIndex)
+{
+    if (slotIndex < 0 || slotIndex >= m_compareProxyRows.size())
+    {
+        return;
+    }
+    const int proxyRow = m_compareProxyRows.at(slotIndex);
+    toggleItemFlagged(proxyRow);
+    emit compareItemsChanged();
+}
+
+void SessionController::addAdjacentToCompare(bool next)
+{
+    if (!m_filterModel || m_compareProxyRows.size() >= 4)
+    {
+        return;
+    }
+
+    const int total = m_filterModel->rowCount();
+    if (total == 0)
+    {
+        return;
+    }
+
+    int candidate = -1;
+    if (next)
+    {
+        const int last = m_compareProxyRows.isEmpty() ? 0 : m_compareProxyRows.last();
+        for (int i = last + 1; i < total; ++i)
+        {
+            if (!m_compareProxyRows.contains(i))
+            {
+                candidate = i;
+                break;
+            }
+        }
+    }
+    else
+    {
+        const int first = m_compareProxyRows.isEmpty() ? 0 : m_compareProxyRows.first();
+        for (int i = first - 1; i >= 0; --i)
+        {
+            if (!m_compareProxyRows.contains(i))
+            {
+                candidate = i;
+                break;
+            }
+        }
+    }
+
+    if (candidate >= 0)
+    {
+        m_compareProxyRows.append(candidate);
+        emit compareItemsChanged();
     }
 }
 

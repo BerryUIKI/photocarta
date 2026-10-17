@@ -228,6 +228,18 @@ Rectangle {
             }
         }
 
+        MenuItem {
+            text: (selectionManager.selectedCount >= 2 && root.isSelected)
+                  ? qsTr("Compare Selected Photos (C)")
+                  : qsTr("Compare with Next Photo (C)")
+            onTriggered: {
+                if (!root.isSelected) {
+                    selectionManager.select(root.itemIndex)
+                }
+                sessionController.setCompareMode(true)
+            }
+        }
+
         MenuSeparator {}
 
         Menu {

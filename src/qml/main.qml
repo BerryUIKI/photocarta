@@ -87,13 +87,18 @@ ApplicationWindow {
 
             ThumbnailGridView {
                 anchors.fill: parent
-                visible: !sessionController.previewMode
+                visible: !sessionController.previewMode && !sessionController.compareMode
                 onRequestOpenFiles: openDialog.open()
             }
 
             ImagePreviewView {
                 anchors.fill: parent
-                visible: sessionController.previewMode
+                visible: sessionController.previewMode && !sessionController.compareMode
+            }
+
+            PhotoCompareView {
+                anchors.fill: parent
+                visible: sessionController.compareMode
             }
         }
     }
@@ -195,10 +200,36 @@ ApplicationWindow {
     }
 
     Shortcut {
+        sequence: "Ctrl+Alt+C"
+        onActivated: {
+            if (sessionController.compareMode) {
+                sessionController.setCompareMode(false)
+            } else if (selectionManager.selectedCount >= 2 || selectionManager.hasSelection) {
+                sessionController.setCompareMode(true)
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "C"
+        onActivated: {
+            if (!sessionController.previewMode) {
+                if (sessionController.compareMode) {
+                    sessionController.setCompareMode(false)
+                } else if (selectionManager.selectedCount >= 2 || selectionManager.hasSelection) {
+                    sessionController.setCompareMode(true)
+                }
+            }
+        }
+    }
+
+    Shortcut {
         sequence: "Escape"
         onActivated: {
             if (sessionController.isFullscreen) {
                 sessionController.setFullscreen(false)
+            } else if (sessionController.compareMode) {
+                sessionController.setCompareMode(false)
             } else if (sessionController.previewMode) {
                 sessionController.setPreviewMode(false)
             } else if (selectionManager.selectedCount > 1) {

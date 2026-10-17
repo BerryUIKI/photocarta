@@ -43,8 +43,16 @@ class SessionController : public QObject
     Q_PROPERTY(bool isFullscreen READ isFullscreen WRITE setFullscreen NOTIFY fullscreenChanged)
     Q_PROPERTY(bool isExporting READ isExporting NOTIFY exportProgressChanged)
     Q_PROPERTY(int exportProgress READ exportProgress NOTIFY exportProgressChanged)
-    Q_PROPERTY(int exportTotal READ exportTotal NOTIFY exportProgressChanged)
     Q_PROPERTY(bool exportDialogOpen READ exportDialogOpen WRITE setExportDialogOpen NOTIFY exportDialogOpenChanged)
+    Q_PROPERTY(bool compareMode READ compareMode WRITE setCompareMode NOTIFY compareModeChanged)
+    Q_PROPERTY(bool syncZoomPan READ syncZoomPan WRITE setSyncZoomPan NOTIFY syncZoomPanChanged)
+    Q_PROPERTY(QVariantList compareItems READ compareItems NOTIFY compareItemsChanged)
+    Q_PROPERTY(int compareCount READ compareCount NOTIFY compareItemsChanged)
+    Q_PROPERTY(double compareZoom READ compareZoom WRITE setCompareZoom NOTIFY compareZoomChanged)
+    Q_PROPERTY(double comparePanX READ comparePanX WRITE setComparePanX NOTIFY comparePanChanged)
+    Q_PROPERTY(double comparePanY READ comparePanY WRITE setComparePanY NOTIFY comparePanChanged)
+    Q_PROPERTY(int activeCompareSlot READ activeCompareSlot WRITE setActiveCompareSlot NOTIFY activeCompareSlotChanged)
+    Q_PROPERTY(QString winnerId READ winnerId NOTIFY winnerIdChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -152,6 +160,44 @@ public:
     Q_INVOKABLE void cancelExport();
     Q_INVOKABLE QString defaultExportDirectory() const;
 
+    // Side-by-Side Photo Comparison (Light Table)
+    [[nodiscard]] bool compareMode() const;
+    Q_INVOKABLE void setCompareMode(bool active);
+    Q_INVOKABLE void toggleCompareMode();
+
+    [[nodiscard]] bool syncZoomPan() const;
+    Q_INVOKABLE void setSyncZoomPan(bool sync);
+    Q_INVOKABLE void toggleSyncZoomPan();
+
+    [[nodiscard]] QVariantList compareItems() const;
+    [[nodiscard]] int compareCount() const;
+
+    [[nodiscard]] double compareZoom() const;
+    Q_INVOKABLE void setCompareZoom(double zoom);
+    Q_INVOKABLE void zoomInCompare(double step = 0.25);
+    Q_INVOKABLE void zoomOutCompare(double step = 0.25);
+    Q_INVOKABLE void resetCompareZoom();
+
+    [[nodiscard]] double comparePanX() const;
+    Q_INVOKABLE void setComparePanX(double x);
+
+    [[nodiscard]] double comparePanY() const;
+    Q_INVOKABLE void setComparePanY(double y);
+    Q_INVOKABLE void setComparePan(double x, double y);
+
+    [[nodiscard]] int activeCompareSlot() const;
+    Q_INVOKABLE void setActiveCompareSlot(int slot);
+
+    [[nodiscard]] QString winnerId() const;
+    Q_INVOKABLE void setAsWinner(int slotIndex);
+    Q_INVOKABLE void clearWinner();
+
+    Q_INVOKABLE void removeCompareItem(int slotIndex);
+    Q_INVOKABLE void swapCompareItems(int slotA, int slotB);
+    Q_INVOKABLE void setCompareRating(int slotIndex, int rating);
+    Q_INVOKABLE void toggleCompareFlagged(int slotIndex);
+    Q_INVOKABLE void addAdjacentToCompare(bool next = true);
+
 signals:
     void previewModeChanged();
     void leftPaneVisibleChanged();
@@ -171,6 +217,13 @@ signals:
     void exportProgressChanged();
     void exportDialogOpenChanged();
     void exportCompleted(int successCount, int failCount, const QString &outputDir);
+    void compareModeChanged();
+    void syncZoomPanChanged();
+    void compareItemsChanged();
+    void compareZoomChanged();
+    void comparePanChanged();
+    void activeCompareSlotChanged();
+    void winnerIdChanged();
 
 private slots:
     void onModelCountChanged();
@@ -204,6 +257,16 @@ private:
 
     ImageExporter *m_exporter = nullptr;
     bool m_exportDialogOpen = false;
+
+    // Side-by-side comparison (Light Table)
+    bool m_compareMode = false;
+    bool m_syncZoomPan = true;
+    double m_compareZoom = 1.0;
+    double m_comparePanX = 0.0;
+    double m_comparePanY = 0.0;
+    int m_activeCompareSlot = 0;
+    QString m_winnerId;
+    QList<int> m_compareProxyRows;
 };
 
 } // namespace PhotoCarta

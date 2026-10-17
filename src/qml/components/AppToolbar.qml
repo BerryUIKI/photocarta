@@ -246,9 +246,9 @@ Rectangle {
             }
         }
 
-        // View Mode Switcher: Grid vs Loupe
+        // View Mode Switcher: Grid vs Loupe vs Compare
         Rectangle {
-            width: 68
+            width: 102
             height: 32
             radius: themeManager.radiusMd
             anchors.verticalCenter: parent.verticalCenter
@@ -264,7 +264,7 @@ Rectangle {
                     width: 34
                     height: 32
                     radius: themeManager.radiusMd
-                    color: !sessionController.previewMode ? themeManager.accent : "transparent"
+                    color: (!sessionController.previewMode && !sessionController.compareMode) ? themeManager.accent : "transparent"
 
                     Image {
                         anchors.centerIn: parent
@@ -275,23 +275,26 @@ Rectangle {
                     }
 
                     ToolTip.visible: gridBtnMouse.containsMouse
-                    ToolTip.text: qsTr("Grid View")
+                    ToolTip.text: qsTr("Grid View (Esc)")
 
                     MouseArea {
                         id: gridBtnMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: sessionController.setPreviewMode(false)
+                        onClicked: {
+                            if (sessionController.compareMode) sessionController.setCompareMode(false)
+                            if (sessionController.previewMode) sessionController.setPreviewMode(false)
+                        }
                     }
                 }
 
-                // Loupe Button
+                // Loupe / Preview Button
                 Rectangle {
                     width: 34
                     height: 32
                     radius: themeManager.radiusMd
-                    color: sessionController.previewMode ? themeManager.accent : "transparent"
+                    color: (sessionController.previewMode && !sessionController.compareMode) ? themeManager.accent : "transparent"
 
                     Image {
                         anchors.centerIn: parent
@@ -302,14 +305,44 @@ Rectangle {
                     }
 
                     ToolTip.visible: loupeBtnMouse.containsMouse
-                    ToolTip.text: qsTr("Preview View (Enter)")
+                    ToolTip.text: qsTr("Preview / Loupe View (Enter)")
 
                     MouseArea {
                         id: loupeBtnMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: sessionController.setPreviewMode(true)
+                        onClicked: {
+                            if (sessionController.compareMode) sessionController.setCompareMode(false)
+                            sessionController.setPreviewMode(true)
+                        }
+                    }
+                }
+
+                // Side-by-Side Compare Button (Light Table)
+                Rectangle {
+                    width: 34
+                    height: 32
+                    radius: themeManager.radiusMd
+                    color: sessionController.compareMode ? themeManager.accent : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "◫"
+                        font.pixelSize: 15
+                        font.weight: Font.Bold
+                        color: sessionController.compareMode ? "#ffffff" : themeManager.textSecondary
+                    }
+
+                    ToolTip.visible: compareBtnMouse.containsMouse
+                    ToolTip.text: qsTr("Compare Selected Photos / Light Table (C)")
+
+                    MouseArea {
+                        id: compareBtnMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: sessionController.toggleCompareMode()
                     }
                 }
             }
