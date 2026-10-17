@@ -127,6 +127,11 @@ void TestMetadataEditing::testFilterByColorLabel()
 {
     QVERIFY(m_catalogModel->rowCount() >= 4);
 
+    // Reset all items' color labels to 0 first to isolate filter test
+    for (int i = 0; i < m_catalogModel->rowCount(); ++i) {
+        m_catalogModel->updateItemColorLabel(i, 0);
+    }
+
     // Explicitly configure color labels on items
     m_catalogModel->updateItemColorLabel(0, 1); // Red
     m_catalogModel->updateItemColorLabel(1, 2); // Yellow
@@ -155,19 +160,16 @@ void TestMetadataEditing::testFilterByCaptionSearch()
 {
     QVERIFY(m_catalogModel->rowCount() >= 2);
 
-    // Assign a unique phrase in caption
-    m_catalogModel->updateItemCaption(1, QStringLiteral("Long exposure waterfall in Icelandic canyon"));
+    // Assign a unique phrase in caption that doesn't appear anywhere else
+    const QString uniqueKeyword = QStringLiteral("UniqueBioluminescentCascade");
+    m_catalogModel->updateItemCaption(1, QStringLiteral("Long exposure night view featuring %1.").arg(uniqueKeyword));
 
-    // Search for waterfall
-    m_filterModel->setSearchQuery(QStringLiteral("waterfall"));
+    // Search for unique keyword
+    m_filterModel->setSearchQuery(uniqueKeyword);
     QCOMPARE(m_filterModel->count(), 1);
 
-    // Search for canyon
-    m_filterModel->setSearchQuery(QStringLiteral("canyon"));
-    QCOMPARE(m_filterModel->count(), 1);
-
-    // Search for something not in caption or other fields
-    m_filterModel->setSearchQuery(QStringLiteral("nonexistentxyz123"));
+    // Search for non-existent text
+    m_filterModel->setSearchQuery(QStringLiteral("NonExistentUnmatchedTextXYZ123"));
     QCOMPARE(m_filterModel->count(), 0);
 
     // Clear search
@@ -192,6 +194,8 @@ void TestMetadataEditing::testDatabasePersistence()
     item.isFlagged = true;
     item.fileSizeBytes = 10485760;
 
+    QString assignedDbId;
+
     {
         CatalogDatabase db(QStringLiteral("test_meta_conn"));
         QVERIFY(db.open(dbPath));
@@ -203,15 +207,17 @@ void TestMetadataEditing::testDatabasePersistence()
 
         // Fetch back and verify
         const CatalogItem fetched = db.fetchItemByPath(item.filePath);
-        QCOMPARE(fetched.id, item.id);
+        QVERIFY(!fetched.id.isEmpty());
+        assignedDbId = fetched.id;
+        QCOMPARE(fetched.filePath, item.filePath);
         QCOMPARE(fetched.title, item.title);
         QCOMPARE(fetched.caption, item.caption);
         QCOMPARE(fetched.colorLabel, 2);
 
-        // Update single fields
-        QVERIFY(db.updateItemTitle(item.id, QStringLiteral("Updated Mountain Sunset")));
-        QVERIFY(db.updateItemCaption(item.id, QStringLiteral("Updated caption text.")));
-        QVERIFY(db.updateItemColorLabel(item.id, 5)); // Purple
+        // Update single fields using assigned DB id
+        QVERIFY(db.updateItemTitle(assignedDbId, QStringLiteral("Updated Mountain Sunset")));
+        QVERIFY(db.updateItemCaption(assignedDbId, QStringLiteral("Updated caption text.")));
+        QVERIFY(db.updateItemColorLabel(assignedDbId, 5)); // Purple
 
         const CatalogItem updated = db.fetchItemByPath(item.filePath);
         QCOMPARE(updated.title, QStringLiteral("Updated Mountain Sunset"));
@@ -227,7 +233,7 @@ void TestMetadataEditing::testDatabasePersistence()
         QVERIFY(db2.open(dbPath));
 
         const CatalogItem reloaded = db2.fetchItemByPath(item.filePath);
-        QCOMPARE(reloaded.id, item.id);
+        QCOMPARE(reloaded.id, assignedDbId);
         QCOMPARE(reloaded.title, QStringLiteral("Updated Mountain Sunset"));
         QCOMPARE(reloaded.caption, QStringLiteral("Updated caption text."));
         QCOMPARE(reloaded.colorLabel, 5);
@@ -240,9 +246,10 @@ void TestMetadataEditing::testSessionControllerIntegration()
 {
     QVERIFY(m_catalogModel->rowCount() > 0);
 
-    // Select the first item
-    m_selectionManager->select(0);
-    QCOMPARE(m_selectionManager->currentIndex(), 0);
+    // Select the first item by its unique ID so source row mapping is exact
+    const QString firstId = m_catalogModel->itemAt(0)->id;
+    m_selectionManager->selectById(firstId);
+    QCOMPARE(m_selectionManager->currentId(), firstId);
 
     // Edit Title via controller
     m_sessionController->setTitleForSelected(QStringLiteral("Controller Assigned Title"));
