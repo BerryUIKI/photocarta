@@ -1017,6 +1017,30 @@ Item {
     }
 
     Shortcut {
+        sequence: "6"
+        enabled: sessionController.compareMode
+        onActivated: sessionController.setCompareColorLabel(sessionController.activeCompareSlot, 1)
+    }
+
+    Shortcut {
+        sequence: "7"
+        enabled: sessionController.compareMode
+        onActivated: sessionController.setCompareColorLabel(sessionController.activeCompareSlot, 2)
+    }
+
+    Shortcut {
+        sequence: "8"
+        enabled: sessionController.compareMode
+        onActivated: sessionController.setCompareColorLabel(sessionController.activeCompareSlot, 3)
+    }
+
+    Shortcut {
+        sequence: "9"
+        enabled: sessionController.compareMode
+        onActivated: sessionController.setCompareColorLabel(sessionController.activeCompareSlot, 4)
+    }
+
+    Shortcut {
         sequence: "0"
         enabled: sessionController.compareMode
         onActivated: sessionController.resetCompareZoom()

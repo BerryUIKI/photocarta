@@ -78,6 +78,9 @@ public:
     [[nodiscard]] int itemCount() const;
 
     // Metadata persistence
+    bool updateItemTitle(const QString &filePath, const QString &title);
+    bool updateItemCaption(const QString &filePath, const QString &caption);
+    bool updateItemColorLabel(const QString &filePath, int colorLabel);
     bool updateItemRating(const QString &filePath, int rating);
     bool updateItemFlagged(const QString &filePath, bool flagged);
     bool setItemTags(const QString &filePath, const QStringList &tags);

@@ -301,6 +301,65 @@ Rectangle {
                     color: themeManager.border
                 }
 
+                // BATCH COLOR LABEL
+                Text {
+                    text: qsTr("BATCH COLOR LABEL")
+                    font.pixelSize: themeManager.fontXs
+                    font.weight: Font.Bold
+                    color: themeManager.textMuted
+                    font.letterSpacing: 1.2
+                }
+
+                Row {
+                    spacing: 8
+                    anchors.horizontalCenter: parent.horizontalCenter
+
+                    Repeater {
+                        model: [
+                            { id: 0, label: qsTr("Clear Color"), color: "transparent", border: themeManager.textMuted },
+                            { id: 1, label: qsTr("Red (6)"), color: "#ef4444", border: "#dc2626" },
+                            { id: 2, label: qsTr("Yellow (7)"), color: "#eab308", border: "#ca8a04" },
+                            { id: 3, label: qsTr("Green (8)"), color: "#22c55e", border: "#16a34a" },
+                            { id: 4, label: qsTr("Blue (9)"), color: "#3b82f6", border: "#2563eb" },
+                            { id: 5, label: qsTr("Purple"), color: "#a855f7", border: "#9333ea" }
+                        ]
+
+                        Rectangle {
+                            width: 22
+                            height: 22
+                            radius: 11
+                            color: modelData.color
+                            border.color: modelData.border
+                            border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: modelData.id === 0
+                                text: "✕"
+                                font.pixelSize: 9
+                                color: themeManager.textMuted
+                            }
+
+                            ToolTip.visible: batchColMouse.containsMouse
+                            ToolTip.text: modelData.label
+
+                            MouseArea {
+                                id: batchColMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: sessionController.setColorLabelForSelected(modelData.id)
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: themeManager.border
+                }
+
                 // BATCH TAGS
                 Text {
                     text: qsTr("SHARED TAGS")
@@ -529,13 +588,129 @@ Rectangle {
                 }
 
                 // Title & Filename
-                Text {
+                Column {
                     width: parent.width
-                    text: root.item.title ? root.item.title : (root.item.fileName ? root.item.fileName : "")
-                    font.pixelSize: themeManager.fontBase
-                    font.weight: Font.Bold
-                    color: themeManager.textPrimary
-                    wrapMode: Text.Wrap
+                    spacing: 4
+
+                    Rectangle {
+                        width: parent.width
+                        height: 32
+                        radius: themeManager.radiusSm
+                        color: titleInput.activeFocus ? themeManager.surfaceSelected : themeManager.surfaceElevated
+                        border.color: titleInput.activeFocus ? themeManager.borderFocus : (titleInputMouse.containsMouse ? themeManager.textMuted : themeManager.border)
+                        border.width: 1
+
+                        TextInput {
+                            id: titleInput
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            font.pixelSize: themeManager.fontSm
+                            font.weight: Font.Bold
+                            color: themeManager.textPrimary
+                            clip: true
+                            selectByMouse: true
+                            text: root.item.title || ""
+
+                            Text {
+                                anchors.fill: parent
+                                verticalAlignment: Text.AlignVCenter
+                                visible: !titleInput.text && !titleInput.activeFocus
+                                text: root.item.fileName ? qsTr("Untitled (%1)").arg(root.item.fileName) : qsTr("Add title...")
+                                font.pixelSize: themeManager.fontSm
+                                color: themeManager.textMuted
+                                elide: Text.ElideRight
+                            }
+
+                            onEditingFinished: {
+                                if (text !== (root.item.title || "")) {
+                                    sessionController.setItemTitle(selectionManager.currentIndex, text)
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            id: titleInputMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.IBeamCursor
+                            hoverEnabled: true
+                            acceptedButtons: Qt.NoButton
+                        }
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: root.item.fileName ? root.item.fileName : ""
+                        font.pixelSize: 10
+                        color: themeManager.textMuted
+                        elide: Text.ElideMiddle
+                    }
+                }
+
+                // Caption / Description Section
+                Column {
+                    width: parent.width
+                    spacing: 4
+
+                    Text {
+                        text: qsTr("CAPTION / NOTES")
+                        font.pixelSize: themeManager.fontXs
+                        font.weight: Font.Bold
+                        color: themeManager.textMuted
+                        font.letterSpacing: 1.2
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: 64
+                        radius: themeManager.radiusSm
+                        color: captionInput.activeFocus ? themeManager.surfaceSelected : themeManager.surfaceElevated
+                        border.color: captionInput.activeFocus ? themeManager.borderFocus : (captionInputMouse.containsMouse ? themeManager.textMuted : themeManager.border)
+                        border.width: 1
+
+                        Flickable {
+                            id: captionFlick
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            contentWidth: width
+                            contentHeight: captionInput.paintedHeight
+                            clip: true
+
+                            TextEdit {
+                                id: captionInput
+                                width: captionFlick.width
+                                wrapMode: TextEdit.Wrap
+                                font.pixelSize: 11
+                                color: themeManager.textPrimary
+                                selectByMouse: true
+                                text: root.item.caption || ""
+
+                                Text {
+                                    anchors.fill: parent
+                                    visible: !captionInput.text && !captionInput.activeFocus
+                                    text: qsTr("Add description or notes...")
+                                    font.pixelSize: 11
+                                    color: themeManager.textMuted
+                                    wrapMode: Text.Wrap
+                                }
+
+                                onEditingFinished: {
+                                    if (text !== (root.item.caption || "")) {
+                                        sessionController.setItemCaption(selectionManager.currentIndex, text)
+                                    }
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            id: captionInputMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.IBeamCursor
+                            hoverEnabled: true
+                            acceptedButtons: Qt.NoButton
+                        }
+                    }
                 }
 
                 Rectangle {
@@ -726,6 +901,75 @@ Rectangle {
                             interactive: true
                             onRatingSelected: (newRating) => {
                                 sessionController.setItemRating(selectionManager.currentIndex, newRating)
+                            }
+                        }
+                    }
+
+                    // COLOR LABEL PICKER
+                    Row {
+                        spacing: 8
+                        anchors.left: parent.left
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Color:")
+                            font.pixelSize: 11
+                            color: themeManager.textSecondary
+                        }
+
+                        Row {
+                            spacing: 6
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Repeater {
+                                model: [
+                                    { id: 0, label: qsTr("Clear Color"), color: "transparent", border: themeManager.textMuted },
+                                    { id: 1, label: qsTr("Red (6)"), color: "#ef4444", border: "#dc2626" },
+                                    { id: 2, label: qsTr("Yellow (7)"), color: "#eab308", border: "#ca8a04" },
+                                    { id: 3, label: qsTr("Green (8)"), color: "#22c55e", border: "#16a34a" },
+                                    { id: 4, label: qsTr("Blue (9)"), color: "#3b82f6", border: "#2563eb" },
+                                    { id: 5, label: qsTr("Purple"), color: "#a855f7", border: "#9333ea" }
+                                ]
+
+                                Rectangle {
+                                    width: 18
+                                    height: 18
+                                    radius: 9
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: modelData.color
+                                    border.color: (root.item.colorLabel || 0) === modelData.id ? "#ffffff" : modelData.border
+                                    border.width: (root.item.colorLabel || 0) === modelData.id ? 2 : 1
+
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        width: 24
+                                        height: 24
+                                        radius: 12
+                                        color: "transparent"
+                                        border.color: themeManager.accent
+                                        border.width: 1.5
+                                        visible: (root.item.colorLabel || 0) === modelData.id
+                                    }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: modelData.id === 0
+                                        text: "✕"
+                                        font.pixelSize: 8
+                                        color: themeManager.textMuted
+                                    }
+
+                                    ToolTip.visible: colMouse.containsMouse
+                                    ToolTip.text: modelData.label
+
+                                    MouseArea {
+                                        id: colMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: sessionController.setItemColorLabel(selectionManager.currentIndex, modelData.id)
+                                    }
+                                }
                             }
                         }
                     }

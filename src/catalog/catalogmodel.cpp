@@ -84,6 +84,10 @@ QVariant CatalogModel::data(const QModelIndex &index, int role) const
         return item.isFlagged;
     case TagsRole:
         return item.tags;
+    case CaptionRole:
+        return item.caption;
+    case ColorLabelRole:
+        return item.colorLabel;
     case ThumbnailUrlRole:
         return item.thumbnailUrl;
     case PreviewUrlRole:
@@ -110,6 +114,8 @@ QHash<int, QByteArray> CatalogModel::roleNames() const
         {FilePathRole, "filePath"},
         {FileNameRole, "fileName"},
         {TitleRole, "title"},
+        {CaptionRole, "caption"},
+        {ColorLabelRole, "colorLabel"},
         {FileSizeRole, "fileSizeBytes"},
         {FormattedFileSizeRole, "formattedFileSize"},
         {MimeTypeRole, "mimeType"},
@@ -196,6 +202,8 @@ void CatalogModel::loadDemoFixtures()
     item1.filePath = QStringLiteral("qrc:/assets/demo/demo_landscape.svg");
     item1.fileName = QStringLiteral("Alpine_Sunrise_Oeschinen.jpg");
     item1.title = QStringLiteral("Alpine Sunrise at Lake Oeschinen");
+    item1.caption = QStringLiteral("Panoramic morning light over turquoise alpine lake waters surrounded by sheer limestone cliffs in the Bernese Alps.");
+    item1.colorLabel = 2; // Yellow
     item1.fileSizeBytes = 28430000;
     item1.formattedFileSize = CatalogItem::formatBytes(item1.fileSizeBytes);
     item1.mimeType = QStringLiteral("image/jpeg");
@@ -222,6 +230,8 @@ void CatalogModel::loadDemoFixtures()
     item2.filePath = QStringLiteral("qrc:/assets/demo/demo_portrait.svg");
     item2.fileName = QStringLiteral("Studio_Profile_AmberRim.jpg");
     item2.title = QStringLiteral("Studio Portrait in Amber & Cyan");
+    item2.caption = QStringLiteral("High-fashion editorial portrait with complementary warm amber edge lighting and cool cyan ambient fill.");
+    item2.colorLabel = 1; // Red
     item2.fileSizeBytes = 35120000;
     item2.formattedFileSize = CatalogItem::formatBytes(item2.fileSizeBytes);
     item2.mimeType = QStringLiteral("image/jpeg");
@@ -248,6 +258,8 @@ void CatalogModel::loadDemoFixtures()
     item3.filePath = QStringLiteral("qrc:/assets/demo/demo_architecture.svg");
     item3.fileName = QStringLiteral("Geometric_Concrete_Pavilion.jpg");
     item3.title = QStringLiteral("Geometric Concrete Pavilion");
+    item3.caption = QStringLiteral("Brutalist architecture study emphasizing diagonal cantilever lines and monolithic concrete textures.");
+    item3.colorLabel = 3; // Green
     item3.fileSizeBytes = 42680000;
     item3.formattedFileSize = CatalogItem::formatBytes(item3.fileSizeBytes);
     item3.mimeType = QStringLiteral("image/jpeg");
@@ -274,6 +286,8 @@ void CatalogModel::loadDemoFixtures()
     item4.filePath = QStringLiteral("qrc:/assets/demo/demo_street.svg");
     item4.fileName = QStringLiteral("Neon_Rain_Alleyway.jpg");
     item4.title = QStringLiteral("Neon Rain in Shinjuku Alleyway");
+    item4.caption = QStringLiteral("Atmospheric rainy night in Tokyo reflecting glowing cybernetic signage off wet pavement.");
+    item4.colorLabel = 4; // Blue
     item4.fileSizeBytes = 22840000;
     item4.formattedFileSize = CatalogItem::formatBytes(item4.fileSizeBytes);
     item4.mimeType = QStringLiteral("image/jpeg");
@@ -300,6 +314,8 @@ void CatalogModel::loadDemoFixtures()
     item5.filePath = QStringLiteral("qrc:/assets/demo/demo_macro.svg");
     item5.fileName = QStringLiteral("Monstera_Dew_Drops_Macro.jpg");
     item5.title = QStringLiteral("Monstera Dew Drops Macro");
+    item5.caption = QStringLiteral("Extreme macro detail capturing pristine condensation droplets along the deep green vein structure of a tropical leaf.");
+    item5.colorLabel = 5; // Purple
     item5.fileSizeBytes = 54200000;
     item5.formattedFileSize = CatalogItem::formatBytes(item5.fileSizeBytes);
     item5.mimeType = QStringLiteral("image/jpeg");
@@ -326,6 +342,8 @@ void CatalogModel::loadDemoFixtures()
     item6.filePath = QStringLiteral("qrc:/assets/demo/demo_astro.svg");
     item6.fileName = QStringLiteral("Milky_Way_Arc_Canyon.jpg");
     item6.title = QStringLiteral("Milky Way Arc over Arch Canyon");
+    item6.caption = QStringLiteral("Untouched dark sky panoramic long exposure revealing the galactic core framed through natural desert sandstone arches.");
+    item6.colorLabel = 2; // Yellow
     item6.fileSizeBytes = 18950000;
     item6.formattedFileSize = CatalogItem::formatBytes(item6.fileSizeBytes);
     item6.mimeType = QStringLiteral("image/jpeg");
@@ -521,6 +539,73 @@ void CatalogModel::addFilePaths(const QStringList &filePaths)
     addItems(newItems);
 }
 
+void CatalogModel::updateItemTitle(int index, const QString &title)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    if (m_items[index].title == title)
+    {
+        return;
+    }
+
+    m_items[index].title = title;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {TitleRole, Qt::DisplayRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemTitle(m_items[index].filePath, title);
+    }
+}
+
+void CatalogModel::updateItemCaption(int index, const QString &caption)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    if (m_items[index].caption == caption)
+    {
+        return;
+    }
+
+    m_items[index].caption = caption;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {CaptionRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemCaption(m_items[index].filePath, caption);
+    }
+}
+
+void CatalogModel::updateItemColorLabel(int index, int colorLabel)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    const int clamped = qBound(0, colorLabel, 5);
+    if (m_items[index].colorLabel == clamped)
+    {
+        return;
+    }
+
+    m_items[index].colorLabel = clamped;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {ColorLabelRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemColorLabel(m_items[index].filePath, clamped);
+    }
+}
+
 void CatalogModel::updateItemRating(int index, int rating)
 {
     if (index < 0 || index >= m_items.size())
@@ -634,6 +719,30 @@ void CatalogModel::removeTagFromItem(int index, const QString &tag)
     if (found)
     {
         updateItemTags(index, updated);
+    }
+}
+
+void CatalogModel::updateItemsTitle(const QList<int> &indices, const QString &title)
+{
+    for (int idx : indices)
+    {
+        updateItemTitle(idx, title);
+    }
+}
+
+void CatalogModel::updateItemsCaption(const QList<int> &indices, const QString &caption)
+{
+    for (int idx : indices)
+    {
+        updateItemCaption(idx, caption);
+    }
+}
+
+void CatalogModel::updateItemsColorLabel(const QList<int> &indices, int colorLabel)
+{
+    for (int idx : indices)
+    {
+        updateItemColorLabel(idx, colorLabel);
     }
 }
 

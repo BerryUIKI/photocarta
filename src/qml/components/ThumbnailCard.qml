@@ -167,10 +167,21 @@ Rectangle {
                         color: "#cbd5e1"
                     }
 
-                    Text {
-                        text: "•"
-                        font.pixelSize: 10
-                        color: "#94a3b8"
+                    Rectangle {
+                        visible: (model.colorLabel || 0) > 0
+                        width: 8
+                        height: 8
+                        radius: 4
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: {
+                            const c = model.colorLabel || 0;
+                            if (c === 1) return "#ef4444";
+                            if (c === 2) return "#eab308";
+                            if (c === 3) return "#22c55e";
+                            if (c === 4) return "#3b82f6";
+                            if (c === 5) return "#a855f7";
+                            return "transparent";
+                        }
                     }
 
                     RatingStars {
@@ -317,6 +328,72 @@ Rectangle {
                     sessionController.toggleFlaggedForSelected()
                 } else {
                     sessionController.toggleItemFlagged(root.itemIndex)
+                }
+            }
+        }
+
+        Menu {
+            title: qsTr("Set Color Label")
+
+            MenuItem {
+                text: qsTr("Red (6)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(1)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 1)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Yellow (7)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(2)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 2)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Green (8)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(3)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 3)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Blue (9)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(4)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 4)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Purple")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(5)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 5)
+                    }
+                }
+            }
+            MenuSeparator {}
+            MenuItem {
+                text: qsTr("Clear Color Label (0)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(0)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 0)
+                    }
                 }
             }
         }

@@ -19,6 +19,8 @@ struct CatalogItem
     QString filePath;
     QString fileName;
     QString title;
+    QString caption;
+    int colorLabel = 0; // 0=None, 1=Red, 2=Yellow, 3=Green, 4=Blue, 5=Purple
     qint64 fileSizeBytes = 0;
     QString formattedFileSize;
     QString mimeType;

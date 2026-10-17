@@ -87,6 +87,13 @@ bool CatalogDatabase::open(const QString &databasePath)
             close();
             return false;
         }
+
+        // Lightweight forward-compatible column migrations for existing databases
+        QSqlQuery migrationQuery(db);
+        migrationQuery.exec(QStringLiteral("ALTER TABLE items ADD COLUMN caption TEXT;"));
+        migrationQuery.exec(QStringLiteral("ALTER TABLE items ADD COLUMN color_label INTEGER DEFAULT 0;"));
+        migrationQuery.exec(QStringLiteral("CREATE INDEX IF NOT EXISTS idx_items_color_label ON items(color_label);"));
+
         loadTagCache();
         qCInfo(lcDb) << "Connected to PhotoCarta SQLite catalog at" << m_databasePath;
     }
@@ -204,6 +211,8 @@ bool CatalogDatabase::createTables()
         "  file_path TEXT UNIQUE NOT NULL,"
         "  file_name TEXT NOT NULL,"
         "  title TEXT,"
+        "  caption TEXT,"
+        "  color_label INTEGER DEFAULT 0,"
         "  file_size INTEGER NOT NULL,"
         "  mime_type TEXT,"
         "  date_taken DATETIME,"
@@ -235,6 +244,7 @@ bool CatalogDatabase::createTables()
         "CREATE INDEX IF NOT EXISTS idx_items_collection ON items(collection_id);"
         "CREATE INDEX IF NOT EXISTS idx_items_date_taken ON items(date_taken);"
         "CREATE INDEX IF NOT EXISTS idx_items_rating ON items(rating);"
+        "CREATE INDEX IF NOT EXISTS idx_items_color_label ON items(color_label);"
         "CREATE INDEX IF NOT EXISTS idx_items_file_path ON items(file_path);"
         "CREATE INDEX IF NOT EXISTS idx_collections_root ON collections(root_path);"
         // Expression index: allows instant ORDER BY COALESCE(date_taken, date_modified) DESC without temp B-Tree sort
@@ -494,11 +504,11 @@ bool CatalogDatabase::insertOrUpdateItems(const QList<CatalogItem> &items, int c
     QSqlQuery itemQuery(db);
     itemQuery.prepare(QStringLiteral(
         "INSERT INTO items ("
-        "  collection_id, file_path, file_name, title, file_size, mime_type, "
+        "  collection_id, file_path, file_name, title, caption, color_label, file_size, mime_type, "
         "  date_taken, date_modified, width, height, camera_model, lens_model, "
         "  focal_length, aperture, shutter_speed, iso, rating, is_flagged, is_missing"
         ") VALUES ("
-        "  :collection_id, :file_path, :file_name, :title, :file_size, :mime_type, "
+        "  :collection_id, :file_path, :file_name, :title, :caption, :color_label, :file_size, :mime_type, "
         "  :date_taken, :date_modified, :width, :height, :camera_model, :lens_model, "
         "  :focal_length, :aperture, :shutter_speed, :iso, :rating, :is_flagged, :is_missing"
         ") ON CONFLICT(file_path) DO UPDATE SET "
@@ -522,6 +532,8 @@ bool CatalogDatabase::insertOrUpdateItems(const QList<CatalogItem> &items, int c
         itemQuery.bindValue(QStringLiteral(":file_path"), normalized);
         itemQuery.bindValue(QStringLiteral(":file_name"), item.fileName.isEmpty() ? QFileInfo(normalized).fileName() : item.fileName);
         itemQuery.bindValue(QStringLiteral(":title"), item.title);
+        itemQuery.bindValue(QStringLiteral(":caption"), item.caption);
+        itemQuery.bindValue(QStringLiteral(":color_label"), item.colorLabel);
         itemQuery.bindValue(QStringLiteral(":file_size"), item.fileSizeBytes);
         itemQuery.bindValue(QStringLiteral(":mime_type"), item.mimeType);
         itemQuery.bindValue(QStringLiteral(":date_taken"), item.dateTaken.isValid() ? item.dateTaken : QVariant());
@@ -627,37 +639,39 @@ CatalogItem parseOptimizedItemRow(const QSqlQuery &query)
     item.filePath = query.value(2).toString();
     item.fileName = query.value(3).toString();
     item.title = query.value(4).toString();
-    item.fileSizeBytes = query.value(5).toLongLong();
+    item.caption = query.value(5).toString();
+    item.colorLabel = query.value(6).toInt();
+    item.fileSizeBytes = query.value(7).toLongLong();
     item.formattedFileSize = CatalogItem::formatBytes(item.fileSizeBytes);
-    item.mimeType = query.value(6).toString();
-    item.dateTaken = query.value(7).toDateTime();
+    item.mimeType = query.value(8).toString();
+    item.dateTaken = query.value(9).toDateTime();
     if (item.dateTaken.isValid())
     {
         item.formattedDate = item.dateTaken.toString(QStringLiteral("yyyy-MM-dd hh:mm"));
     }
-    item.fileLastModified = query.value(8).toDateTime();
+    item.fileLastModified = query.value(10).toDateTime();
     if (item.fileLastModified.isValid())
     {
         item.formattedLastModified = item.fileLastModified.toString(QStringLiteral("yyyy-MM-dd hh:mm"));
     }
-    item.dimensions = QSize(query.value(9).toInt(), query.value(10).toInt());
+    item.dimensions = QSize(query.value(11).toInt(), query.value(12).toInt());
     if (item.dimensions.isValid())
     {
         item.formattedDimensions = QStringLiteral("%1 × %2").arg(item.dimensions.width()).arg(item.dimensions.height());
     }
-    item.cameraModel = query.value(11).toString();
-    item.lensModel = query.value(12).toString();
-    item.focalLength = query.value(13).toString();
-    item.aperture = query.value(14).toString();
-    item.shutterSpeed = query.value(15).toString();
-    item.iso = query.value(16).toInt();
-    item.rating = query.value(17).toInt();
-    item.isFlagged = query.value(18).toBool();
-    item.isMissing = query.value(19).toBool();
+    item.cameraModel = query.value(13).toString();
+    item.lensModel = query.value(14).toString();
+    item.focalLength = query.value(15).toString();
+    item.aperture = query.value(16).toString();
+    item.shutterSpeed = query.value(17).toString();
+    item.iso = query.value(18).toInt();
+    item.rating = query.value(19).toInt();
+    item.isFlagged = query.value(20).toBool();
+    item.isMissing = query.value(21).toBool();
     item.isDemoFixture = false;
 
     // Direct O(1) tag assignment from GROUP_CONCAT, avoiding N+1 subqueries
-    const QString tagsConcat = query.value(20).toString();
+    const QString tagsConcat = query.value(22).toString();
     if (!tagsConcat.isEmpty())
     {
         item.tags = tagsConcat.split(QStringLiteral("|||"), Qt::SkipEmptyParts);
@@ -704,7 +718,7 @@ QList<CatalogItem> CatalogDatabase::fetchItemsPaged(int offset, int limit, int c
 
     // High performance single-pass query with GROUP_CONCAT to eliminate N+1 queries entirely
     QString sql = QStringLiteral(
-        "SELECT i.id, i.collection_id, i.file_path, i.file_name, i.title, i.file_size, i.mime_type, "
+        "SELECT i.id, i.collection_id, i.file_path, i.file_name, i.title, i.caption, i.color_label, i.file_size, i.mime_type, "
         "       i.date_taken, i.date_modified, i.width, i.height, i.camera_model, i.lens_model, "
         "       i.focal_length, i.aperture, i.shutter_speed, i.iso, i.rating, i.is_flagged, i.is_missing, "
         "       GROUP_CONCAT(t.name, '|||') AS tag_names "
@@ -772,7 +786,7 @@ CatalogItem CatalogDatabase::fetchItemByPath(const QString &filePath) const
     const QString normalized = QDir::fromNativeSeparators(filePath);
     QSqlQuery query(db);
     query.prepare(QStringLiteral(
-        "SELECT i.id, i.collection_id, i.file_path, i.file_name, i.title, i.file_size, i.mime_type, "
+        "SELECT i.id, i.collection_id, i.file_path, i.file_name, i.title, i.caption, i.color_label, i.file_size, i.mime_type, "
         "       i.date_taken, i.date_modified, i.width, i.height, i.camera_model, i.lens_model, "
         "       i.focal_length, i.aperture, i.shutter_speed, i.iso, i.rating, i.is_flagged, i.is_missing, "
         "       GROUP_CONCAT(t.name, '|||') AS tag_names "
@@ -810,6 +824,75 @@ int CatalogDatabase::itemCount() const
         return query.value(0).toInt();
     }
     return 0;
+}
+
+bool CatalogDatabase::updateItemTitle(const QString &filePath, const QString &title)
+{
+    if (!isOpen() || filePath.isEmpty())
+    {
+        return false;
+    }
+
+    const QString normalized = QDir::fromNativeSeparators(filePath);
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("UPDATE items SET title = :title WHERE file_path = :path;"));
+    query.bindValue(QStringLiteral(":title"), title);
+    query.bindValue(QStringLiteral(":path"), normalized);
+
+    if (query.exec())
+    {
+        emit itemsChanged();
+        return true;
+    }
+    m_lastError = query.lastError().text();
+    return false;
+}
+
+bool CatalogDatabase::updateItemCaption(const QString &filePath, const QString &caption)
+{
+    if (!isOpen() || filePath.isEmpty())
+    {
+        return false;
+    }
+
+    const QString normalized = QDir::fromNativeSeparators(filePath);
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("UPDATE items SET caption = :caption WHERE file_path = :path;"));
+    query.bindValue(QStringLiteral(":caption"), caption);
+    query.bindValue(QStringLiteral(":path"), normalized);
+
+    if (query.exec())
+    {
+        emit itemsChanged();
+        return true;
+    }
+    m_lastError = query.lastError().text();
+    return false;
+}
+
+bool CatalogDatabase::updateItemColorLabel(const QString &filePath, int colorLabel)
+{
+    if (!isOpen() || filePath.isEmpty())
+    {
+        return false;
+    }
+
+    const QString normalized = QDir::fromNativeSeparators(filePath);
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("UPDATE items SET color_label = :color WHERE file_path = :path;"));
+    query.bindValue(QStringLiteral(":color"), qBound(0, colorLabel, 5));
+    query.bindValue(QStringLiteral(":path"), normalized);
+
+    if (query.exec())
+    {
+        emit itemsChanged();
+        return true;
+    }
+    m_lastError = query.lastError().text();
+    return false;
 }
 
 bool CatalogDatabase::updateItemRating(const QString &filePath, int rating)

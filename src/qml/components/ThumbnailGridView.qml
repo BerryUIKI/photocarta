@@ -76,6 +76,14 @@ Item {
                     sessionController.setItemRating(selectionManager.currentIndex, rating)
                 }
                 event.accepted = true
+            } else if (event.key >= Qt.Key_6 && event.key <= Qt.Key_9 && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier))) {
+                const colorLabel = (event.key - Qt.Key_6) + 1 // 6->1 (Red), 7->2 (Yellow), 8->3 (Green), 9->4 (Blue)
+                if (selectionManager.selectedCount > 1) {
+                    sessionController.setColorLabelForSelected(colorLabel)
+                } else if (selectionManager.currentIndex >= 0) {
+                    sessionController.setItemColorLabel(selectionManager.currentIndex, colorLabel)
+                }
+                event.accepted = true
             } else if (event.key === Qt.Key_F && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier))) {
                 if (selectionManager.selectedCount > 1) {
                     sessionController.toggleFlaggedForSelected()

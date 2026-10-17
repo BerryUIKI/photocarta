@@ -107,6 +107,9 @@ public:
     Q_INVOKABLE void cancelScan();
     Q_INVOKABLE void setItemRating(int proxyIndex, int rating);
     Q_INVOKABLE void toggleItemFlagged(int proxyIndex);
+    Q_INVOKABLE void setItemTitle(int proxyIndex, const QString &title);
+    Q_INVOKABLE void setItemCaption(int proxyIndex, const QString &caption);
+    Q_INVOKABLE void setItemColorLabel(int proxyIndex, int colorLabel);
     Q_INVOKABLE void setItemTags(int proxyIndex, const QStringList &tags);
     Q_INVOKABLE void addTagToItem(int proxyIndex, const QString &tag);
     Q_INVOKABLE void removeTagFromItem(int proxyIndex, const QString &tag);
@@ -114,7 +117,12 @@ public:
     Q_INVOKABLE void clearTagFilter();
     Q_INVOKABLE void setRatingFilter(int minRating);
     Q_INVOKABLE void clearRatingFilter();
+    Q_INVOKABLE void setColorLabelFilter(int colorLabel);
+    Q_INVOKABLE void clearColorLabelFilter();
     Q_INVOKABLE void clearAllFilters();
+    Q_INVOKABLE void setTitleForSelected(const QString &title);
+    Q_INVOKABLE void setCaptionForSelected(const QString &caption);
+    Q_INVOKABLE void setColorLabelForSelected(int colorLabel);
     Q_INVOKABLE void setRatingForSelected(int rating);
     Q_INVOKABLE void setFlaggedForSelected(bool flagged);
     Q_INVOKABLE void toggleFlaggedForSelected();
@@ -201,6 +209,7 @@ public:
     Q_INVOKABLE void swapCompareItems(int slotA, int slotB);
     Q_INVOKABLE void setCompareRating(int slotIndex, int rating);
     Q_INVOKABLE void toggleCompareFlagged(int slotIndex);
+    Q_INVOKABLE void setCompareColorLabel(int slotIndex, int colorLabel);
     Q_INVOKABLE void addAdjacentToCompare(bool next = true);
 
     // Image Histogram Service

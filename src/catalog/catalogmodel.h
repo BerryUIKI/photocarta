@@ -48,6 +48,8 @@ public:
         RatingRole,
         IsFlaggedRole,
         TagsRole,
+        CaptionRole,
+        ColorLabelRole,
         ThumbnailUrlRole,
         PreviewUrlRole,
         IsDemoFixtureRole,
@@ -78,11 +80,17 @@ public:
     Q_INVOKABLE void openUrls(const QList<QUrl> &urls);
     Q_INVOKABLE void addFilePaths(const QStringList &filePaths);
     Q_INVOKABLE void addItems(const QList<CatalogItem> &items);
+    Q_INVOKABLE void updateItemTitle(int index, const QString &title);
+    Q_INVOKABLE void updateItemCaption(int index, const QString &caption);
+    Q_INVOKABLE void updateItemColorLabel(int index, int colorLabel);
     Q_INVOKABLE void updateItemRating(int index, int rating);
     Q_INVOKABLE void updateItemFlagged(int index, bool flagged);
     Q_INVOKABLE void updateItemTags(int index, const QStringList &tags);
     Q_INVOKABLE void addTagToItem(int index, const QString &tag);
     Q_INVOKABLE void removeTagFromItem(int index, const QString &tag);
+    Q_INVOKABLE void updateItemsTitle(const QList<int> &indices, const QString &title);
+    Q_INVOKABLE void updateItemsCaption(const QList<int> &indices, const QString &caption);
+    Q_INVOKABLE void updateItemsColorLabel(const QList<int> &indices, int colorLabel);
     Q_INVOKABLE void updateItemsRating(const QList<int> &indices, int rating);
     Q_INVOKABLE void updateItemsFlagged(const QList<int> &indices, bool flagged);
     Q_INVOKABLE void addTagToItems(const QList<int> &indices, const QString &tag);

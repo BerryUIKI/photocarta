@@ -106,6 +106,23 @@ void CatalogFilterModel::setMinRating(int rating)
     emit countChanged();
 }
 
+int CatalogFilterModel::colorLabelFilter() const
+{
+    return m_colorLabelFilter;
+}
+
+void CatalogFilterModel::setColorLabelFilter(int colorLabel)
+{
+    if (m_colorLabelFilter == colorLabel)
+    {
+        return;
+    }
+    m_colorLabelFilter = colorLabel;
+    emit colorLabelFilterChanged();
+    invalidateFilter();
+    emit countChanged();
+}
+
 QString CatalogFilterModel::sortCriterion() const
 {
     return m_sortCriterion;
@@ -256,17 +273,29 @@ bool CatalogFilterModel::filterAcceptsRow(int sourceRow, const QModelIndex &sour
         }
     }
 
-    // 4. Search query filter
+    // 4. Color label filter
+    if (m_colorLabelFilter > 0)
+    {
+        const int color = idx.data(CatalogModel::ColorLabelRole).toInt();
+        if (color != m_colorLabelFilter)
+        {
+            return false;
+        }
+    }
+
+    // 5. Search query filter
     if (!m_searchQuery.trimmed().isEmpty())
     {
         const QString query = m_searchQuery.trimmed();
         const QString fileName = idx.data(CatalogModel::FileNameRole).toString();
         const QString title = idx.data(CatalogModel::TitleRole).toString();
+        const QString caption = idx.data(CatalogModel::CaptionRole).toString();
         const QString camera = idx.data(CatalogModel::CameraModelRole).toString();
         const QStringList tags = idx.data(CatalogModel::TagsRole).toStringList();
 
         if (fileName.contains(query, Qt::CaseInsensitive) ||
             title.contains(query, Qt::CaseInsensitive) ||
+            caption.contains(query, Qt::CaseInsensitive) ||
             camera.contains(query, Qt::CaseInsensitive))
         {
             return true;
