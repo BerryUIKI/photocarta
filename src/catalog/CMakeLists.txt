@@ -31,6 +31,8 @@ add_library(photocarta_catalog STATIC
     metadata/exifparser.cpp
     export/imageexporter.h
     export/imageexporter.cpp
+    settings/settingsmanager.h
+    settings/settingsmanager.cpp
 )
 
 target_include_directories(photocarta_catalog PUBLIC

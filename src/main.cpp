@@ -8,6 +8,7 @@
 #include "catalog/sessioncontroller.h"
 #include "catalog/thememanager.h"
 #include "catalog/database/catalogdatabase.h"
+#include "catalog/settings/settingsmanager.h"
 #include "catalog/thumbnails/thumbnailimageprovider.h"
 
 #include <QApplication>
@@ -96,18 +97,34 @@ int main(int argc, char *argv[])
 
     const bool isSmokeTest = parser.isSet(smokeTestOption);
     const QString screenshotPath = parser.value(screenshotOption);
-    const bool isDarkTheme = (parser.value(themeOption).toLower() != QStringLiteral("light"));
     const bool startInPreview = parser.isSet(previewOption);
     const int customWidth = parser.value(widthOption).toInt();
     const int customHeight = parser.value(heightOption).toInt();
     const QString customDbPath = parser.value(databaseOption);
     const QStringList positionalFiles = parser.positionalArguments();
 
+    // Initialize Settings Manager for user preferences
+    auto *settingsManager = new SettingsManager(&app);
+    if (customWidth > 0 && customHeight > 0)
+    {
+        settingsManager->setWindowWidth(customWidth);
+        settingsManager->setWindowHeight(customHeight);
+    }
+
+    const bool cliThemeSet = parser.isSet(themeOption);
+    const bool isDarkTheme = cliThemeSet
+        ? (parser.value(themeOption).toLower() != QStringLiteral("light"))
+        : (settingsManager->theme().toLower() != QStringLiteral("light"));
+
     // Initialize SQLite Catalog Database
     auto *catalogDatabase = new CatalogDatabase(QStringLiteral("main_app_connection"), &app);
     if (!customDbPath.isEmpty())
     {
         catalogDatabase->open(customDbPath);
+    }
+    else if (!settingsManager->lastDatabasePath().isEmpty() && QFile::exists(settingsManager->lastDatabasePath()) && !isSmokeTest)
+    {
+        catalogDatabase->open(settingsManager->lastDatabasePath());
     }
     else
     {
@@ -142,6 +159,36 @@ int main(int argc, char *argv[])
 
     auto *sessionController = new SessionController(catalogModel, filterModel, selectionManager, &app);
     sessionController->setDatabase(catalogDatabase);
+
+    // Apply restored user preferences
+    sessionController->setLeftPaneVisible(settingsManager->leftPaneVisible());
+    sessionController->setRightPaneVisible(settingsManager->rightPaneVisible());
+    sessionController->setZoomFactor(settingsManager->gridZoomFactor());
+    filterModel->setSortCriterion(settingsManager->sortCriterion());
+    filterModel->setSortAscending(settingsManager->sortAscending());
+
+    // Connect auto-save bindings
+    QObject::connect(themeManager, &ThemeManager::isDarkChanged, settingsManager, [themeManager, settingsManager]() {
+        settingsManager->setTheme(themeManager->isDark() ? QStringLiteral("dark") : QStringLiteral("light"));
+    });
+    QObject::connect(sessionController, &SessionController::leftPaneVisibleChanged, settingsManager, [sessionController, settingsManager]() {
+        settingsManager->setLeftPaneVisible(sessionController->leftPaneVisible());
+    });
+    QObject::connect(sessionController, &SessionController::rightPaneVisibleChanged, settingsManager, [sessionController, settingsManager]() {
+        settingsManager->setRightPaneVisible(sessionController->rightPaneVisible());
+    });
+    QObject::connect(sessionController, &SessionController::zoomFactorChanged, settingsManager, [sessionController, settingsManager]() {
+        settingsManager->setGridZoomFactor(sessionController->zoomFactor());
+    });
+    QObject::connect(filterModel, &CatalogFilterModel::sortCriterionChanged, settingsManager, [filterModel, settingsManager]() {
+        settingsManager->setSortCriterion(filterModel->sortCriterion());
+    });
+    QObject::connect(filterModel, &CatalogFilterModel::sortAscendingChanged, settingsManager, [filterModel, settingsManager]() {
+        settingsManager->setSortAscending(filterModel->sortAscending());
+    });
+    QObject::connect(catalogDatabase, &CatalogDatabase::databaseOpened, settingsManager, [settingsManager](const QString &path) {
+        settingsManager->setLastDatabasePath(path);
+    });
 
     QObject::connect(sessionController, &SessionController::currentCollectionChanged, collectionModel, [sessionController, collectionModel]() {
         collectionModel->setActiveCollectionId(sessionController->currentCollectionId());
@@ -183,6 +230,7 @@ int main(int argc, char *argv[])
     rootCtx->setContextProperty(QStringLiteral("selectionManager"), selectionManager);
     rootCtx->setContextProperty(QStringLiteral("themeManager"), themeManager);
     rootCtx->setContextProperty(QStringLiteral("sessionController"), sessionController);
+    rootCtx->setContextProperty(QStringLiteral("settingsManager"), settingsManager);
 
     // QML Import Paths
     engine.addImportPath(QStringLiteral("qrc:/"));

@@ -12,13 +12,21 @@ ApplicationWindow {
     id: window
 
     title: qsTr("PhotoCarta — Photo Management")
-    width: 1280
-    height: 800
+    width: settingsManager ? settingsManager.windowWidth : 1280
+    height: settingsManager ? settingsManager.windowHeight : 800
     minimumWidth: 840
     minimumHeight: 560
     visible: true
-    visibility: sessionController.isFullscreen ? Window.FullScreen : Window.Windowed
+    visibility: sessionController.isFullscreen
+                ? Window.FullScreen
+                : (settingsManager && settingsManager.windowMaximized ? Window.Maximized : Window.Windowed)
     color: themeManager.background
+
+    onClosing: {
+        if (settingsManager && !sessionController.isFullscreen) {
+            settingsManager.saveWindowGeometry(x, y, width, height, visibility === Window.Maximized)
+        }
+    }
 
     header: AppToolbar {
         id: appToolbar
