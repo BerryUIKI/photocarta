@@ -33,6 +33,8 @@ add_library(photocarta_catalog STATIC
     export/imageexporter.cpp
     settings/settingsmanager.h
     settings/settingsmanager.cpp
+    histogram/histogramcalculator.h
+    histogram/histogramcalculator.cpp
 )
 
 target_include_directories(photocarta_catalog PUBLIC

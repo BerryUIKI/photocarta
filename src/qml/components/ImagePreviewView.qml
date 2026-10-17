@@ -176,6 +176,34 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 12
 
+            // Histogram HUD Toggle Button
+            Rectangle {
+                width: 28
+                height: 28
+                radius: 6
+                anchors.verticalCenter: parent.verticalCenter
+                color: sessionController.histogramVisible ? themeManager.surfaceSelected : (histBtnMouse.containsMouse ? "#222533" : "transparent")
+                border.color: sessionController.histogramVisible ? themeManager.accent : (histBtnMouse.containsMouse ? "#3b4256" : "transparent")
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "📊"
+                    font.pixelSize: 13
+                }
+
+                ToolTip.visible: histBtnMouse.containsMouse
+                ToolTip.text: sessionController.histogramVisible ? qsTr("Hide Histogram HUD (H)") : qsTr("Show Histogram HUD (H)")
+
+                MouseArea {
+                    id: histBtnMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: sessionController.toggleHistogramVisible()
+                }
+            }
+
             // Interactive Flag Button
             Rectangle {
                 width: 28
@@ -496,6 +524,20 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: selectionManager.selectNext()
             }
+        }
+
+        // ==========================================
+        // FLOATING HISTOGRAM HUD PANEL
+        // ==========================================
+        HistogramView {
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: 14
+            width: 250
+            compact: true
+            visible: sessionController.histogramVisible
+            z: 25
+            opacity: 0.94
         }
 
         // ==========================================
@@ -1058,6 +1100,9 @@ Item {
             event.accepted = true;
         } else if (event.key === Qt.Key_T) {
             root.filmstripVisible = !root.filmstripVisible;
+            event.accepted = true;
+        } else if (event.key === Qt.Key_H) {
+            sessionController.toggleHistogramVisible();
             event.accepted = true;
         } else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_5 && (event.modifiers & Qt.ControlModifier)) {
             sessionController.setItemRating(selectionManager.currentIndex, event.key - Qt.Key_0);

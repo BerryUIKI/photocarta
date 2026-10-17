@@ -38,6 +38,7 @@ add_photocarta_test(test_collection_model)
 add_photocarta_test(test_image_exporter)
 add_photocarta_test(test_settings_manager)
 add_photocarta_test(test_compare_mode)
+add_photocarta_test(test_histogram_calculator)
 
 # Automated startup smoke tests for main application executable
 add_test(NAME app_startup_smoke_test

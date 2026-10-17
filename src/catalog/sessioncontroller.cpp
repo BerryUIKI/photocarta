@@ -3,6 +3,7 @@
 
 #include "sessioncontroller.h"
 #include "export/imageexporter.h"
+#include "histogram/histogramcalculator.h"
 
 #include <algorithm>
 #include <QClipboard>
@@ -27,6 +28,7 @@ SessionController::SessionController(CatalogModel *model,
     , m_selectionManager(selectionManager)
     , m_scanner(new DirectoryScanner(this))
     , m_exporter(new ImageExporter(this))
+    , m_histogramCalculator(new HistogramCalculator(this))
 {
     if (m_model)
     {
@@ -39,8 +41,30 @@ SessionController::SessionController(CatalogModel *model,
         connect(m_selectionManager, &SelectionManager::selectionChanged, this, [this]() {
             resetViewerZoom();
             resetViewerRotation();
+            if (m_selectionManager && m_selectionManager->hasSelection())
+            {
+                const QVariantMap item = m_selectionManager->selectedItem();
+                const QString filePath = item.value(QStringLiteral("filePath")).toString();
+                const QString previewUrl = item.value(QStringLiteral("previewUrl")).toString();
+                const QString targetPath = !filePath.isEmpty() ? filePath : previewUrl;
+                if (!targetPath.isEmpty())
+                {
+                    requestHistogram(targetPath);
+                }
+            }
+            else
+            {
+                m_currentHistogram.clear();
+                emit currentHistogramChanged();
+            }
         });
     }
+
+    connect(m_histogramCalculator, &HistogramCalculator::histogramReady, this, [this](const QString &filePath, const QVariantMap &data) {
+        Q_UNUSED(filePath)
+        m_currentHistogram = data;
+        emit currentHistogramChanged();
+    });
 
     connect(m_scanner, &DirectoryScanner::scanStarted, this, [this](const QString &path) {
         m_scanProgress = 0;
@@ -1546,6 +1570,80 @@ void SessionController::addAdjacentToCompare(bool next)
         m_compareProxyRows.append(candidate);
         emit compareItemsChanged();
     }
+}
+
+QVariantMap SessionController::currentHistogram() const
+{
+    return m_currentHistogram;
+}
+
+QString SessionController::histogramChannel() const
+{
+    return m_histogramChannel;
+}
+
+void SessionController::setHistogramChannel(const QString &channel)
+{
+    const QString lowered = channel.toLower();
+    if (m_histogramChannel == lowered)
+    {
+        return;
+    }
+    m_histogramChannel = lowered;
+    emit histogramChannelChanged();
+}
+
+bool SessionController::histogramLogScale() const
+{
+    return m_histogramLogScale;
+}
+
+void SessionController::setHistogramLogScale(bool logScale)
+{
+    if (m_histogramLogScale == logScale)
+    {
+        return;
+    }
+    m_histogramLogScale = logScale;
+    emit histogramLogScaleChanged();
+}
+
+void SessionController::toggleHistogramLogScale()
+{
+    setHistogramLogScale(!m_histogramLogScale);
+}
+
+bool SessionController::histogramVisible() const
+{
+    return m_histogramVisible;
+}
+
+void SessionController::setHistogramVisible(bool visible)
+{
+    if (m_histogramVisible == visible)
+    {
+        return;
+    }
+    m_histogramVisible = visible;
+    emit histogramVisibleChanged();
+}
+
+void SessionController::toggleHistogramVisible()
+{
+    setHistogramVisible(!m_histogramVisible);
+}
+
+void SessionController::requestHistogram(const QString &filePath)
+{
+    if (m_histogramCalculator && !filePath.isEmpty())
+    {
+        m_histogramCalculator->requestHistogram(filePath);
+    }
+}
+
+HistogramCalculator *SessionController::histogramCalculator() const
+{
+    return m_histogramCalculator;
 }
 
 } // namespace PhotoCarta

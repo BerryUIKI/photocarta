@@ -14,6 +14,7 @@
         <file alias="components/TagChip.qml">../qml/components/TagChip.qml</file>
         <file alias="components/ExportDialog.qml">../qml/components/ExportDialog.qml</file>
         <file alias="components/PhotoCompareView.qml">../qml/components/PhotoCompareView.qml</file>
+        <file alias="components/HistogramView.qml">../qml/components/HistogramView.qml</file>
         <file alias="styles/Theme.qml">../qml/styles/Theme.qml</file>
         <file alias="styles/qmldir">../qml/styles/qmldir</file>
     </qresource>
