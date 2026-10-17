@@ -4,8 +4,11 @@
 #include "sessioncontroller.h"
 
 #include <algorithm>
+#include <QClipboard>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QImage>
 #include <QQuickWindow>
 
@@ -413,6 +416,215 @@ void SessionController::clearAllFilters()
     }
     selectCollection(0);
     setStatusMessage(QStringLiteral("All filters cleared (%1 photos)").arg(m_filterModel ? m_filterModel->count() : 0));
+}
+
+void SessionController::setRatingForSelected(int rating)
+{
+    if (!m_selectionManager || !m_model)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        return;
+    }
+
+    QList<int> srcRows;
+    srcRows.reserve(proxyRows.size());
+    for (int proxyRow : proxyRows)
+    {
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (srcRow >= 0)
+        {
+            srcRows.append(srcRow);
+        }
+    }
+
+    m_model->updateItemsRating(srcRows, rating);
+    setStatusMessage(QStringLiteral("Rating %1★ applied to %2 photo(s)").arg(rating).arg(srcRows.size()));
+}
+
+void SessionController::setFlaggedForSelected(bool flagged)
+{
+    if (!m_selectionManager || !m_model)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        return;
+    }
+
+    QList<int> srcRows;
+    srcRows.reserve(proxyRows.size());
+    for (int proxyRow : proxyRows)
+    {
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (srcRow >= 0)
+        {
+            srcRows.append(srcRow);
+        }
+    }
+
+    m_model->updateItemsFlagged(srcRows, flagged);
+    setStatusMessage(flagged
+        ? QStringLiteral("Flagged %1 photo(s)").arg(srcRows.size())
+        : QStringLiteral("Unflagged %1 photo(s)").arg(srcRows.size()));
+}
+
+void SessionController::toggleFlaggedForSelected()
+{
+    if (!m_selectionManager || !m_model)
+    {
+        return;
+    }
+
+    const bool currentFlagged = m_selectionManager->selectedItem().value(QStringLiteral("isFlagged")).toBool();
+    setFlaggedForSelected(!currentFlagged);
+}
+
+void SessionController::addTagToSelected(const QString &tag)
+{
+    if (!m_selectionManager || !m_model)
+    {
+        return;
+    }
+
+    const QString trimmed = tag.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        return;
+    }
+
+    QList<int> srcRows;
+    srcRows.reserve(proxyRows.size());
+    for (int proxyRow : proxyRows)
+    {
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (srcRow >= 0)
+        {
+            srcRows.append(srcRow);
+        }
+    }
+
+    m_model->addTagToItems(srcRows, trimmed);
+    setStatusMessage(QStringLiteral("Tag '%1' added to %2 photo(s)").arg(trimmed).arg(srcRows.size()));
+}
+
+void SessionController::removeTagFromSelected(const QString &tag)
+{
+    if (!m_selectionManager || !m_model)
+    {
+        return;
+    }
+
+    const QString trimmed = tag.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        return;
+    }
+
+    QList<int> srcRows;
+    srcRows.reserve(proxyRows.size());
+    for (int proxyRow : proxyRows)
+    {
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (srcRow >= 0)
+        {
+            srcRows.append(srcRow);
+        }
+    }
+
+    m_model->removeTagFromItems(srcRows, trimmed);
+    setStatusMessage(QStringLiteral("Tag '%1' removed from %2 photo(s)").arg(trimmed).arg(srcRows.size()));
+}
+
+void SessionController::copySelectedPathsToClipboard()
+{
+    if (!m_selectionManager || !m_filterModel)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        return;
+    }
+
+    QStringList paths;
+    for (int proxyRow : proxyRows)
+    {
+        const QModelIndex idx = m_filterModel->index(proxyRow, 0);
+        const QString p = idx.data(CatalogModel::FilePathRole).toString();
+        if (!p.isEmpty())
+        {
+            paths.append(p);
+        }
+    }
+
+    if (!paths.isEmpty())
+    {
+        QClipboard *clipboard = QGuiApplication::clipboard();
+        if (clipboard)
+        {
+            clipboard->setText(paths.join(QLatin1Char('\n')));
+            setStatusMessage(QStringLiteral("Copied %1 path(s) to clipboard").arg(paths.size()));
+        }
+    }
+}
+
+void SessionController::revealInFileManager(int proxyIndex)
+{
+    if (!m_filterModel)
+    {
+        return;
+    }
+
+    if (proxyIndex < 0 && m_selectionManager)
+    {
+        proxyIndex = m_selectionManager->currentIndex();
+    }
+
+    if (proxyIndex < 0 || proxyIndex >= m_filterModel->rowCount())
+    {
+        return;
+    }
+
+    const QModelIndex idx = m_filterModel->index(proxyIndex, 0);
+    const QString filePath = idx.data(CatalogModel::FilePathRole).toString();
+    if (filePath.isEmpty() || filePath.startsWith(QStringLiteral("qrc:")))
+    {
+        setStatusMessage(QStringLiteral("Demo fixture has no physical file on disk."));
+        return;
+    }
+
+    const QFileInfo info(filePath);
+    if (!info.exists())
+    {
+        setStatusMessage(QStringLiteral("File does not exist on disk: %1").arg(filePath));
+        return;
+    }
+
+    const QString dirPath = info.dir().absolutePath();
+    QDesktopServices::openUrl(QUrl::fromLocalFile(dirPath));
+    setStatusMessage(QStringLiteral("Opened folder: %1").arg(dirPath));
 }
 
 void SessionController::loadDatabaseCatalog(int collectionId)

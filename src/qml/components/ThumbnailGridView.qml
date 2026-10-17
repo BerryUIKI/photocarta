@@ -63,11 +63,32 @@ Item {
         }
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Home) {
-                selectionManager.selectFirst();
-                event.accepted = true;
+                selectionManager.selectFirst()
+                event.accepted = true
             } else if (event.key === Qt.Key_End) {
-                selectionManager.selectLast();
-                event.accepted = true;
+                selectionManager.selectLast()
+                event.accepted = true
+            } else if (event.key >= Qt.Key_0 && event.key <= Qt.Key_5 && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier))) {
+                const rating = event.key - Qt.Key_0
+                if (selectionManager.selectedCount > 1) {
+                    sessionController.setRatingForSelected(rating)
+                } else if (selectionManager.currentIndex >= 0) {
+                    sessionController.setItemRating(selectionManager.currentIndex, rating)
+                }
+                event.accepted = true
+            } else if (event.key === Qt.Key_F && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier))) {
+                if (selectionManager.selectedCount > 1) {
+                    sessionController.toggleFlaggedForSelected()
+                } else if (selectionManager.currentIndex >= 0) {
+                    sessionController.toggleItemFlagged(selectionManager.currentIndex)
+                }
+                event.accepted = true
+            } else if (event.key === Qt.Key_A && (event.modifiers & Qt.ControlModifier)) {
+                selectionManager.selectAll()
+                event.accepted = true
+            } else if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
+                sessionController.copySelectedPathsToClipboard()
+                event.accepted = true
             }
         }
 

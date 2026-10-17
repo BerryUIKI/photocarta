@@ -188,19 +188,158 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
 
         onClicked: (mouse) => {
-            if (mouse.modifiers & Qt.ControlModifier) {
+            if (mouse.button === Qt.RightButton) {
+                if (!root.isSelected) {
+                    selectionManager.select(root.itemIndex)
+                }
+                cardContextMenu.popup()
+                return
+            }
+
+            if (mouse.modifiers & Qt.ShiftModifier) {
+                selectionManager.selectRange(root.itemIndex)
+            } else if (mouse.modifiers & Qt.ControlModifier) {
                 selectionManager.toggleSelect(root.itemIndex)
             } else {
                 selectionManager.select(root.itemIndex)
             }
         }
 
-        onDoubleClicked: {
-            selectionManager.select(root.itemIndex)
-            sessionController.setPreviewMode(true)
-            root.activated()
+        onDoubleClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton) {
+                selectionManager.select(root.itemIndex)
+                sessionController.setPreviewMode(true)
+                root.activated()
+            }
+        }
+    }
+
+    Menu {
+        id: cardContextMenu
+
+        MenuItem {
+            text: qsTr("Preview Photo (Enter)")
+            onTriggered: {
+                selectionManager.select(root.itemIndex)
+                sessionController.setPreviewMode(true)
+            }
+        }
+
+        MenuSeparator {}
+
+        Menu {
+            title: qsTr("Set Rating")
+
+            MenuItem {
+                text: "★ 5"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(5)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 5)
+                    }
+                }
+            }
+            MenuItem {
+                text: "★ 4"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(4)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 4)
+                    }
+                }
+            }
+            MenuItem {
+                text: "★ 3"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(3)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 3)
+                    }
+                }
+            }
+            MenuItem {
+                text: "★ 2"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(2)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 2)
+                    }
+                }
+            }
+            MenuItem {
+                text: "★ 1"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(1)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 1)
+                    }
+                }
+            }
+            MenuSeparator {}
+            MenuItem {
+                text: qsTr("Clear Rating (0)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(0)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 0)
+                    }
+                }
+            }
+        }
+
+        MenuItem {
+            text: (selectionManager.selectedCount > 1 && root.isSelected)
+                  ? qsTr("Toggle Flag for Selected (F)")
+                  : (model.isFlagged ? qsTr("Unflag Photo (F)") : qsTr("Flag as Favorite (F)"))
+            onTriggered: {
+                if (selectionManager.selectedCount > 1 && root.isSelected) {
+                    sessionController.toggleFlaggedForSelected()
+                } else {
+                    sessionController.toggleItemFlagged(root.itemIndex)
+                }
+            }
+        }
+
+        MenuSeparator {}
+
+        MenuItem {
+            text: qsTr("Copy File Path (Ctrl+C)")
+            onTriggered: {
+                if (selectionManager.selectedCount > 1 && root.isSelected) {
+                    sessionController.copySelectedPathsToClipboard()
+                } else {
+                    selectionManager.select(root.itemIndex)
+                    sessionController.copySelectedPathsToClipboard()
+                }
+            }
+        }
+
+        MenuItem {
+            text: qsTr("Reveal in File Manager")
+            enabled: !model.isDemoFixture
+            onTriggered: sessionController.revealInFileManager(root.itemIndex)
+        }
+
+        MenuSeparator {}
+
+        MenuItem {
+            text: qsTr("Select All (Ctrl+A)")
+            onTriggered: selectionManager.selectAll()
+        }
+
+        MenuItem {
+            text: qsTr("Deselect All (Esc)")
+            enabled: selectionManager.hasSelection
+            onTriggered: selectionManager.clearSelection()
         }
     }
 }
