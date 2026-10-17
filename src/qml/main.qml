@@ -90,6 +90,11 @@ ApplicationWindow {
         }
     }
 
+    // Modal Export Dialog
+    ExportDialog {
+        id: exportDialog
+    }
+
     // Real Native File Dialog for Temporary Session
     FileDialog {
         id: openDialog
@@ -152,6 +157,15 @@ ApplicationWindow {
     Shortcut {
         sequence: "F11"
         onActivated: sessionController.toggleFullscreen()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+E"
+        onActivated: {
+            if (selectionManager.hasSelection || selectionManager.selectedCount > 0) {
+                sessionController.openExportDialog()
+            }
+        }
     }
 
     Shortcut {

@@ -35,6 +35,7 @@ add_photocarta_test(test_directory_scanner)
 add_photocarta_test(test_thumbnail_cache)
 add_photocarta_test(test_exif_parser)
 add_photocarta_test(test_collection_model)
+add_photocarta_test(test_image_exporter)
 
 # Automated startup smoke tests for main application executable
 add_test(NAME app_startup_smoke_test

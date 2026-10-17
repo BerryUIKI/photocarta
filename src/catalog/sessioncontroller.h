@@ -15,6 +15,7 @@
 #include <QUrl>
 
 class QQuickWindow;
+class ImageExporter;
 
 namespace PhotoCarta
 {
@@ -39,6 +40,10 @@ class SessionController : public QObject
     Q_PROPERTY(double viewerZoom READ viewerZoom WRITE setViewerZoom NOTIFY viewerZoomChanged)
     Q_PROPERTY(int viewerRotation READ viewerRotation WRITE setViewerRotation NOTIFY viewerRotationChanged)
     Q_PROPERTY(bool isFullscreen READ isFullscreen WRITE setFullscreen NOTIFY fullscreenChanged)
+    Q_PROPERTY(bool isExporting READ isExporting NOTIFY exportProgressChanged)
+    Q_PROPERTY(int exportProgress READ exportProgress NOTIFY exportProgressChanged)
+    Q_PROPERTY(int exportTotal READ exportTotal NOTIFY exportProgressChanged)
+    Q_PROPERTY(bool exportDialogOpen READ exportDialogOpen WRITE setExportDialogOpen NOTIFY exportDialogOpenChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -133,6 +138,19 @@ public:
     Q_INVOKABLE void setFullscreen(bool fullscreen);
     Q_INVOKABLE void toggleFullscreen();
 
+    // Batch Photo Export
+    [[nodiscard]] bool isExporting() const;
+    [[nodiscard]] int exportProgress() const;
+    [[nodiscard]] int exportTotal() const;
+    [[nodiscard]] bool exportDialogOpen() const;
+    void setExportDialogOpen(bool open);
+
+    Q_INVOKABLE void openExportDialog();
+    Q_INVOKABLE void closeExportDialog();
+    Q_INVOKABLE void startExportSelected(const QVariantMap &options);
+    Q_INVOKABLE void cancelExport();
+    Q_INVOKABLE QString defaultExportDirectory() const;
+
 signals:
     void previewModeChanged();
     void leftPaneVisibleChanged();
@@ -149,6 +167,9 @@ signals:
     void viewerRotationChanged();
     void fullscreenChanged();
     void screenshotCompleted(const QString &path, bool success);
+    void exportProgressChanged();
+    void exportDialogOpenChanged();
+    void exportCompleted(int successCount, int failCount, const QString &outputDir);
 
 private slots:
     void onModelCountChanged();
@@ -179,6 +200,9 @@ private:
     double m_viewerZoom = 1.0;
     int m_viewerRotation = 0;
     bool m_isFullscreen = false;
+
+    ImageExporter *m_exporter = nullptr;
+    bool m_exportDialogOpen = false;
 };
 
 } // namespace PhotoCarta

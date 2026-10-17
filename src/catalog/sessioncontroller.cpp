@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "sessioncontroller.h"
+#include "export/imageexporter.h"
 
 #include <algorithm>
 #include <QClipboard>
@@ -11,6 +12,7 @@
 #include <QGuiApplication>
 #include <QImage>
 #include <QQuickWindow>
+#include <QStandardPaths>
 
 namespace PhotoCarta
 {
@@ -24,6 +26,7 @@ SessionController::SessionController(CatalogModel *model,
     , m_filterModel(filterModel)
     , m_selectionManager(selectionManager)
     , m_scanner(new DirectoryScanner(this))
+    , m_exporter(new ImageExporter(this))
 {
     if (m_model)
     {
@@ -49,6 +52,25 @@ SessionController::SessionController(CatalogModel *model,
     connect(m_scanner, &DirectoryScanner::progress, this, &SessionController::onScanProgress);
     connect(m_scanner, &DirectoryScanner::scanFinished, this, &SessionController::onScanFinished);
     connect(m_scanner, &DirectoryScanner::scanCanceled, this, &SessionController::onScanCanceled);
+
+    connect(m_exporter, &ImageExporter::progressChanged, this, [this](int completed, int total) {
+        Q_UNUSED(completed)
+        Q_UNUSED(total)
+        emit exportProgressChanged();
+    });
+    connect(m_exporter, &ImageExporter::exportStateChanged, this, [this]() {
+        emit exportProgressChanged();
+    });
+    connect(m_exporter, &ImageExporter::exportFinished, this, [this](const ExportResult &result) {
+        emit exportProgressChanged();
+        setStatusMessage(QStringLiteral("Export complete: %1 exported, %2 failed")
+                         .arg(result.successCount).arg(result.failCount));
+        emit exportCompleted(result.successCount, result.failCount, QString());
+    });
+    connect(m_exporter, &ImageExporter::exportCanceled, this, [this]() {
+        emit exportProgressChanged();
+        setStatusMessage(QStringLiteral("Export canceled"));
+    });
 }
 
 SessionController::~SessionController() = default;
@@ -1016,6 +1038,129 @@ void SessionController::onScanCanceled()
 {
     emit isScanningChanged();
     setStatusMessage(QStringLiteral("Scan canceled"));
+}
+
+bool SessionController::isExporting() const
+{
+    return m_exporter ? m_exporter->isExporting() : false;
+}
+
+int SessionController::exportProgress() const
+{
+    return m_exporter ? m_exporter->progress() : 0;
+}
+
+int SessionController::exportTotal() const
+{
+    return m_exporter ? m_exporter->total() : 0;
+}
+
+bool SessionController::exportDialogOpen() const
+{
+    return m_exportDialogOpen;
+}
+
+void SessionController::setExportDialogOpen(bool open)
+{
+    if (m_exportDialogOpen != open)
+    {
+        m_exportDialogOpen = open;
+        emit exportDialogOpenChanged();
+    }
+}
+
+void SessionController::openExportDialog()
+{
+    setExportDialogOpen(true);
+}
+
+void SessionController::closeExportDialog()
+{
+    setExportDialogOpen(false);
+}
+
+QString SessionController::defaultExportDirectory() const
+{
+    return QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+}
+
+void SessionController::cancelExport()
+{
+    if (m_exporter)
+    {
+        m_exporter->cancel();
+    }
+}
+
+void SessionController::startExportSelected(const QVariantMap &options)
+{
+    if (!m_exporter || !m_model)
+    {
+        return;
+    }
+
+    if (m_exporter->isExporting())
+    {
+        return;
+    }
+
+    ExportSettings settings;
+    settings.outputDirectory = options.value(QStringLiteral("outputDirectory")).toString();
+    if (settings.outputDirectory.isEmpty())
+    {
+        settings.outputDirectory = defaultExportDirectory() + QStringLiteral("/PhotoCarta_Export");
+    }
+
+    // Clean up file:// prefix if user picked via QML FolderDialog
+    if (settings.outputDirectory.startsWith(QStringLiteral("file:///")))
+    {
+        settings.outputDirectory = QUrl(settings.outputDirectory).toLocalFile();
+    }
+
+    settings.format = options.value(QStringLiteral("format"), QStringLiteral("original")).toString();
+    settings.quality = options.value(QStringLiteral("quality"), 90).toInt();
+    settings.maxDimension = options.value(QStringLiteral("maxDimension"), 0).toInt();
+    settings.preserveMetadata = options.value(QStringLiteral("preserveMetadata"), true).toBool();
+    settings.filenamePrefix = options.value(QStringLiteral("filenamePrefix")).toString();
+    settings.filenameSuffix = options.value(QStringLiteral("filenameSuffix")).toString();
+    settings.overwriteExisting = options.value(QStringLiteral("overwriteExisting"), false).toBool();
+
+    QList<CatalogItem> itemsToExport;
+
+    const QList<int> proxyRows = m_selectionManager ? m_selectionManager->selectedProxyRows() : QList<int>();
+    if (proxyRows.isEmpty())
+    {
+        if (m_selectionManager && m_selectionManager->currentIndex() >= 0)
+        {
+            const int srcRow = sourceRowForProxy(m_selectionManager->currentIndex());
+            if (const CatalogItem *item = m_model->itemAt(srcRow))
+            {
+                itemsToExport.append(*item);
+            }
+        }
+    }
+    else
+    {
+        for (int pRow : proxyRows)
+        {
+            const int srcRow = sourceRowForProxy(pRow);
+            if (const CatalogItem *item = m_model->itemAt(srcRow))
+            {
+                itemsToExport.append(*item);
+            }
+        }
+    }
+
+    if (itemsToExport.isEmpty())
+    {
+        showError(QStringLiteral("No photos selected for export."));
+        return;
+    }
+
+    if (m_exporter->startExport(itemsToExport, settings))
+    {
+        setStatusMessage(QStringLiteral("Exporting %1 photo(s)...").arg(itemsToExport.size()));
+    }
 }
 
 } // namespace PhotoCarta

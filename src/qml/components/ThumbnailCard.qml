@@ -332,6 +332,15 @@ Rectangle {
         MenuSeparator {}
 
         MenuItem {
+            text: (selectionManager.selectedCount > 1 && root.isSelected)
+                  ? qsTr("Export Selected Photos... (Ctrl+E)")
+                  : qsTr("Export Photo... (Ctrl+E)")
+            onTriggered: sessionController.openExportDialog()
+        }
+
+        MenuSeparator {}
+
+        MenuItem {
             text: qsTr("Select All (Ctrl+A)")
             onTriggered: selectionManager.selectAll()
         }
