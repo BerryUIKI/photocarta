@@ -39,6 +39,11 @@ private:
 
 void TestImageExporter::initTestCase()
 {
+    qRegisterMetaType<PhotoCarta::ExportResult>("PhotoCarta::ExportResult");
+    qRegisterMetaType<PhotoCarta::ExportResult>("ExportResult");
+    qRegisterMetaType<PhotoCarta::ExportSettings>("PhotoCarta::ExportSettings");
+    qRegisterMetaType<PhotoCarta::ExportSettings>("ExportSettings");
+
     m_tempDir = std::make_unique<QTemporaryDir>();
     QVERIFY(m_tempDir->isValid());
 

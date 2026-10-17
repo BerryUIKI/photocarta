@@ -15,10 +15,11 @@
 #include <QUrl>
 
 class QQuickWindow;
-class ImageExporter;
 
 namespace PhotoCarta
 {
+
+class ImageExporter;
 
 class SessionController : public QObject
 {
