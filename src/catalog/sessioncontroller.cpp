@@ -355,6 +355,56 @@ void SessionController::loadDatabaseCatalog(int collectionId)
     }
 }
 
+void SessionController::openDatabase(const QString &databasePath)
+{
+    if (!m_database)
+    {
+        return;
+    }
+
+    if (!m_database->open(databasePath))
+    {
+        showError(QStringLiteral("Failed to open database: %1").arg(m_database->lastError()));
+        return;
+    }
+
+    if (m_model)
+    {
+        m_model->loadFromDatabase();
+    }
+
+    const QString schemaDesc = m_database->isDigikamDatabase()
+                                   ? QStringLiteral("digiKam SQLite Catalog")
+                                   : QStringLiteral("PhotoCarta SQLite Catalog");
+    setStatusMessage(QStringLiteral("Connected to %1 (%2 photos)").arg(schemaDesc).arg(m_database->itemCount()));
+    emit databaseStateChanged();
+    emit sessionTypeChanged();
+}
+
+void SessionController::importDigikamDatabase(const QString &databasePath)
+{
+    if (!m_database || !m_database->isOpen())
+    {
+        showError(QStringLiteral("Target catalog database is not open"));
+        return;
+    }
+
+    if (!m_database->importFromDigikamDatabase(databasePath))
+    {
+        showError(QStringLiteral("Failed to import digiKam database: %1").arg(m_database->lastError()));
+        return;
+    }
+
+    if (m_model)
+    {
+        m_model->loadFromDatabase();
+    }
+
+    setStatusMessage(QStringLiteral("Successfully imported digiKam catalog (%1 photos total)").arg(m_database->itemCount()));
+    emit databaseStateChanged();
+    emit sessionTypeChanged();
+}
+
 void SessionController::selectCollection(int collectionId)
 {
     m_currentCollectionId = collectionId;

@@ -90,6 +90,8 @@ public:
     Q_INVOKABLE void toggleItemFlagged(int proxyIndex);
     Q_INVOKABLE void setItemTags(int proxyIndex, const QStringList &tags);
     Q_INVOKABLE void loadDatabaseCatalog(int collectionId = 0);
+    Q_INVOKABLE void openDatabase(const QString &databasePath);
+    Q_INVOKABLE void importDigikamDatabase(const QString &databasePath);
     Q_INVOKABLE void selectCollection(int collectionId);
     Q_INVOKABLE void rescanCollection(int collectionId);
     Q_INVOKABLE void removeCollection(int collectionId);

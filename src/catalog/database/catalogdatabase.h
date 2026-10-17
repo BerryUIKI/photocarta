@@ -6,6 +6,7 @@
 #include "catalogitem.h"
 
 #include <QDateTime>
+#include <QHash>
 #include <QList>
 #include <QObject>
 #include <QSqlDatabase>
@@ -14,6 +15,15 @@
 
 namespace PhotoCarta
 {
+
+class DigikamDatabaseAdapter;
+
+enum class DatabaseSchemaType
+{
+    PhotoCarta,
+    Digikam,
+    Unknown
+};
 
 struct CollectionRecord
 {
@@ -43,6 +53,12 @@ public:
     [[nodiscard]] QString databasePath() const;
     [[nodiscard]] QString lastError() const;
 
+    // Schema detection & digiKam adapter
+    [[nodiscard]] DatabaseSchemaType schemaType() const;
+    [[nodiscard]] bool isDigikamDatabase() const;
+    [[nodiscard]] DigikamDatabaseAdapter *digikamAdapter() const;
+    void setDigikamRootPathMapping(int rootId, const QString &localPath);
+
     // Collection management
     int addOrGetCollection(const QString &rootPath,
                            const QString &name = QString(),
@@ -57,6 +73,7 @@ public:
     bool insertOrUpdateItems(const QList<CatalogItem> &items, int collectionId = 0);
     [[nodiscard]] QList<CatalogItem> fetchAllItems() const;
     [[nodiscard]] QList<CatalogItem> fetchItemsByCollection(int collectionId) const;
+    [[nodiscard]] QList<CatalogItem> fetchItemsPaged(int offset, int limit, int collectionId = 0) const;
     [[nodiscard]] CatalogItem fetchItemByPath(const QString &filePath) const;
     [[nodiscard]] int itemCount() const;
 
@@ -65,6 +82,9 @@ public:
     bool updateItemFlagged(const QString &filePath, bool flagged);
     bool setItemTags(const QString &filePath, const QStringList &tags);
     [[nodiscard]] QStringList allTags() const;
+
+    // Migration / Synchronization
+    bool importFromDigikamDatabase(const QString &digikamDatabasePath);
 
 signals:
     void databaseOpened(const QString &path);
@@ -75,10 +95,14 @@ signals:
 private:
     bool createTables();
     bool executePragmas();
+    void loadTagCache() const;
 
     QString m_connectionName;
     QString m_databasePath;
     QString m_lastError;
+    DatabaseSchemaType m_schemaType = DatabaseSchemaType::PhotoCarta;
+    DigikamDatabaseAdapter *m_digikamAdapter = nullptr;
+    mutable QHash<QString, int> m_tagCache;
 };
 
 } // namespace PhotoCarta

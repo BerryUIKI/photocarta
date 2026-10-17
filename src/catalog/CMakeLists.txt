@@ -18,6 +18,8 @@ add_library(photocarta_catalog STATIC
     sessioncontroller.cpp
     database/catalogdatabase.h
     database/catalogdatabase.cpp
+    database/digikamdatabaseadapter.h
+    database/digikamdatabaseadapter.cpp
     ingestion/directoryscanner.h
     ingestion/directoryscanner.cpp
     thumbnails/thumbnailcache.h
