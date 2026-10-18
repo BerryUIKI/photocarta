@@ -129,12 +129,12 @@ bool XmpSidecar::readFromData(const QByteArray &data, XmpMetadata &outMetadata)
 
         if (reader.isStartElement())
         {
-            const QStringRef name = reader.name();
+            const QString name = reader.name().toString();
 
             // 1. Inspect attributes on elements like rdf:Description
             for (const QXmlStreamAttribute &attr : reader.attributes())
             {
-                const QStringRef attrName = attr.name();
+                const QString attrName = attr.name().toString();
                 const QString val = attr.value().toString().trimmed();
 
                 if (attrName == QStringLiteral("Rating"))
@@ -223,7 +223,7 @@ bool XmpSidecar::readFromData(const QByteArray &data, XmpMetadata &outMetadata)
         }
         else if (reader.isEndElement())
         {
-            const QStringRef name = reader.name();
+            const QString name = reader.name().toString();
             if (name == QStringLiteral("title") || name == QStringLiteral("description") || name == QStringLiteral("subject")
                 || name == QStringLiteral("TagsList"))
             {
