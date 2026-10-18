@@ -246,6 +246,51 @@ Rectangle {
             }
         }
 
+        // Batch Rename Photos Button
+        Rectangle {
+            width: renameBtnRow.implicitWidth + 16
+            height: 32
+            radius: themeManager.radiusMd
+            anchors.verticalCenter: parent.verticalCenter
+            color: renameToolbarMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
+            border.color: themeManager.border
+            border.width: 1
+            opacity: (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0) ? 1.0 : 0.5
+
+            Row {
+                id: renameBtnRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "🏷️"
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Rename...")
+                    font.pixelSize: themeManager.fontSm
+                    font.weight: Font.Medium
+                    color: themeManager.textPrimary
+                    visible: root.width > 1160
+                }
+            }
+
+            ToolTip.visible: renameToolbarMouse.containsMouse
+            ToolTip.text: qsTr("Batch rename photos using custom templates (F2)")
+
+            MouseArea {
+                id: renameToolbarMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                enabled: (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0)
+                onClicked: sessionController.openBatchRenameDialog()
+            }
+        }
+
         // View Mode Switcher: Grid vs Loupe vs Compare
         Rectangle {
             width: 102

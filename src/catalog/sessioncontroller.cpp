@@ -4,6 +4,7 @@
 #include "sessioncontroller.h"
 #include "export/imageexporter.h"
 #include "histogram/histogramcalculator.h"
+#include "organization/batchrenamer.h"
 
 #include <algorithm>
 #include <QClipboard>
@@ -1918,6 +1919,159 @@ void SessionController::importXmpSidecarsForSelected()
 
     const int count = m_model->readXmpSidecars(srcRows);
     setStatusMessage(QStringLiteral("Imported metadata from %1 XMP sidecar(s)").arg(count));
+}
+
+bool SessionController::batchRenameDialogOpen() const
+{
+    return m_batchRenameDialogOpen;
+}
+
+void SessionController::setBatchRenameDialogOpen(bool open)
+{
+    if (m_batchRenameDialogOpen != open)
+    {
+        m_batchRenameDialogOpen = open;
+        emit batchRenameDialogOpenChanged();
+    }
+}
+
+void SessionController::openBatchRenameDialog()
+{
+    setBatchRenameDialogOpen(true);
+}
+
+void SessionController::closeBatchRenameDialog()
+{
+    setBatchRenameDialogOpen(false);
+}
+
+QVariantList SessionController::previewBatchRename(const QVariantMap &ruleOptions)
+{
+    QVariantList resultList;
+    if (!m_model)
+    {
+        return resultList;
+    }
+
+    QList<CatalogItem> items;
+    QList<int> sourceIndices;
+
+    const QList<int> selectedProxies = m_selectionManager ? m_selectionManager->selectedProxyRows() : QList<int>();
+    if (!selectedProxies.isEmpty())
+    {
+        for (int pRow : selectedProxies)
+        {
+            const int sRow = sourceRowForProxy(pRow);
+            if (sRow >= 0 && sRow < m_model->count())
+            {
+                const CatalogItem *item = m_model->itemAt(sRow);
+                if (item)
+                {
+                    items.append(*item);
+                    sourceIndices.append(sRow);
+                }
+            }
+        }
+    }
+    else if (m_selectionManager && m_selectionManager->currentIndex() >= 0)
+    {
+        const int sRow = sourceRowForProxy(m_selectionManager->currentIndex());
+        if (sRow >= 0 && sRow < m_model->count())
+        {
+            const CatalogItem *item = m_model->itemAt(sRow);
+            if (item)
+            {
+                items.append(*item);
+                sourceIndices.append(sRow);
+            }
+        }
+    }
+    else if (m_filterModel && m_filterModel->rowCount() > 0)
+    {
+        for (int pRow = 0; pRow < m_filterModel->rowCount(); ++pRow)
+        {
+            const int sRow = sourceRowForProxy(pRow);
+            if (sRow >= 0 && sRow < m_model->count())
+            {
+                const CatalogItem *item = m_model->itemAt(sRow);
+                if (item)
+                {
+                    items.append(*item);
+                    sourceIndices.append(sRow);
+                }
+            }
+        }
+    }
+
+    const RenameRule rule = RenameRule::fromVariantMap(ruleOptions);
+    const QList<RenameCandidate> candidates = BatchRenamer::generatePreview(items, rule);
+
+    for (int i = 0; i < candidates.size(); ++i)
+    {
+        RenameCandidate c = candidates.at(i);
+        if (i < sourceIndices.size())
+        {
+            c.sourceIndex = sourceIndices.at(i);
+        }
+        resultList.append(c.toVariantMap());
+    }
+
+    return resultList;
+}
+
+QVariantMap SessionController::executeBatchRename(const QVariantMap &ruleOptions)
+{
+    if (!m_model)
+    {
+        return QVariantMap();
+    }
+
+    const QVariantList preview = previewBatchRename(ruleOptions);
+    QList<RenameCandidate> candidates;
+    candidates.reserve(preview.size());
+    for (const auto &v : preview)
+    {
+        candidates.append(RenameCandidate::fromVariantMap(v.toMap()));
+    }
+
+    const BatchRenameResult result = BatchRenamer::executeRename(candidates);
+
+    // Synchronize renamed paths back into CatalogModel and CatalogDatabase
+    for (const auto &success : result.successfulRenames)
+    {
+        if (success.sourceIndex >= 0 && success.sourceIndex < m_model->count())
+        {
+            m_model->updateItemFilePath(success.sourceIndex, success.proposedFilePath, success.proposedFileName);
+        }
+        else
+        {
+            for (int r = 0; r < m_model->count(); ++r)
+            {
+                const CatalogItem *item = m_model->itemAt(r);
+                if (item && (item->id == success.itemId || item->filePath == success.originalFilePath))
+                {
+                    m_model->updateItemFilePath(r, success.proposedFilePath, success.proposedFileName);
+                    break;
+                }
+            }
+        }
+    }
+
+    if (result.failCount == 0 && result.successCount > 0)
+    {
+        setStatusMessage(QStringLiteral("Successfully renamed %1 photo(s)").arg(result.successCount));
+    }
+    else if (result.successCount > 0)
+    {
+        setStatusMessage(QStringLiteral("Renamed %1 photo(s) with %2 error(s)").arg(result.successCount).arg(result.failCount));
+    }
+    else if (result.failCount > 0)
+    {
+        setStatusMessage(QStringLiteral("Batch rename failed for %1 photo(s)").arg(result.failCount));
+    }
+
+    emit batchRenameCompleted(result.successCount, result.failCount);
+    return result.toVariantMap();
 }
 
 } // namespace PhotoCarta

@@ -448,6 +448,18 @@ Rectangle {
 
         MenuItem {
             text: (selectionManager.selectedCount > 1 && root.isSelected)
+                  ? qsTr("Batch Rename Selected... (F2)")
+                  : qsTr("Batch Rename... (F2)")
+            onTriggered: {
+                if (!root.isSelected) {
+                    selectionManager.setCurrentIndex(root.itemIndex)
+                }
+                sessionController.openBatchRenameDialog()
+            }
+        }
+
+        MenuItem {
+            text: (selectionManager.selectedCount > 1 && root.isSelected)
                   ? qsTr("Export Selected Photos... (Ctrl+E)")
                   : qsTr("Export Photo... (Ctrl+E)")
             onTriggered: sessionController.openExportDialog()
