@@ -826,6 +826,33 @@ int CatalogDatabase::itemCount() const
     return 0;
 }
 
+bool CatalogDatabase::updateItemPath(const QString &oldFilePath, const QString &newFilePath, const QString &newFileName)
+{
+    if (!isOpen() || oldFilePath.isEmpty() || newFilePath.isEmpty())
+    {
+        return false;
+    }
+
+    const QString oldNormalized = QDir::fromNativeSeparators(oldFilePath);
+    const QString newNormalized = QDir::fromNativeSeparators(newFilePath);
+    const QString finalFileName = newFileName.isEmpty() ? QFileInfo(newNormalized).fileName() : newFileName;
+
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("UPDATE items SET file_path = :new_path, file_name = :new_name WHERE file_path = :old_path;"));
+    query.bindValue(QStringLiteral(":new_path"), newNormalized);
+    query.bindValue(QStringLiteral(":new_name"), finalFileName);
+    query.bindValue(QStringLiteral(":old_path"), oldNormalized);
+
+    if (query.exec())
+    {
+        emit itemsChanged();
+        return true;
+    }
+    m_lastError = query.lastError().text();
+    return false;
+}
+
 bool CatalogDatabase::updateItemTitle(const QString &filePath, const QString &title)
 {
     if (!isOpen() || filePath.isEmpty())

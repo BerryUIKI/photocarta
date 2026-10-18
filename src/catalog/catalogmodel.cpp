@@ -541,6 +541,30 @@ void CatalogModel::addFilePaths(const QStringList &filePaths)
     addItems(newItems);
 }
 
+bool CatalogModel::updateItemFilePath(int index, const QString &newFilePath, const QString &newFileName)
+{
+    if (index < 0 || index >= m_items.size() || newFilePath.isEmpty())
+    {
+        return false;
+    }
+
+    CatalogItem &item = m_items[index];
+    const QString oldFilePath = item.filePath;
+    item.filePath = newFilePath;
+    item.fileName = newFileName.isEmpty() ? QFileInfo(newFilePath).fileName() : newFileName;
+    item.previewUrl = QUrl::fromLocalFile(newFilePath);
+    item.thumbnailUrl = QUrl(QStringLiteral("image://thumbnail/") + newFilePath);
+
+    if (m_database && m_database->isOpen() && !item.isDemoFixture)
+    {
+        m_database->updateItemPath(oldFilePath, newFilePath, item.fileName);
+    }
+
+    const QModelIndex modelIdx = createIndex(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {FilePathRole, FileNameRole, PreviewUrlRole, ThumbnailUrlRole, ItemMapRole});
+    return true;
+}
+
 void CatalogModel::updateItemTitle(int index, const QString &title)
 {
     if (index < 0 || index >= m_items.size())

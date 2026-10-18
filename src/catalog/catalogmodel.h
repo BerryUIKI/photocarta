@@ -80,6 +80,7 @@ public:
     Q_INVOKABLE void openUrls(const QList<QUrl> &urls);
     Q_INVOKABLE void addFilePaths(const QStringList &filePaths);
     Q_INVOKABLE void addItems(const QList<CatalogItem> &items);
+    Q_INVOKABLE bool updateItemFilePath(int index, const QString &newFilePath, const QString &newFileName);
     Q_INVOKABLE void updateItemTitle(int index, const QString &title);
     Q_INVOKABLE void updateItemCaption(int index, const QString &caption);
     Q_INVOKABLE void updateItemColorLabel(int index, int colorLabel);

@@ -37,6 +37,8 @@ add_library(photocarta_catalog STATIC
     settings/settingsmanager.cpp
     histogram/histogramcalculator.h
     histogram/histogramcalculator.cpp
+    organization/batchrenamer.h
+    organization/batchrenamer.cpp
 )
 
 target_include_directories(photocarta_catalog PUBLIC

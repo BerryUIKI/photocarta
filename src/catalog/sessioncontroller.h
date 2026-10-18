@@ -59,6 +59,7 @@ class SessionController : public QObject
     Q_PROPERTY(bool histogramLogScale READ histogramLogScale WRITE setHistogramLogScale NOTIFY histogramLogScaleChanged)
     Q_PROPERTY(bool histogramVisible READ histogramVisible WRITE setHistogramVisible NOTIFY histogramVisibleChanged)
     Q_PROPERTY(bool xmpSyncEnabled READ xmpSyncEnabled WRITE setXmpSyncEnabled NOTIFY xmpSyncEnabledChanged)
+    Q_PROPERTY(bool batchRenameDialogOpen READ batchRenameDialogOpen WRITE setBatchRenameDialogOpen NOTIFY batchRenameDialogOpenChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -234,6 +235,14 @@ public:
     Q_INVOKABLE void exportXmpSidecar(int proxyIndex);
     Q_INVOKABLE void importXmpSidecar(int proxyIndex);
 
+    // Batch Photo Renamer
+    [[nodiscard]] bool batchRenameDialogOpen() const;
+    void setBatchRenameDialogOpen(bool open);
+    Q_INVOKABLE void openBatchRenameDialog();
+    Q_INVOKABLE void closeBatchRenameDialog();
+    Q_INVOKABLE QVariantList previewBatchRename(const QVariantMap &ruleOptions);
+    Q_INVOKABLE QVariantMap executeBatchRename(const QVariantMap &ruleOptions);
+
 signals:
     void previewModeChanged();
     void leftPaneVisibleChanged();
@@ -265,6 +274,8 @@ signals:
     void histogramLogScaleChanged();
     void histogramVisibleChanged();
     void xmpSyncEnabledChanged();
+    void batchRenameDialogOpenChanged();
+    void batchRenameCompleted(int successCount, int failCount);
 
 private slots:
     void onModelCountChanged();
@@ -316,6 +327,7 @@ private:
     bool m_histogramLogScale = false;
     bool m_histogramVisible = true;
     bool m_xmpSyncEnabled = true;
+    bool m_batchRenameDialogOpen = false;
 };
 
 } // namespace PhotoCarta

@@ -108,6 +108,11 @@ ApplicationWindow {
         id: exportDialog
     }
 
+    // Modal Batch Rename Dialog
+    BatchRenameDialog {
+        id: batchRenameDialog
+    }
+
     // Real Native File Dialog for Temporary Session
     FileDialog {
         id: openDialog
@@ -177,6 +182,15 @@ ApplicationWindow {
         onActivated: {
             if (selectionManager.hasSelection || selectionManager.selectedCount > 0) {
                 sessionController.openExportDialog()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "F2"
+        onActivated: {
+            if (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0) {
+                sessionController.openBatchRenameDialog()
             }
         }
     }

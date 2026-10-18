@@ -78,6 +78,7 @@ public:
     [[nodiscard]] int itemCount() const;
 
     // Metadata persistence
+    bool updateItemPath(const QString &oldFilePath, const QString &newFilePath, const QString &newFileName);
     bool updateItemTitle(const QString &filePath, const QString &title);
     bool updateItemCaption(const QString &filePath, const QString &caption);
     bool updateItemColorLabel(const QString &filePath, int colorLabel);
