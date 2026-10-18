@@ -99,6 +99,13 @@ public:
     Q_INVOKABLE void setCollectionAvailable(const QString &rootPath, bool available);
     Q_INVOKABLE void clearSession();
 
+    [[nodiscard]] bool xmpSyncEnabled() const;
+    void setXmpSyncEnabled(bool enabled);
+    Q_INVOKABLE bool writeXmpSidecar(int index);
+    Q_INVOKABLE bool readXmpSidecar(int index);
+    Q_INVOKABLE int writeXmpSidecars(const QList<int> &indices);
+    Q_INVOKABLE int readXmpSidecars(const QList<int> &indices);
+
 signals:
     void countChanged();
     void availableTagsChanged();
@@ -111,6 +118,7 @@ private:
 
     QList<CatalogItem> m_items;
     class CatalogDatabase *m_database = nullptr;
+    bool m_xmpSyncEnabled = false;
 };
 
 } // namespace PhotoCarta

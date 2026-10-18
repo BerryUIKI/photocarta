@@ -58,6 +58,7 @@ class SessionController : public QObject
     Q_PROPERTY(QString histogramChannel READ histogramChannel WRITE setHistogramChannel NOTIFY histogramChannelChanged)
     Q_PROPERTY(bool histogramLogScale READ histogramLogScale WRITE setHistogramLogScale NOTIFY histogramLogScaleChanged)
     Q_PROPERTY(bool histogramVisible READ histogramVisible WRITE setHistogramVisible NOTIFY histogramVisibleChanged)
+    Q_PROPERTY(bool xmpSyncEnabled READ xmpSyncEnabled WRITE setXmpSyncEnabled NOTIFY xmpSyncEnabledChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -225,6 +226,14 @@ public:
     Q_INVOKABLE void requestHistogram(const QString &filePath);
     [[nodiscard]] HistogramCalculator *histogramCalculator() const;
 
+    // XMP Sidecar Metadata Sync
+    [[nodiscard]] bool xmpSyncEnabled() const;
+    Q_INVOKABLE void setXmpSyncEnabled(bool enabled);
+    Q_INVOKABLE void exportXmpSidecarsForSelected();
+    Q_INVOKABLE void importXmpSidecarsForSelected();
+    Q_INVOKABLE void exportXmpSidecar(int proxyIndex);
+    Q_INVOKABLE void importXmpSidecar(int proxyIndex);
+
 signals:
     void previewModeChanged();
     void leftPaneVisibleChanged();
@@ -255,6 +264,7 @@ signals:
     void histogramChannelChanged();
     void histogramLogScaleChanged();
     void histogramVisibleChanged();
+    void xmpSyncEnabledChanged();
 
 private slots:
     void onModelCountChanged();
@@ -305,6 +315,7 @@ private:
     QString m_histogramChannel = QStringLiteral("rgb");
     bool m_histogramLogScale = false;
     bool m_histogramVisible = true;
+    bool m_xmpSyncEnabled = true;
 };
 
 } // namespace PhotoCarta

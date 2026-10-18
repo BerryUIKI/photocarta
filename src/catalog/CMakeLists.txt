@@ -29,6 +29,8 @@ add_library(photocarta_catalog STATIC
     metadata/exifdata.h
     metadata/exifparser.h
     metadata/exifparser.cpp
+    metadata/xmpsidecar.h
+    metadata/xmpsidecar.cpp
     export/imageexporter.h
     export/imageexporter.cpp
     settings/settingsmanager.h

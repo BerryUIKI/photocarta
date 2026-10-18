@@ -34,6 +34,7 @@ SessionController::SessionController(CatalogModel *model,
     {
         connect(m_model, &CatalogModel::countChanged, this, &SessionController::onModelCountChanged);
         connect(m_model, &CatalogModel::fileLoadError, this, &SessionController::onFileLoadError);
+        m_model->setXmpSyncEnabled(m_xmpSyncEnabled);
     }
 
     if (m_selectionManager)
@@ -1800,6 +1801,123 @@ void SessionController::requestHistogram(const QString &filePath)
 HistogramCalculator *SessionController::histogramCalculator() const
 {
     return m_histogramCalculator;
+}
+
+bool SessionController::xmpSyncEnabled() const
+{
+    return m_xmpSyncEnabled;
+}
+
+void SessionController::setXmpSyncEnabled(bool enabled)
+{
+    if (m_xmpSyncEnabled == enabled)
+    {
+        return;
+    }
+    m_xmpSyncEnabled = enabled;
+    if (m_model)
+    {
+        m_model->setXmpSyncEnabled(enabled);
+    }
+    emit xmpSyncEnabledChanged();
+}
+
+void SessionController::exportXmpSidecar(int proxyIndex)
+{
+    if (!m_model)
+    {
+        return;
+    }
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (srcRow >= 0)
+    {
+        if (m_model->writeXmpSidecar(srcRow))
+        {
+            setStatusMessage(QStringLiteral("Exported XMP sidecar for photo"));
+        }
+    }
+}
+
+void SessionController::importXmpSidecar(int proxyIndex)
+{
+    if (!m_model)
+    {
+        return;
+    }
+    const int srcRow = sourceRowForProxy(proxyIndex);
+    if (srcRow >= 0)
+    {
+        if (m_model->readXmpSidecar(srcRow))
+        {
+            setStatusMessage(QStringLiteral("Imported metadata from XMP sidecar"));
+        }
+    }
+}
+
+void SessionController::exportXmpSidecarsForSelected()
+{
+    if (!m_model || !m_selectionManager)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        const int curr = m_selectionManager->currentIndex();
+        if (curr >= 0)
+        {
+            exportXmpSidecar(curr);
+        }
+        return;
+    }
+
+    QList<int> srcRows;
+    srcRows.reserve(proxyRows.size());
+    for (int pRow : proxyRows)
+    {
+        const int sRow = sourceRowForProxy(pRow);
+        if (sRow >= 0)
+        {
+            srcRows.append(sRow);
+        }
+    }
+
+    const int count = m_model->writeXmpSidecars(srcRows);
+    setStatusMessage(QStringLiteral("Exported %1 XMP sidecar(s)").arg(count));
+}
+
+void SessionController::importXmpSidecarsForSelected()
+{
+    if (!m_model || !m_selectionManager)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        const int curr = m_selectionManager->currentIndex();
+        if (curr >= 0)
+        {
+            importXmpSidecar(curr);
+        }
+        return;
+    }
+
+    QList<int> srcRows;
+    srcRows.reserve(proxyRows.size());
+    for (int pRow : proxyRows)
+    {
+        const int sRow = sourceRowForProxy(pRow);
+        if (sRow >= 0)
+        {
+            srcRows.append(sRow);
+        }
+    }
+
+    const int count = m_model->readXmpSidecars(srcRows);
+    setStatusMessage(QStringLiteral("Imported metadata from %1 XMP sidecar(s)").arg(count));
 }
 
 } // namespace PhotoCarta

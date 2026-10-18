@@ -40,6 +40,7 @@ class SettingsManager : public QObject
     Q_PROPERTY(int windowY READ windowY WRITE setWindowY NOTIFY windowGeometryChanged)
     Q_PROPERTY(bool windowMaximized READ windowMaximized WRITE setWindowMaximized NOTIFY windowGeometryChanged)
     Q_PROPERTY(bool filmstripVisible READ filmstripVisible WRITE setFilmstripVisible NOTIFY filmstripVisibleChanged)
+    Q_PROPERTY(bool xmpSidecarSyncEnabled READ xmpSidecarSyncEnabled WRITE setXmpSidecarSyncEnabled NOTIFY xmpSidecarSyncEnabledChanged)
 
 public:
     explicit SettingsManager(QObject *parent = nullptr);
@@ -101,6 +102,10 @@ public:
     [[nodiscard]] bool filmstripVisible() const;
     void setFilmstripVisible(bool visible);
 
+    // Metadata & XMP Sidecars
+    [[nodiscard]] bool xmpSidecarSyncEnabled() const;
+    void setXmpSidecarSyncEnabled(bool enabled);
+
     Q_INVOKABLE void saveWindowGeometry(int x, int y, int width, int height, bool maximized);
     Q_INVOKABLE void resetToDefaults();
 
@@ -115,6 +120,7 @@ signals:
     void lastCollectionIdChanged(int id);
     void windowGeometryChanged();
     void filmstripVisibleChanged(bool visible);
+    void xmpSidecarSyncEnabledChanged(bool enabled);
 
 private:
     std::unique_ptr<QSettings> m_settings;
@@ -133,6 +139,7 @@ private:
     int m_windowY = -1;
     bool m_windowMaximized = false;
     bool m_filmstripVisible = true;
+    bool m_xmpSidecarSyncEnabled = true;
 };
 
 } // namespace PhotoCarta

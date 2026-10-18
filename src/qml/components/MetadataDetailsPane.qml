@@ -539,6 +539,65 @@ Rectangle {
                         onClicked: sessionController.openExportDialog()
                     }
                 }
+
+                Row {
+                    width: parent.width
+                    spacing: 8
+
+                    Rectangle {
+                        width: (parent.width - 8) / 2
+                        height: 32
+                        radius: themeManager.radiusSm
+                        color: batchSaveXmpMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
+                        border.color: themeManager.border
+                        border.width: 1
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text { text: "💾"; font.pixelSize: 11 }
+                            Text { text: qsTr("Save XMP"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
+                        }
+
+                        ToolTip.visible: batchSaveXmpMouse.containsMouse
+                        ToolTip.text: qsTr("Write metadata to companion .xmp sidecar files")
+
+                        MouseArea {
+                            id: batchSaveXmpMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: sessionController.exportXmpSidecarsForSelected()
+                        }
+                    }
+
+                    Rectangle {
+                        width: (parent.width - 8) / 2
+                        height: 32
+                        radius: themeManager.radiusSm
+                        color: batchReloadXmpMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
+                        border.color: themeManager.border
+                        border.width: 1
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text { text: "🔄"; font.pixelSize: 11 }
+                            Text { text: qsTr("Reload XMP"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
+                        }
+
+                        ToolTip.visible: batchReloadXmpMouse.containsMouse
+                        ToolTip.text: qsTr("Reload metadata from companion .xmp sidecars")
+
+                        MouseArea {
+                            id: batchReloadXmpMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: sessionController.importXmpSidecarsForSelected()
+                        }
+                    }
+                }
             }
 
             // Populated Single Photo Metadata Pane
@@ -809,6 +868,127 @@ Rectangle {
                         width: parent.width
                         Text { width: 90; text: qsTr("Modified:"); font.pixelSize: 11; color: themeManager.textSecondary }
                         Text { width: parent.width - 90; text: root.item.formattedLastModified ? root.item.formattedLastModified : "-"; font.pixelSize: 11; color: themeManager.textPrimary }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: themeManager.border
+                }
+
+                // XMP SIDECAR SECTION
+                Text {
+                    text: qsTr("XMP SIDECAR")
+                    font.pixelSize: themeManager.fontXs
+                    font.weight: Font.Bold
+                    color: themeManager.textMuted
+                    font.letterSpacing: 1.2
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 8
+
+                    Row {
+                        width: parent.width
+                        spacing: 8
+
+                        Rectangle {
+                            width: (parent.width - 8) / 2
+                            height: 28
+                            radius: themeManager.radiusSm
+                            color: exportXmpMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
+                            border.color: themeManager.border
+                            border.width: 1
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 4
+                                Text { text: "💾"; font.pixelSize: 10 }
+                                Text { text: qsTr("Save XMP"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
+                            }
+
+                            ToolTip.visible: exportXmpMouse.containsMouse
+                            ToolTip.text: qsTr("Write metadata to companion .xmp sidecar file")
+
+                            MouseArea {
+                                id: exportXmpMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: sessionController.exportXmpSidecarsForSelected()
+                            }
+                        }
+
+                        Rectangle {
+                            width: (parent.width - 8) / 2
+                            height: 28
+                            radius: themeManager.radiusSm
+                            color: importXmpMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
+                            border.color: themeManager.border
+                            border.width: 1
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 4
+                                Text { text: "🔄"; font.pixelSize: 10 }
+                                Text { text: qsTr("Reload XMP"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
+                            }
+
+                            ToolTip.visible: importXmpMouse.containsMouse
+                            ToolTip.text: qsTr("Reload metadata from companion .xmp sidecar file")
+
+                            MouseArea {
+                                id: importXmpMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: sessionController.importXmpSidecarsForSelected()
+                            }
+                        }
+                    }
+
+                    // Auto-sync toggle
+                    Row {
+                        spacing: 8
+                        Rectangle {
+                            width: 14
+                            height: 14
+                            radius: 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: sessionController.xmpSyncEnabled ? themeManager.accent : themeManager.surfaceElevated
+                            border.color: sessionController.xmpSyncEnabled ? themeManager.accent : themeManager.border
+                            border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: sessionController.xmpSyncEnabled
+                                text: "✓"
+                                font.pixelSize: 10
+                                font.weight: Font.Bold
+                                color: "#ffffff"
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: sessionController.setXmpSyncEnabled(!sessionController.xmpSyncEnabled)
+                            }
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Auto-sync edits with .xmp sidecar")
+                            font.pixelSize: 11
+                            color: themeManager.textSecondary
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: sessionController.setXmpSyncEnabled(!sessionController.xmpSyncEnabled)
+                            }
+                        }
                     }
                 }
 
