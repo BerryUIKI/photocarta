@@ -3,6 +3,7 @@
 
 #include "directoryscanner.h"
 #include "../metadata/exifparser.h"
+#include "../metadata/xmpsidecar.h"
 
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -142,6 +143,45 @@ CatalogItem DirectoryScanner::inspectFile(const QString &filePath)
         {
             item.dimensions = exif.dimensions;
             item.formattedDimensions = QString::asprintf("%d × %d", exif.dimensions.width(), exif.dimensions.height());
+        }
+    }
+
+    // Inspect companion XMP sidecar if available (<file>.<ext>.xmp or <file>.xmp)
+    if (XmpSidecar::hasSidecar(absPath))
+    {
+        XmpMetadata xmp;
+        const QString sidecarPath = XmpSidecar::sidecarPathForImage(absPath, true);
+        if (XmpSidecar::readFromFile(sidecarPath, xmp))
+        {
+            if (!xmp.title.isEmpty())
+            {
+                item.title = xmp.title;
+            }
+            if (!xmp.caption.isEmpty())
+            {
+                item.caption = xmp.caption;
+            }
+            if (xmp.rating > 0)
+            {
+                item.rating = xmp.rating;
+            }
+            if (xmp.colorLabel > 0)
+            {
+                item.colorLabel = xmp.colorLabel;
+            }
+            if (xmp.isFlagged)
+            {
+                item.isFlagged = true;
+            }
+            if (!xmp.tags.isEmpty())
+            {
+                item.tags = xmp.tags;
+            }
+            if (xmp.dateTaken.isValid())
+            {
+                item.dateTaken = xmp.dateTaken;
+                item.formattedDate = xmp.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+            }
         }
     }
 

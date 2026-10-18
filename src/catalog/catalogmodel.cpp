@@ -4,7 +4,9 @@
 #include "catalogmodel.h"
 #include "database/catalogdatabase.h"
 #include "metadata/exifparser.h"
+#include "metadata/xmpsidecar.h"
 
+#include <QFile>
 #include <QFileInfo>
 #include <QImageReader>
 #include <QMimeDatabase>
@@ -559,6 +561,11 @@ void CatalogModel::updateItemTitle(int index, const QString &title)
     {
         m_database->updateItemTitle(m_items[index].filePath, title);
     }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
+    }
 }
 
 void CatalogModel::updateItemCaption(int index, const QString &caption)
@@ -580,6 +587,11 @@ void CatalogModel::updateItemCaption(int index, const QString &caption)
     if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
     {
         m_database->updateItemCaption(m_items[index].filePath, caption);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
     }
 }
 
@@ -604,6 +616,11 @@ void CatalogModel::updateItemColorLabel(int index, int colorLabel)
     {
         m_database->updateItemColorLabel(m_items[index].filePath, clamped);
     }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
+    }
 }
 
 void CatalogModel::updateItemRating(int index, int rating)
@@ -625,6 +642,11 @@ void CatalogModel::updateItemRating(int index, int rating)
     if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
     {
         m_database->updateItemRating(m_items[index].filePath, rating);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
     }
 }
 
@@ -648,6 +670,11 @@ void CatalogModel::updateItemFlagged(int index, bool flagged)
     {
         m_database->updateItemFlagged(m_items[index].filePath, flagged);
     }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
+    }
 }
 
 void CatalogModel::updateItemTags(int index, const QStringList &tags)
@@ -665,6 +692,11 @@ void CatalogModel::updateItemTags(int index, const QStringList &tags)
     if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
     {
         m_database->setItemTags(m_items[index].filePath, tags);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
     }
 }
 
@@ -879,6 +911,118 @@ void CatalogModel::clearSession()
     emit countChanged();
     emit availableTagsChanged();
     emit sessionLoaded(0);
+}
+
+bool CatalogModel::xmpSyncEnabled() const
+{
+    return m_xmpSyncEnabled;
+}
+
+void CatalogModel::setXmpSyncEnabled(bool enabled)
+{
+    m_xmpSyncEnabled = enabled;
+}
+
+bool CatalogModel::writeXmpSidecar(int index)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    const CatalogItem &item = m_items[index];
+    if (item.isDemoFixture || item.filePath.startsWith(QStringLiteral("qrc:/")) || !QFile::exists(item.filePath))
+    {
+        return false;
+    }
+
+    XmpMetadata xmp;
+    xmp.title = item.title;
+    xmp.caption = item.caption;
+    xmp.rating = item.rating;
+    xmp.colorLabel = item.colorLabel;
+    xmp.isFlagged = item.isFlagged;
+    xmp.tags = item.tags;
+    xmp.dateTaken = item.dateTaken;
+
+    const QString sidecarPath = XmpSidecar::sidecarPathForImage(item.filePath, false);
+    return XmpSidecar::writeToFile(sidecarPath, xmp);
+}
+
+bool CatalogModel::readXmpSidecar(int index)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    const CatalogItem &item = m_items[index];
+    if (item.isDemoFixture || item.filePath.startsWith(QStringLiteral("qrc:/")))
+    {
+        return false;
+    }
+
+    if (!XmpSidecar::hasSidecar(item.filePath))
+    {
+        return false;
+    }
+
+    const QString sidecarPath = XmpSidecar::sidecarPathForImage(item.filePath, true);
+    XmpMetadata xmp;
+    if (!XmpSidecar::readFromFile(sidecarPath, xmp))
+    {
+        return false;
+    }
+
+    if (!xmp.title.isEmpty())
+    {
+        updateItemTitle(index, xmp.title);
+    }
+    if (!xmp.caption.isEmpty())
+    {
+        updateItemCaption(index, xmp.caption);
+    }
+    if (xmp.rating > 0)
+    {
+        updateItemRating(index, xmp.rating);
+    }
+    if (xmp.colorLabel > 0)
+    {
+        updateItemColorLabel(index, xmp.colorLabel);
+    }
+    updateItemFlagged(index, xmp.isFlagged);
+    if (!xmp.tags.isEmpty())
+    {
+        updateItemTags(index, xmp.tags);
+    }
+
+    return true;
+}
+
+int CatalogModel::writeXmpSidecars(const QList<int> &indices)
+{
+    int count = 0;
+    for (int idx : indices)
+    {
+        if (writeXmpSidecar(idx))
+        {
+            ++count;
+        }
+    }
+    return count;
+}
+
+int CatalogModel::readXmpSidecars(const QList<int> &indices)
+{
+    int count = 0;
+    for (int idx : indices)
+    {
+        if (readXmpSidecar(idx))
+        {
+            ++count;
+        }
+    }
+    return count;
 }
 
 } // namespace PhotoCarta

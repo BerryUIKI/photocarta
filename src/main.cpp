@@ -190,6 +190,14 @@ int main(int argc, char *argv[])
         settingsManager->setLastDatabasePath(path);
     });
 
+    sessionController->setXmpSyncEnabled(settingsManager->xmpSidecarSyncEnabled());
+    QObject::connect(sessionController, &SessionController::xmpSyncEnabledChanged, settingsManager, [sessionController, settingsManager]() {
+        settingsManager->setXmpSidecarSyncEnabled(sessionController->xmpSyncEnabled());
+    });
+    QObject::connect(settingsManager, &SettingsManager::xmpSidecarSyncEnabledChanged, sessionController, [sessionController, settingsManager]() {
+        sessionController->setXmpSyncEnabled(settingsManager->xmpSidecarSyncEnabled());
+    });
+
     QObject::connect(sessionController, &SessionController::currentCollectionChanged, collectionModel, [sessionController, collectionModel]() {
         collectionModel->setActiveCollectionId(sessionController->currentCollectionId());
     });

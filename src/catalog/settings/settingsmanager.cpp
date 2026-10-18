@@ -41,6 +41,7 @@ void SettingsManager::load()
     m_windowY = m_settings->value(QStringLiteral("window/y"), -1).toInt();
     m_windowMaximized = m_settings->value(QStringLiteral("window/maximized"), false).toBool();
     m_filmstripVisible = m_settings->value(QStringLiteral("viewer/filmstripVisible"), true).toBool();
+    m_xmpSidecarSyncEnabled = m_settings->value(QStringLiteral("metadata/xmpSidecarSyncEnabled"), true).toBool();
 }
 
 void SettingsManager::sync()
@@ -304,6 +305,25 @@ void SettingsManager::setFilmstripVisible(bool visible)
     }
 }
 
+bool SettingsManager::xmpSidecarSyncEnabled() const
+{
+    return m_xmpSidecarSyncEnabled;
+}
+
+void SettingsManager::setXmpSidecarSyncEnabled(bool enabled)
+{
+    if (m_xmpSidecarSyncEnabled == enabled)
+    {
+        return;
+    }
+    m_xmpSidecarSyncEnabled = enabled;
+    if (m_settings)
+    {
+        m_settings->setValue(QStringLiteral("metadata/xmpSidecarSyncEnabled"), m_xmpSidecarSyncEnabled);
+    }
+    emit xmpSidecarSyncEnabledChanged(m_xmpSidecarSyncEnabled);
+}
+
 void SettingsManager::saveWindowGeometry(int x, int y, int width, int height, bool maximized)
 {
     m_windowX = x;
@@ -345,6 +365,7 @@ void SettingsManager::resetToDefaults()
     setLastDatabasePath(QString());
     setLastCollectionId(0);
     setFilmstripVisible(true);
+    setXmpSidecarSyncEnabled(true);
     saveWindowGeometry(-1, -1, 1200, 800, false);
 }
 

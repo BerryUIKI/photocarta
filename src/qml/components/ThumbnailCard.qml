@@ -421,6 +421,32 @@ Rectangle {
         MenuSeparator {}
 
         MenuItem {
+            text: qsTr("Save to XMP Sidecar")
+            enabled: !model.isDemoFixture
+            onTriggered: {
+                if (selectionManager.selectedCount > 1 && root.isSelected) {
+                    sessionController.exportXmpSidecarsForSelected()
+                } else {
+                    sessionController.exportXmpSidecar(root.itemIndex)
+                }
+            }
+        }
+
+        MenuItem {
+            text: qsTr("Reload from XMP Sidecar")
+            enabled: !model.isDemoFixture
+            onTriggered: {
+                if (selectionManager.selectedCount > 1 && root.isSelected) {
+                    sessionController.importXmpSidecarsForSelected()
+                } else {
+                    sessionController.importXmpSidecar(root.itemIndex)
+                }
+            }
+        }
+
+        MenuSeparator {}
+
+        MenuItem {
             text: (selectionManager.selectedCount > 1 && root.isSelected)
                   ? qsTr("Export Selected Photos... (Ctrl+E)")
                   : qsTr("Export Photo... (Ctrl+E)")
