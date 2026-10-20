@@ -207,6 +207,8 @@ void CatalogModel::rebuildTagUsage()
             }
         }
     }
+
+    m_availableTagsDirty = true;
 }
 
 void CatalogModel::adjustTagUsage(const QStringList &oldTags, const QStringList &newTags)
