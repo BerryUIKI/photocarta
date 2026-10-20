@@ -19,7 +19,7 @@ def get_project_version():
     match = re.search(r"project\s*\(\s*PhotoCarta[\s\S]*?VERSION\s+([0-9A-Za-z._-]+)", cmake_text)
     if match:
         return match.group(1)
-    return "0.0.1"
+    return "0.1.0"
 
 
 def get_architecture():
