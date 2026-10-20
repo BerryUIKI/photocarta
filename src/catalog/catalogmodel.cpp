@@ -10,6 +10,30 @@
 #include <QMimeDatabase>
 #include <QUuid>
 
+#include <algorithm>
+
+namespace
+{
+
+QString normalizedTag(const QString &tag)
+{
+    return tag.trimmed();
+}
+
+bool containsTag(const QStringList &tags, const QString &tag)
+{
+    return std::any_of(tags.cbegin(), tags.cend(), [&tag](const QString &existing)
+                       { return existing.compare(tag, Qt::CaseInsensitive) == 0; });
+}
+
+bool isTagRequested(const QStringList &requestedTags, const QString &tag)
+{
+    return std::any_of(requestedTags.cbegin(), requestedTags.cend(), [&tag](const QString &candidate)
+                       { return candidate.trimmed().compare(tag.trimmed(), Qt::CaseInsensitive) == 0; });
+}
+
+} // namespace
+
 namespace PhotoCarta
 {
 
@@ -152,6 +176,77 @@ bool CatalogModel::hasDemoContent() const
         }
     }
     return false;
+}
+
+QStringList CatalogModel::availableTags() const
+{
+    if (m_availableTagsDirty)
+    {
+        m_availableTagsCache = m_tagUsage.keys();
+        std::sort(m_availableTagsCache.begin(), m_availableTagsCache.end(),
+                  [](const QString &left, const QString &right)
+                  {
+                      return QString::compare(left, right, Qt::CaseInsensitive) < 0;
+                  });
+        m_availableTagsDirty = false;
+    }
+    return m_availableTagsCache;
+}
+
+void CatalogModel::rebuildTagUsage()
+{
+    m_tagUsage.clear();
+    for (const auto &item : m_items)
+    {
+        for (const QString &tag : item.tags)
+        {
+            const QString trimmed = normalizedTag(tag);
+            if (!trimmed.isEmpty())
+            {
+                ++m_tagUsage[trimmed];
+            }
+        }
+    }
+}
+
+void CatalogModel::adjustTagUsage(const QStringList &oldTags, const QStringList &newTags)
+{
+    for (const QString &tag : oldTags)
+    {
+        const QString trimmed = normalizedTag(tag);
+        if (trimmed.isEmpty())
+        {
+            continue;
+        }
+
+        auto it = m_tagUsage.find(trimmed);
+        if (it == m_tagUsage.end())
+        {
+            continue;
+        }
+
+        if (--it.value() <= 0)
+        {
+            m_tagUsage.erase(it);
+        }
+    }
+
+    for (const QString &tag : newTags)
+    {
+        const QString trimmed = normalizedTag(tag);
+        if (!trimmed.isEmpty())
+        {
+            ++m_tagUsage[trimmed];
+        }
+    }
+
+    m_availableTagsDirty = true;
+}
+
+void CatalogModel::invalidateAvailableTags()
+{
+    m_availableTagsDirty = true;
+    emit availableTagsChanged();
 }
 
 const QList<CatalogItem> &CatalogModel::items() const
@@ -353,7 +448,9 @@ void CatalogModel::loadDemoFixtures()
     }
 
     endResetModel();
+    rebuildTagUsage();
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(static_cast<int>(m_items.size()));
 }
 
@@ -488,7 +585,9 @@ void CatalogModel::addItems(const QList<CatalogItem> &items)
         m_database->insertOrUpdateItems(items);
     }
 
+    rebuildTagUsage();
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(static_cast<int>(m_items.size()));
 }
 
@@ -569,6 +668,7 @@ void CatalogModel::updateItemTags(int index, const QStringList &tags)
         return;
     }
 
+    adjustTagUsage(m_items[index].tags, tags);
     m_items[index].tags = tags;
     const QModelIndex modelIdx = this->index(index, 0);
     emit dataChanged(modelIdx, modelIdx, {TagsRole, ItemMapRole});
@@ -577,6 +677,255 @@ void CatalogModel::updateItemTags(int index, const QStringList &tags)
     {
         m_database->setItemTags(m_items[index].filePath, tags);
     }
+
+    invalidateAvailableTags();
+}
+
+void CatalogModel::updateItemsRating(const QStringList &itemIds, int rating)
+{
+    if (itemIds.isEmpty())
+    {
+        return;
+    }
+
+    const QSet<QString> idSet(itemIds.begin(), itemIds.end());
+    QVector<int> changedRows;
+    QStringList paths;
+
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        CatalogItem &item = m_items[i];
+        if (!idSet.contains(item.id) || item.rating == rating)
+        {
+            continue;
+        }
+
+        item.rating = rating;
+        changedRows.append(i);
+        if (m_database && m_database->isOpen() && !item.isDemoFixture)
+        {
+            paths.append(item.filePath);
+        }
+    }
+
+    if (changedRows.isEmpty())
+    {
+        return;
+    }
+
+    emit dataChanged(index(changedRows.first(), 0), index(changedRows.last(), 0),
+                     {RatingRole, ItemMapRole});
+
+    if (!paths.isEmpty())
+    {
+        m_database->updateItemsRating(paths, rating);
+    }
+}
+
+void CatalogModel::updateItemsFlagged(const QStringList &itemIds, bool flagged)
+{
+    if (itemIds.isEmpty())
+    {
+        return;
+    }
+
+    const QSet<QString> idSet(itemIds.begin(), itemIds.end());
+    QVector<int> changedRows;
+    QStringList paths;
+
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        CatalogItem &item = m_items[i];
+        if (!idSet.contains(item.id) || item.isFlagged == flagged)
+        {
+            continue;
+        }
+
+        item.isFlagged = flagged;
+        changedRows.append(i);
+        if (m_database && m_database->isOpen() && !item.isDemoFixture)
+        {
+            paths.append(item.filePath);
+        }
+    }
+
+    if (changedRows.isEmpty())
+    {
+        return;
+    }
+
+    emit dataChanged(index(changedRows.first(), 0), index(changedRows.last(), 0),
+                     {IsFlaggedRole, ItemMapRole});
+
+    if (!paths.isEmpty())
+    {
+        m_database->updateItemsFlagged(paths, flagged);
+    }
+}
+
+void CatalogModel::addTagsToItems(const QStringList &itemIds, const QStringList &tags)
+{
+    if (itemIds.isEmpty() || tags.isEmpty())
+    {
+        return;
+    }
+
+    QStringList requestedTags;
+    for (const QString &tag : tags)
+    {
+        const QString trimmed = normalizedTag(tag);
+        if (!trimmed.isEmpty() && !containsTag(requestedTags, trimmed))
+        {
+            requestedTags.append(trimmed);
+        }
+    }
+
+    if (requestedTags.isEmpty())
+    {
+        return;
+    }
+
+    const QSet<QString> idSet(itemIds.begin(), itemIds.end());
+    QVector<int> changedRows;
+    QStringList paths;
+    QStringList appliedTags;
+
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        CatalogItem &item = m_items[i];
+        if (!idSet.contains(item.id))
+        {
+            continue;
+        }
+
+        QStringList newTags = item.tags;
+        for (const QString &tag : requestedTags)
+        {
+            if (!containsTag(newTags, tag))
+            {
+                newTags.append(tag);
+                if (!containsTag(appliedTags, tag))
+                {
+                    appliedTags.append(tag);
+                }
+            }
+        }
+
+        if (newTags == item.tags)
+        {
+            continue;
+        }
+
+        adjustTagUsage(item.tags, newTags);
+        item.tags = newTags;
+        changedRows.append(i);
+        if (m_database && m_database->isOpen() && !item.isDemoFixture)
+        {
+            paths.append(item.filePath);
+        }
+    }
+
+    if (changedRows.isEmpty())
+    {
+        return;
+    }
+
+    emit dataChanged(index(changedRows.first(), 0), index(changedRows.last(), 0),
+                     {TagsRole, ItemMapRole});
+
+    if (!paths.isEmpty() && !appliedTags.isEmpty())
+    {
+        m_database->addTagsToItems(paths, appliedTags);
+    }
+
+    invalidateAvailableTags();
+}
+
+void CatalogModel::removeTagsFromItems(const QStringList &itemIds, const QStringList &tags)
+{
+    if (itemIds.isEmpty() || tags.isEmpty())
+    {
+        return;
+    }
+
+    QStringList requestedTags;
+    for (const QString &tag : tags)
+    {
+        const QString trimmed = normalizedTag(tag);
+        if (!trimmed.isEmpty() && !containsTag(requestedTags, trimmed))
+        {
+            requestedTags.append(trimmed);
+        }
+    }
+
+    if (requestedTags.isEmpty())
+    {
+        return;
+    }
+
+    const QSet<QString> idSet(itemIds.begin(), itemIds.end());
+    QVector<int> changedRows;
+    QStringList paths;
+    QStringList removedTags;
+
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        CatalogItem &item = m_items[i];
+        if (!idSet.contains(item.id))
+        {
+            continue;
+        }
+
+        QStringList keptTags;
+        QStringList itemRemovedTags;
+        for (const QString &tag : item.tags)
+        {
+            if (isTagRequested(requestedTags, tag))
+            {
+                itemRemovedTags.append(tag);
+            }
+            else
+            {
+                keptTags.append(tag);
+            }
+        }
+
+        if (itemRemovedTags.isEmpty())
+        {
+            continue;
+        }
+
+        adjustTagUsage(item.tags, keptTags);
+        item.tags = keptTags;
+        changedRows.append(i);
+        if (m_database && m_database->isOpen() && !item.isDemoFixture)
+        {
+            paths.append(item.filePath);
+        }
+
+        for (const QString &tag : itemRemovedTags)
+        {
+            if (!containsTag(removedTags, tag))
+            {
+                removedTags.append(tag);
+            }
+        }
+    }
+
+    if (changedRows.isEmpty())
+    {
+        return;
+    }
+
+    emit dataChanged(index(changedRows.first(), 0), index(changedRows.last(), 0),
+                     {TagsRole, ItemMapRole});
+
+    if (!paths.isEmpty() && !removedTags.isEmpty())
+    {
+        m_database->removeTagsFromItems(paths, removedTags);
+    }
+
+    invalidateAvailableTags();
 }
 
 void CatalogModel::loadFromDatabase(int collectionId)
@@ -594,7 +943,9 @@ void CatalogModel::loadFromDatabase(int collectionId)
     m_items = dbItems;
     endResetModel();
 
+    rebuildTagUsage();
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(static_cast<int>(m_items.size()));
 }
 
@@ -630,7 +981,9 @@ void CatalogModel::clearSession()
     m_items.clear();
     endResetModel();
 
+    rebuildTagUsage();
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(0);
 }
 

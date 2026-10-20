@@ -8,6 +8,7 @@
 #include <QAbstractListModel>
 #include <QHash>
 #include <QList>
+#include <QSet>
 #include <QStringList>
 #include <QUrl>
 #include <QVector>
@@ -20,6 +21,7 @@ class CatalogModel : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(bool hasDemoContent READ hasDemoContent NOTIFY countChanged)
+    Q_PROPERTY(QStringList availableTags READ availableTags NOTIFY availableTagsChanged)
 
 public:
     enum CatalogRoles
@@ -65,6 +67,7 @@ public:
 
     [[nodiscard]] int count() const;
     [[nodiscard]] bool hasDemoContent() const;
+    [[nodiscard]] QStringList availableTags() const;
     [[nodiscard]] const QList<CatalogItem> &items() const;
     [[nodiscard]] const CatalogItem *itemAt(int index) const;
 
@@ -79,20 +82,31 @@ public:
     Q_INVOKABLE void updateItemRating(int index, int rating);
     Q_INVOKABLE void updateItemFlagged(int index, bool flagged);
     Q_INVOKABLE void updateItemTags(int index, const QStringList &tags);
+    void updateItemsRating(const QStringList &itemIds, int rating);
+    void updateItemsFlagged(const QStringList &itemIds, bool flagged);
+    void addTagsToItems(const QStringList &itemIds, const QStringList &tags);
+    void removeTagsFromItems(const QStringList &itemIds, const QStringList &tags);
     Q_INVOKABLE void loadFromDatabase(int collectionId = 0);
     Q_INVOKABLE void setCollectionAvailable(const QString &rootPath, bool available);
     Q_INVOKABLE void clearSession();
 
 signals:
     void countChanged();
+    void availableTagsChanged();
     void sessionLoaded(int itemCount);
     void fileLoadError(const QString &fileName, const QString &errorMessage);
 
 private:
     void appendItem(const CatalogItem &item);
+    void rebuildTagUsage();
+    void adjustTagUsage(const QStringList &oldTags, const QStringList &newTags);
+    void invalidateAvailableTags();
     [[nodiscard]] static CatalogItem inspectLocalFile(const QString &filePath);
 
     QList<CatalogItem> m_items;
+    QHash<QString, int> m_tagUsage;
+    mutable QStringList m_availableTagsCache;
+    mutable bool m_availableTagsDirty = true;
     class CatalogDatabase *m_database = nullptr;
 };
 
