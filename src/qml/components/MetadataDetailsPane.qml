@@ -256,6 +256,15 @@ Rectangle {
                     width: parent.width
                     spacing: 10
 
+                    Text {
+                        width: parent.width
+                        visible: selectionManager.selectedCount > 1
+                        wrapMode: Text.Wrap
+                        text: qsTr("Edits apply to %1 selected photos.").arg(selectionManager.selectedCount)
+                        font.pixelSize: 10
+                        color: themeManager.accent
+                    }
+
                     Row {
                         spacing: 10
                         Text {
@@ -269,8 +278,14 @@ Rectangle {
                             rating: root.item.rating ? root.item.rating : 0
                             interactive: true
                             onRatingSelected: (newRating) => {
-                                sessionController.setItemRating(selectionManager.currentIndex, newRating)
+                                sessionController.setSelectionRating(newRating)
                             }
+                        }
+                        TagChip {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Favorite")
+                            active: root.item.isFlagged === true
+                            onClicked: sessionController.setSelectionFlagged(!root.item.isFlagged)
                         }
                     }
 
@@ -278,11 +293,56 @@ Rectangle {
                         width: parent.width
                         spacing: 6
 
+                        Text {
+                            visible: !root.item.tags || root.item.tags.length === 0
+                            text: qsTr("No tags")
+                            font.pixelSize: 11
+                            color: themeManager.textMuted
+                        }
+
                         Repeater {
                             model: root.item.tags ? root.item.tags : []
                             TagChip {
                                 text: modelData
                                 interactive: false
+                                removable: true
+                                onRemoveClicked: sessionController.removeTagFromSelection(modelData)
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: 28
+                        radius: themeManager.radiusSm
+                        color: themeManager.surfaceElevated
+                        border.color: tagInput.activeFocus ? themeManager.borderFocus : themeManager.border
+                        border.width: 1
+
+                        TextInput {
+                            id: tagInput
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: TextInput.AlignVCenter
+                            font.pixelSize: themeManager.fontSm
+                            color: themeManager.textPrimary
+                            clip: true
+                            selectByMouse: true
+
+                            Text {
+                                anchors.fill: parent
+                                verticalAlignment: Text.AlignVCenter
+                                visible: !tagInput.text && !tagInput.activeFocus
+                                text: qsTr("Add tag and press Enter")
+                                font.pixelSize: themeManager.fontSm
+                                color: themeManager.textMuted
+                                elide: Text.ElideRight
+                            }
+
+                            onAccepted: {
+                                sessionController.addTagToSelection(text)
+                                text = ""
                             }
                         }
                     }

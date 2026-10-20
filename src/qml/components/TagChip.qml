@@ -10,9 +10,11 @@ Rectangle {
     property string text: ""
     property bool active: false
     property bool interactive: true
+    property bool removable: false
     signal clicked()
+    signal removeClicked()
 
-    implicitWidth: chipLabel.implicitWidth + 18
+    implicitWidth: contentRow.implicitWidth + 18
     implicitHeight: 24
     radius: 12
 
@@ -30,13 +32,36 @@ Rectangle {
     Behavior on color { ColorAnimation { duration: 120 } }
     Behavior on border.color { ColorAnimation { duration: 120 } }
 
-    Text {
-        id: chipLabel
+    Row {
+        id: contentRow
         anchors.centerIn: parent
-        text: root.text
-        font.pixelSize: themeManager.fontXs
-        font.weight: root.active ? Font.DemiBold : Font.Normal
-        color: root.active ? themeManager.accentText : themeManager.textPrimary
+        spacing: 4
+
+        Text {
+            id: chipLabel
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.text
+            font.pixelSize: themeManager.fontXs
+            font.weight: root.active ? Font.DemiBold : Font.Normal
+            color: root.active ? themeManager.accentText : themeManager.textPrimary
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.removable
+            text: "×"
+            font.pixelSize: themeManager.fontSm
+            color: removeMouseArea.containsMouse ? themeManager.textPrimary : themeManager.textMuted
+
+            MouseArea {
+                id: removeMouseArea
+                anchors.fill: parent
+                anchors.margins: -4
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.removeClicked()
+            }
+        }
     }
 
     MouseArea {

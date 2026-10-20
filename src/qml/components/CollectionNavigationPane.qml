@@ -598,64 +598,73 @@ Rectangle {
                 color: themeManager.border
             }
 
-            // SECTION 3: POPULAR TAGS
+            // SECTION 3: MINIMUM RATING
             Text {
-                text: qsTr("CATEGORIES & TAGS")
+                text: qsTr("MINIMUM RATING")
                 font.pixelSize: themeManager.fontXs
                 font.weight: Font.Bold
                 color: themeManager.textMuted
                 font.letterSpacing: 1.2
             }
 
+            Row {
+                spacing: 8
+
+                RatingStars {
+                    anchors.verticalCenter: parent.verticalCenter
+                    rating: filterModel.minRating
+                    interactive: true
+                    onRatingSelected: (newRating) => {
+                        filterModel.minRating = newRating
+                    }
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: filterModel.minRating > 0
+                    text: qsTr("%1+").arg(filterModel.minRating)
+                    font.pixelSize: themeManager.fontXs
+                    font.weight: Font.DemiBold
+                    color: themeManager.accent
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: themeManager.border
+            }
+
+            // SECTION 4: TAGS
+            Text {
+                text: qsTr("TAGS")
+                font.pixelSize: themeManager.fontXs
+                font.weight: Font.Bold
+                color: themeManager.textMuted
+                font.letterSpacing: 1.2
+            }
+
+            Text {
+                width: parent.width
+                visible: catalogModel.availableTags.length === 0
+                text: qsTr("No tags in this catalog yet")
+                font.pixelSize: 11
+                color: themeManager.textMuted
+                wrapMode: Text.Wrap
+            }
+
             Flow {
                 width: parent.width
                 spacing: 6
 
-                TagChip {
-                    text: qsTr("Landscape")
-                    active: filterModel.tagFilter === "Landscape"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Landscape") ? "" : "Landscape"
-                    }
-                }
-
-                TagChip {
-                    text: qsTr("Portrait")
-                    active: filterModel.tagFilter === "Portrait"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Portrait") ? "" : "Portrait"
-                    }
-                }
-
-                TagChip {
-                    text: qsTr("Architecture")
-                    active: filterModel.tagFilter === "Architecture"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Architecture") ? "" : "Architecture"
-                    }
-                }
-
-                TagChip {
-                    text: qsTr("Street")
-                    active: filterModel.tagFilter === "Street"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Street") ? "" : "Street"
-                    }
-                }
-
-                TagChip {
-                    text: qsTr("Macro")
-                    active: filterModel.tagFilter === "Macro"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Macro") ? "" : "Macro"
-                    }
-                }
-
-                TagChip {
-                    text: qsTr("Astro")
-                    active: filterModel.tagFilter === "Astro"
-                    onClicked: {
-                        filterModel.tagFilter = (filterModel.tagFilter === "Astro") ? "" : "Astro"
+                Repeater {
+                    model: catalogModel.availableTags
+                    TagChip {
+                        text: modelData
+                        active: filterModel.tagFilter === modelData
+                        onClicked: {
+                            filterModel.tagFilter = (filterModel.tagFilter === modelData) ? "" : modelData
+                        }
                     }
                 }
             }
@@ -666,7 +675,7 @@ Rectangle {
                 color: themeManager.border
             }
 
-            // SECTION 3: SESSION CONTROLS
+            // SECTION 5: SESSION CONTROLS
             Text {
                 text: qsTr("SESSION ACTIONS")
                 font.pixelSize: themeManager.fontXs
@@ -762,7 +771,7 @@ Rectangle {
                 color: themeManager.border
             }
 
-            // SECTION 4: SESSION STATUS NOTE
+            // SECTION 6: SESSION STATUS NOTE
             Rectangle {
                 width: parent.width
                 implicitHeight: noticeCol.implicitHeight + 14
