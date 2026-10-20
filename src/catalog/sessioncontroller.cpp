@@ -341,6 +341,62 @@ void SessionController::setItemTags(int proxyIndex, const QStringList &tags)
     }
 }
 
+QStringList SessionController::targetItemIds() const
+{
+    if (!m_selectionManager)
+    {
+        return {};
+    }
+
+    const QSet<QString> &selectedIds = m_selectionManager->selectedIds();
+    if (!selectedIds.isEmpty())
+    {
+        return QStringList(selectedIds.begin(), selectedIds.end());
+    }
+
+    const QString currentId = m_selectionManager->currentId();
+    if (!currentId.isEmpty())
+    {
+        return {currentId};
+    }
+
+    return {};
+}
+
+void SessionController::setSelectionRating(int rating)
+{
+    if (m_model)
+    {
+        m_model->updateItemsRating(targetItemIds(), rating);
+    }
+}
+
+void SessionController::setSelectionFlagged(bool flagged)
+{
+    if (m_model)
+    {
+        m_model->updateItemsFlagged(targetItemIds(), flagged);
+    }
+}
+
+void SessionController::addTagToSelection(const QString &tag)
+{
+    const QString trimmed = tag.trimmed();
+    if (m_model && !trimmed.isEmpty())
+    {
+        m_model->addTagsToItems(targetItemIds(), {trimmed});
+    }
+}
+
+void SessionController::removeTagFromSelection(const QString &tag)
+{
+    const QString trimmed = tag.trimmed();
+    if (m_model && !trimmed.isEmpty())
+    {
+        m_model->removeTagsFromItems(targetItemIds(), {trimmed});
+    }
+}
+
 void SessionController::loadDatabaseCatalog(int collectionId)
 {
     if (m_model)

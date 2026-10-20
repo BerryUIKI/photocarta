@@ -12,6 +12,7 @@
 #include <QList>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QUrl>
 
 class QQuickWindow;
@@ -89,6 +90,10 @@ public:
     Q_INVOKABLE void setItemRating(int proxyIndex, int rating);
     Q_INVOKABLE void toggleItemFlagged(int proxyIndex);
     Q_INVOKABLE void setItemTags(int proxyIndex, const QStringList &tags);
+    Q_INVOKABLE void setSelectionRating(int rating);
+    Q_INVOKABLE void setSelectionFlagged(bool flagged);
+    Q_INVOKABLE void addTagToSelection(const QString &tag);
+    Q_INVOKABLE void removeTagFromSelection(const QString &tag);
     Q_INVOKABLE void loadDatabaseCatalog(int collectionId = 0);
     Q_INVOKABLE void selectCollection(int collectionId);
     Q_INVOKABLE void rescanCollection(int collectionId);
@@ -144,6 +149,7 @@ private slots:
 
 private:
     [[nodiscard]] int sourceRowForProxy(int proxyIndex) const;
+    [[nodiscard]] QStringList targetItemIds() const;
 
     CatalogModel *m_model = nullptr;
     CatalogFilterModel *m_filterModel = nullptr;
