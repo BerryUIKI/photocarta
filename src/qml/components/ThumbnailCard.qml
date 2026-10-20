@@ -105,6 +105,29 @@ Rectangle {
             }
         }
 
+        // Offline / Missing Collection Badge Overlay
+        Rectangle {
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: 8
+            width: offlineText.implicitWidth + 8
+            height: 18
+            radius: 4
+            color: "#b91c1c"
+            border.color: "#fca5a5"
+            border.width: 1
+            visible: model.isMissing === true && !model.isDemoFixture
+
+            Text {
+                id: offlineText
+                anchors.centerIn: parent
+                text: qsTr("OFFLINE")
+                font.pixelSize: 9
+                font.weight: Font.Bold
+                color: "#ffffff"
+            }
+        }
+
         // Bottom Info Gradient Overlay
         Rectangle {
             anchors.left: parent.left
@@ -144,10 +167,21 @@ Rectangle {
                         color: "#cbd5e1"
                     }
 
-                    Text {
-                        text: "•"
-                        font.pixelSize: 10
-                        color: "#94a3b8"
+                    Rectangle {
+                        visible: (model.colorLabel || 0) > 0
+                        width: 8
+                        height: 8
+                        radius: 4
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: {
+                            const c = model.colorLabel || 0;
+                            if (c === 1) return "#ef4444";
+                            if (c === 2) return "#eab308";
+                            if (c === 3) return "#22c55e";
+                            if (c === 4) return "#3b82f6";
+                            if (c === 5) return "#a855f7";
+                            return "transparent";
+                        }
                     }
 
                     RatingStars {
@@ -165,19 +199,283 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
 
         onClicked: (mouse) => {
-            if (mouse.modifiers & Qt.ControlModifier) {
+            if (mouse.button === Qt.RightButton) {
+                if (!root.isSelected) {
+                    selectionManager.select(root.itemIndex)
+                }
+                cardContextMenu.popup()
+                return
+            }
+
+            if (mouse.modifiers & Qt.ShiftModifier) {
+                selectionManager.selectRange(root.itemIndex)
+            } else if (mouse.modifiers & Qt.ControlModifier) {
                 selectionManager.toggleSelect(root.itemIndex)
             } else {
                 selectionManager.select(root.itemIndex)
             }
         }
 
-        onDoubleClicked: {
-            selectionManager.select(root.itemIndex)
-            sessionController.setPreviewMode(true)
-            root.activated()
+        onDoubleClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton) {
+                selectionManager.select(root.itemIndex)
+                sessionController.setPreviewMode(true)
+                root.activated()
+            }
+        }
+    }
+
+    Menu {
+        id: cardContextMenu
+
+        MenuItem {
+            text: qsTr("Preview Photo (Enter)")
+            onTriggered: {
+                selectionManager.select(root.itemIndex)
+                sessionController.setPreviewMode(true)
+            }
+        }
+
+        MenuItem {
+            text: (selectionManager.selectedCount >= 2 && root.isSelected)
+                  ? qsTr("Compare Selected Photos (C)")
+                  : qsTr("Compare with Next Photo (C)")
+            onTriggered: {
+                if (!root.isSelected) {
+                    selectionManager.select(root.itemIndex)
+                }
+                sessionController.setCompareMode(true)
+            }
+        }
+
+        MenuSeparator {}
+
+        Menu {
+            title: qsTr("Set Rating")
+
+            MenuItem {
+                text: "★ 5"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(5)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 5)
+                    }
+                }
+            }
+            MenuItem {
+                text: "★ 4"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(4)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 4)
+                    }
+                }
+            }
+            MenuItem {
+                text: "★ 3"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(3)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 3)
+                    }
+                }
+            }
+            MenuItem {
+                text: "★ 2"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(2)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 2)
+                    }
+                }
+            }
+            MenuItem {
+                text: "★ 1"
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(1)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 1)
+                    }
+                }
+            }
+            MenuSeparator {}
+            MenuItem {
+                text: qsTr("Clear Rating (0)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setRatingForSelected(0)
+                    } else {
+                        sessionController.setItemRating(root.itemIndex, 0)
+                    }
+                }
+            }
+        }
+
+        MenuItem {
+            text: (selectionManager.selectedCount > 1 && root.isSelected)
+                  ? qsTr("Toggle Flag for Selected (F)")
+                  : (model.isFlagged ? qsTr("Unflag Photo (F)") : qsTr("Flag as Favorite (F)"))
+            onTriggered: {
+                if (selectionManager.selectedCount > 1 && root.isSelected) {
+                    sessionController.toggleFlaggedForSelected()
+                } else {
+                    sessionController.toggleItemFlagged(root.itemIndex)
+                }
+            }
+        }
+
+        Menu {
+            title: qsTr("Set Color Label")
+
+            MenuItem {
+                text: qsTr("Red (6)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(1)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 1)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Yellow (7)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(2)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 2)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Green (8)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(3)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 3)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Blue (9)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(4)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 4)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Purple")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(5)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 5)
+                    }
+                }
+            }
+            MenuSeparator {}
+            MenuItem {
+                text: qsTr("Clear Color Label (0)")
+                onTriggered: {
+                    if (selectionManager.selectedCount > 1 && root.isSelected) {
+                        sessionController.setColorLabelForSelected(0)
+                    } else {
+                        sessionController.setItemColorLabel(root.itemIndex, 0)
+                    }
+                }
+            }
+        }
+
+        MenuSeparator {}
+
+        MenuItem {
+            text: qsTr("Copy File Path (Ctrl+C)")
+            onTriggered: {
+                if (selectionManager.selectedCount > 1 && root.isSelected) {
+                    sessionController.copySelectedPathsToClipboard()
+                } else {
+                    selectionManager.select(root.itemIndex)
+                    sessionController.copySelectedPathsToClipboard()
+                }
+            }
+        }
+
+        MenuItem {
+            text: qsTr("Reveal in File Manager")
+            enabled: !model.isDemoFixture
+            onTriggered: sessionController.revealInFileManager(root.itemIndex)
+        }
+
+        MenuSeparator {}
+
+        MenuItem {
+            text: qsTr("Save to XMP Sidecar")
+            enabled: !model.isDemoFixture
+            onTriggered: {
+                if (selectionManager.selectedCount > 1 && root.isSelected) {
+                    sessionController.exportXmpSidecarsForSelected()
+                } else {
+                    sessionController.exportXmpSidecar(root.itemIndex)
+                }
+            }
+        }
+
+        MenuItem {
+            text: qsTr("Reload from XMP Sidecar")
+            enabled: !model.isDemoFixture
+            onTriggered: {
+                if (selectionManager.selectedCount > 1 && root.isSelected) {
+                    sessionController.importXmpSidecarsForSelected()
+                } else {
+                    sessionController.importXmpSidecar(root.itemIndex)
+                }
+            }
+        }
+
+        MenuSeparator {}
+
+        MenuItem {
+            text: (selectionManager.selectedCount > 1 && root.isSelected)
+                  ? qsTr("Batch Rename Selected... (F2)")
+                  : qsTr("Batch Rename... (F2)")
+            onTriggered: {
+                if (!root.isSelected) {
+                    selectionManager.setCurrentIndex(root.itemIndex)
+                }
+                sessionController.openBatchRenameDialog()
+            }
+        }
+
+        MenuItem {
+            text: (selectionManager.selectedCount > 1 && root.isSelected)
+                  ? qsTr("Export Selected Photos... (Ctrl+E)")
+                  : qsTr("Export Photo... (Ctrl+E)")
+            onTriggered: sessionController.openExportDialog()
+        }
+
+        MenuSeparator {}
+
+        MenuItem {
+            text: qsTr("Select All (Ctrl+A)")
+            onTriggered: selectionManager.selectAll()
+        }
+
+        MenuItem {
+            text: qsTr("Deselect All (Esc)")
+            enabled: selectionManager.hasSelection
+            onTriggered: selectionManager.clearSelection()
         }
     }
 }

@@ -27,14 +27,39 @@ target_compile_definitions(photocarta PRIVATE
     PHOTOCARTA_VERSION="${PROJECT_VERSION}"
 )
 
-set_target_properties(photocarta PROPERTIES
-    AUTOMOC ON
-    AUTORCC ON
-    WIN32_EXECUTABLE OFF  # Keep console visible during prototype bring-up / CLI commands
-    MACOSX_BUNDLE OFF
-)
+# Target installation and bundle properties
+if(WIN32)
+    set(PHOTOCARTA_RUNTIME_INSTALL_DIR ".")
+else()
+    set(PHOTOCARTA_RUNTIME_INSTALL_DIR "bin")
+endif()
+
+if(APPLE)
+    set_target_properties(photocarta PROPERTIES
+        AUTOMOC ON
+        AUTORCC ON
+        MACOSX_BUNDLE ON
+        MACOSX_BUNDLE_BUNDLE_NAME "PhotoCarta"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "org.photocarta.PhotoCarta"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+    )
+else()
+    set_target_properties(photocarta PROPERTIES
+        AUTOMOC ON
+        AUTORCC ON
+        WIN32_EXECUTABLE OFF  # Keep console visible during prototype bring-up / CLI commands
+        MACOSX_BUNDLE OFF
+    )
+endif()
 
 install(TARGETS photocarta
-    RUNTIME DESTINATION bin
+    RUNTIME DESTINATION ${PHOTOCARTA_RUNTIME_INSTALL_DIR}
     BUNDLE DESTINATION .
+)
+
+install(FILES
+    ${CMAKE_SOURCE_DIR}/LICENSE
+    ${CMAKE_SOURCE_DIR}/README.md
+    DESTINATION .
 )

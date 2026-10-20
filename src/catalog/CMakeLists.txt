@@ -8,12 +8,37 @@ add_library(photocarta_catalog STATIC
     catalogmodel.cpp
     catalogfiltermodel.h
     catalogfiltermodel.cpp
+    collectionmodel.h
+    collectionmodel.cpp
     selectionmanager.h
     selectionmanager.cpp
     thememanager.h
     thememanager.cpp
     sessioncontroller.h
     sessioncontroller.cpp
+    database/catalogdatabase.h
+    database/catalogdatabase.cpp
+    database/digikamdatabaseadapter.h
+    database/digikamdatabaseadapter.cpp
+    ingestion/directoryscanner.h
+    ingestion/directoryscanner.cpp
+    thumbnails/thumbnailcache.h
+    thumbnails/thumbnailcache.cpp
+    thumbnails/thumbnailimageprovider.h
+    thumbnails/thumbnailimageprovider.cpp
+    metadata/exifdata.h
+    metadata/exifparser.h
+    metadata/exifparser.cpp
+    metadata/xmpsidecar.h
+    metadata/xmpsidecar.cpp
+    export/imageexporter.h
+    export/imageexporter.cpp
+    settings/settingsmanager.h
+    settings/settingsmanager.cpp
+    histogram/histogramcalculator.h
+    histogram/histogramcalculator.cpp
+    organization/batchrenamer.h
+    organization/batchrenamer.cpp
 )
 
 target_include_directories(photocarta_catalog PUBLIC
@@ -25,6 +50,8 @@ target_link_libraries(photocarta_catalog PUBLIC
     Qt6::Core
     Qt6::Gui
     Qt6::Quick
+    Qt6::Sql
+    Qt6::Concurrent
 )
 
 set_target_properties(photocarta_catalog PROPERTIES

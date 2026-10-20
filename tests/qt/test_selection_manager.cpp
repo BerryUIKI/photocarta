@@ -24,6 +24,9 @@ private slots:
     void testNavigation();
     void testModelResetAdjustment();
     void testSelectionPreservedOnSortAndFilter();
+    void testSelectRange();
+    void testCommonAndAllTags();
+    void testSelectedProxyRowsAndSummary();
 
 private:
     CatalogModel *m_catalogModel = nullptr;
@@ -186,6 +189,74 @@ void TestSelectionManager::testSelectionPreservedOnSortAndFilter()
     m_filterModel->setSearchQuery(QString());
     QCOMPARE(m_selectionManager->currentId(), QStringLiteral("demo-005"));
     QVERIFY(m_selectionManager->currentIndex() >= 0);
+}
+
+void TestSelectionManager::testSelectRange()
+{
+    m_selectionManager->select(1);
+    QCOMPARE(m_selectionManager->currentIndex(), 1);
+    QCOMPARE(m_selectionManager->selectedCount(), 1);
+
+    // Range forward from 1 to 4
+    m_selectionManager->selectRange(4);
+    QCOMPARE(m_selectionManager->selectedCount(), 4);
+    QVERIFY(!m_selectionManager->isSelected(0));
+    QVERIFY(m_selectionManager->isSelected(1));
+    QVERIFY(m_selectionManager->isSelected(2));
+    QVERIFY(m_selectionManager->isSelected(3));
+    QVERIFY(m_selectionManager->isSelected(4));
+    QVERIFY(!m_selectionManager->isSelected(5));
+    QCOMPARE(m_selectionManager->currentIndex(), 4);
+
+    // Range backward: select 3, then range to 1
+    m_selectionManager->select(3);
+    m_selectionManager->selectRange(1);
+    QCOMPARE(m_selectionManager->selectedCount(), 3);
+    QVERIFY(m_selectionManager->isSelected(1));
+    QVERIFY(m_selectionManager->isSelected(2));
+    QVERIFY(m_selectionManager->isSelected(3));
+}
+
+void TestSelectionManager::testCommonAndAllTags()
+{
+    // Demo fixtures:
+    // Item 0 (demo-001): Landscape, Mountain, Sunrise, Demo
+    // Item 5 (demo-006): Astro, Night, Landscape, Demo
+    m_selectionManager->clearSelection();
+    m_selectionManager->select(0);
+    m_selectionManager->toggleSelect(5);
+    QCOMPARE(m_selectionManager->selectedCount(), 2);
+
+    const QStringList common = m_selectionManager->commonTags();
+    QVERIFY(common.contains(QStringLiteral("Landscape")));
+    QVERIFY(common.contains(QStringLiteral("Demo")));
+    QVERIFY(!common.contains(QStringLiteral("Astro")));
+    QVERIFY(!common.contains(QStringLiteral("Mountain")));
+
+    const QStringList allTags = m_selectionManager->allSelectedTags();
+    QVERIFY(allTags.contains(QStringLiteral("Landscape")));
+    QVERIFY(allTags.contains(QStringLiteral("Demo")));
+    QVERIFY(allTags.contains(QStringLiteral("Astro")));
+    QVERIFY(allTags.contains(QStringLiteral("Mountain")));
+    QVERIFY(allTags.contains(QStringLiteral("Sunrise")));
+    QVERIFY(allTags.contains(QStringLiteral("Night")));
+}
+
+void TestSelectionManager::testSelectedProxyRowsAndSummary()
+{
+    m_selectionManager->clearSelection();
+    m_selectionManager->select(1);
+    m_selectionManager->toggleSelect(3);
+
+    const QList<int> rows = m_selectionManager->selectedProxyRows();
+    QCOMPARE(rows.size(), 2);
+    QCOMPARE(rows.at(0), 1);
+    QCOMPARE(rows.at(1), 3);
+
+    const QVariantList summary = m_selectionManager->selectedItemsSummary(4);
+    QCOMPARE(summary.size(), 2);
+    QVERIFY(!summary.at(0).toMap().value(QStringLiteral("id")).toString().isEmpty());
+    QVERIFY(!summary.at(1).toMap().value(QStringLiteral("id")).toString().isEmpty());
 }
 
 QTEST_MAIN(TestSelectionManager)

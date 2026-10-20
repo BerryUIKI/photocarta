@@ -19,6 +19,8 @@ struct CatalogItem
     QString filePath;
     QString fileName;
     QString title;
+    QString caption;
+    int colorLabel = 0; // 0=None, 1=Red, 2=Yellow, 3=Green, 4=Blue, 5=Purple
     qint64 fileSizeBytes = 0;
     QString formattedFileSize;
     QString mimeType;
@@ -40,6 +42,8 @@ struct CatalogItem
     QUrl thumbnailUrl;
     QUrl previewUrl;
     bool isDemoFixture = false; // Clearly identifies demo content vs user-opened files
+    bool isMissing = false;     // Identifies items whose collection is temporarily offline/unmounted
+    int collectionId = 0;       // Database collection ID
 
     [[nodiscard]] QVariantMap toVariantMap() const;
     static QString formatBytes(qint64 bytes);

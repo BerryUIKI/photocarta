@@ -158,3 +158,24 @@ Verify repository policy, file formatting, and GitFlow rules:
 python scripts/check_repository.py
 python -m unittest discover -s tests -v
 ```
+
+---
+
+## 7. Packaging Standalone Binaries
+
+PhotoCarta provides automated cross-platform packaging for Windows, macOS, and Linux:
+
+```bash
+# Package portable distribution archives and compute SHA-256 checksums
+python scripts/package.py --build-dir build --output-dir packages
+```
+
+Output packages by platform:
+- **Windows**: `packages/PhotoCarta-<version>-windows-x86_64.zip` (self-contained portable bundle deployed with Qt runtime DLLs and QML plugins via `windeployqt`).
+- **macOS**: `packages/PhotoCarta-<version>-macos-<arch>.dmg` (drag-and-drop installer disk image) and `.zip` bundle deployed via `macdeployqt`.
+- **Linux**: `packages/PhotoCarta-<version>-linux-x86_64.tar.gz` (portable tarball).
+
+You can also use standard CPack from the build directory:
+```bash
+cpack --config build/CPackConfig.cmake -B packages
+```

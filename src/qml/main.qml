@@ -12,20 +12,32 @@ ApplicationWindow {
     id: window
 
     title: qsTr("PhotoCarta — Photo Management")
-    width: 1280
-    height: 800
+    width: settingsManager ? settingsManager.windowWidth : 1280
+    height: settingsManager ? settingsManager.windowHeight : 800
     minimumWidth: 840
     minimumHeight: 560
     visible: true
+    visibility: sessionController.isFullscreen
+                ? Window.FullScreen
+                : (settingsManager && settingsManager.windowMaximized ? Window.Maximized : Window.Windowed)
     color: themeManager.background
+
+    onClosing: {
+        if (settingsManager && !sessionController.isFullscreen) {
+            settingsManager.saveWindowGeometry(x, y, width, height, visibility === Window.Maximized)
+        }
+    }
 
     header: AppToolbar {
         id: appToolbar
+        visible: !sessionController.isFullscreen
         onRequestOpenFiles: openDialog.open()
+        onRequestScanFolder: scanFolderDialog.open()
     }
 
     footer: AppStatusBar {
         id: appStatusBar
+        visible: !sessionController.isFullscreen
     }
 
     // Top Error / Warning notification banner
@@ -34,12 +46,13 @@ ApplicationWindow {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
+        visible: sessionController.hasError && !sessionController.isFullscreen
         z: 20
     }
 
     // Main 3-Pane Responsive Layout
     Item {
-        anchors.top: errorBanner.bottom
+        anchors.top: (errorBanner.visible ? errorBanner.bottom : parent.top)
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -50,7 +63,8 @@ ApplicationWindow {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            visible: sessionController.leftPaneVisible
+            visible: sessionController.leftPaneVisible && !sessionController.isFullscreen
+            onRequestScanFolder: scanFolderDialog.open()
         }
 
         // Right: Metadata & Details Sidebar
@@ -59,7 +73,7 @@ ApplicationWindow {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            visible: sessionController.rightPaneVisible
+            visible: sessionController.rightPaneVisible && !sessionController.isFullscreen
         }
 
         // Center: Content Canvas (Grid or Preview Mode)
@@ -73,15 +87,30 @@ ApplicationWindow {
 
             ThumbnailGridView {
                 anchors.fill: parent
-                visible: !sessionController.previewMode
+                visible: !sessionController.previewMode && !sessionController.compareMode
                 onRequestOpenFiles: openDialog.open()
             }
 
             ImagePreviewView {
                 anchors.fill: parent
-                visible: sessionController.previewMode
+                visible: sessionController.previewMode && !sessionController.compareMode
+            }
+
+            PhotoCompareView {
+                anchors.fill: parent
+                visible: sessionController.compareMode
             }
         }
+    }
+
+    // Modal Export Dialog
+    ExportDialog {
+        id: exportDialog
+    }
+
+    // Modal Batch Rename Dialog
+    BatchRenameDialog {
+        id: batchRenameDialog
     }
 
     // Real Native File Dialog for Temporary Session
@@ -102,10 +131,25 @@ ApplicationWindow {
         }
     }
 
+    // Native Directory Dialog for Recursive Catalog Scanning
+    FolderDialog {
+        id: scanFolderDialog
+        title: qsTr("Scan Photo Directory into Catalog")
+        currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
+        onAccepted: {
+            sessionController.scanFolder(selectedFolder)
+        }
+    }
+
     // Global Application Shortcuts
     Shortcut {
         sequence: "Ctrl+O"
         onActivated: openDialog.open()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Shift+O"
+        onActivated: scanFolderDialog.open()
     }
 
     Shortcut {
@@ -129,10 +173,81 @@ ApplicationWindow {
     }
 
     Shortcut {
+        sequence: "F11"
+        onActivated: sessionController.toggleFullscreen()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+E"
+        onActivated: {
+            if (selectionManager.hasSelection || selectionManager.selectedCount > 0) {
+                sessionController.openExportDialog()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "F2"
+        onActivated: {
+            if (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0) {
+                sessionController.openBatchRenameDialog()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: StandardKey.SelectAll
+        onActivated: {
+            if (!sessionController.previewMode) {
+                selectionManager.selectAll()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: StandardKey.Copy
+        onActivated: {
+            if (selectionManager.hasSelection) {
+                sessionController.copySelectedPathsToClipboard()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Alt+C"
+        onActivated: {
+            if (sessionController.compareMode) {
+                sessionController.setCompareMode(false)
+            } else if (selectionManager.selectedCount >= 2 || selectionManager.hasSelection) {
+                sessionController.setCompareMode(true)
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "C"
+        onActivated: {
+            if (!sessionController.previewMode) {
+                if (sessionController.compareMode) {
+                    sessionController.setCompareMode(false)
+                } else if (selectionManager.selectedCount >= 2 || selectionManager.hasSelection) {
+                    sessionController.setCompareMode(true)
+                }
+            }
+        }
+    }
+
+    Shortcut {
         sequence: "Escape"
         onActivated: {
-            if (sessionController.previewMode) {
+            if (sessionController.isFullscreen) {
+                sessionController.setFullscreen(false)
+            } else if (sessionController.compareMode) {
+                sessionController.setCompareMode(false)
+            } else if (sessionController.previewMode) {
                 sessionController.setPreviewMode(false)
+            } else if (selectionManager.selectedCount > 1) {
+                selectionManager.clearSelection()
             } else if (filterModel.searchQuery) {
                 filterModel.searchQuery = ""
             }

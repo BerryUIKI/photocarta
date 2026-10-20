@@ -8,6 +8,7 @@ Rectangle {
     id: root
 
     signal requestOpenFiles()
+    signal requestScanFolder()
 
     implicitHeight: 52
     color: themeManager.surface
@@ -134,7 +135,7 @@ Rectangle {
             }
 
             ToolTip.visible: openMouse.containsMouse
-            ToolTip.text: qsTr("Add local photos to temporary session (Ctrl+O)")
+            ToolTip.text: qsTr("Add local photos to session (Ctrl+O)")
 
             MouseArea {
                 id: openMouse
@@ -145,9 +146,154 @@ Rectangle {
             }
         }
 
-        // View Mode Switcher: Grid vs Loupe
+        // Scan Directory Button
         Rectangle {
-            width: 68
+            width: scanRow.implicitWidth + 16
+            height: 32
+            radius: themeManager.radiusMd
+            anchors.verticalCenter: parent.verticalCenter
+            color: sessionController.isScanning
+                   ? themeManager.surfaceSelected
+                   : (scanMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated)
+            border.color: sessionController.isScanning ? themeManager.accent : themeManager.border
+            border.width: 1
+
+            Row {
+                id: scanRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: sessionController.isScanning ? "⏳" : "🔍"
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: sessionController.isScanning ? qsTr("Scanning...") : qsTr("Scan Folder...")
+                    font.pixelSize: themeManager.fontSm
+                    font.weight: Font.Medium
+                    color: themeManager.textPrimary
+                    visible: root.width > 960
+                }
+            }
+
+            ToolTip.visible: scanMouse.containsMouse
+            ToolTip.text: sessionController.isScanning
+                          ? qsTr("Scanning in progress... Click to cancel")
+                          : qsTr("Scan directory recursively and import into SQLite catalog (Ctrl+Shift+O)")
+
+            MouseArea {
+                id: scanMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (sessionController.isScanning) {
+                        sessionController.cancelScan();
+                    } else {
+                        root.requestScanFolder();
+                    }
+                }
+            }
+        }
+
+        // Export Photos Button
+        Rectangle {
+            width: exportBtnRow.implicitWidth + 16
+            height: 32
+            radius: themeManager.radiusMd
+            anchors.verticalCenter: parent.verticalCenter
+            color: sessionController.isExporting
+                   ? themeManager.surfaceSelected
+                   : (exportToolbarMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated)
+            border.color: sessionController.isExporting ? themeManager.accent : themeManager.border
+            border.width: 1
+            opacity: (selectionManager.hasSelection || selectionManager.selectedCount > 0) ? 1.0 : 0.5
+
+            Row {
+                id: exportBtnRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "📤"
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Export...")
+                    font.pixelSize: themeManager.fontSm
+                    font.weight: Font.Medium
+                    color: themeManager.textPrimary
+                    visible: root.width > 1060
+                }
+            }
+
+            ToolTip.visible: exportToolbarMouse.containsMouse
+            ToolTip.text: qsTr("Export selected photos with format conversion and resizing (Ctrl+E)")
+
+            MouseArea {
+                id: exportToolbarMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                enabled: (selectionManager.hasSelection || selectionManager.selectedCount > 0) && !sessionController.isExporting
+                onClicked: sessionController.openExportDialog()
+            }
+        }
+
+        // Batch Rename Photos Button
+        Rectangle {
+            width: renameBtnRow.implicitWidth + 16
+            height: 32
+            radius: themeManager.radiusMd
+            anchors.verticalCenter: parent.verticalCenter
+            color: renameToolbarMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
+            border.color: themeManager.border
+            border.width: 1
+            opacity: (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0) ? 1.0 : 0.5
+
+            Row {
+                id: renameBtnRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "🏷️"
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Rename...")
+                    font.pixelSize: themeManager.fontSm
+                    font.weight: Font.Medium
+                    color: themeManager.textPrimary
+                    visible: root.width > 1160
+                }
+            }
+
+            ToolTip.visible: renameToolbarMouse.containsMouse
+            ToolTip.text: qsTr("Batch rename photos using custom templates (F2)")
+
+            MouseArea {
+                id: renameToolbarMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                enabled: (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0)
+                onClicked: sessionController.openBatchRenameDialog()
+            }
+        }
+
+        // View Mode Switcher: Grid vs Loupe vs Compare
+        Rectangle {
+            width: 102
             height: 32
             radius: themeManager.radiusMd
             anchors.verticalCenter: parent.verticalCenter
@@ -163,7 +309,7 @@ Rectangle {
                     width: 34
                     height: 32
                     radius: themeManager.radiusMd
-                    color: !sessionController.previewMode ? themeManager.accent : "transparent"
+                    color: (!sessionController.previewMode && !sessionController.compareMode) ? themeManager.accent : "transparent"
 
                     Image {
                         anchors.centerIn: parent
@@ -174,23 +320,26 @@ Rectangle {
                     }
 
                     ToolTip.visible: gridBtnMouse.containsMouse
-                    ToolTip.text: qsTr("Grid View")
+                    ToolTip.text: qsTr("Grid View (Esc)")
 
                     MouseArea {
                         id: gridBtnMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: sessionController.setPreviewMode(false)
+                        onClicked: {
+                            if (sessionController.compareMode) sessionController.setCompareMode(false)
+                            if (sessionController.previewMode) sessionController.setPreviewMode(false)
+                        }
                     }
                 }
 
-                // Loupe Button
+                // Loupe / Preview Button
                 Rectangle {
                     width: 34
                     height: 32
                     radius: themeManager.radiusMd
-                    color: sessionController.previewMode ? themeManager.accent : "transparent"
+                    color: (sessionController.previewMode && !sessionController.compareMode) ? themeManager.accent : "transparent"
 
                     Image {
                         anchors.centerIn: parent
@@ -201,14 +350,44 @@ Rectangle {
                     }
 
                     ToolTip.visible: loupeBtnMouse.containsMouse
-                    ToolTip.text: qsTr("Preview View (Enter)")
+                    ToolTip.text: qsTr("Preview / Loupe View (Enter)")
 
                     MouseArea {
                         id: loupeBtnMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: sessionController.setPreviewMode(true)
+                        onClicked: {
+                            if (sessionController.compareMode) sessionController.setCompareMode(false)
+                            sessionController.setPreviewMode(true)
+                        }
+                    }
+                }
+
+                // Side-by-Side Compare Button (Light Table)
+                Rectangle {
+                    width: 34
+                    height: 32
+                    radius: themeManager.radiusMd
+                    color: sessionController.compareMode ? themeManager.accent : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "◫"
+                        font.pixelSize: 15
+                        font.weight: Font.Bold
+                        color: sessionController.compareMode ? "#ffffff" : themeManager.textSecondary
+                    }
+
+                    ToolTip.visible: compareBtnMouse.containsMouse
+                    ToolTip.text: qsTr("Compare Selected Photos / Light Table (C)")
+
+                    MouseArea {
+                        id: compareBtnMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: sessionController.toggleCompareMode()
                     }
                 }
             }
@@ -292,6 +471,197 @@ Rectangle {
             }
         }
 
+        // Active Tag Filter Chip
+        Rectangle {
+            visible: filterModel.tagFilter.length > 0
+            height: 28
+            radius: 14
+            anchors.verticalCenter: parent.verticalCenter
+            color: themeManager.surfaceSelected
+            border.color: themeManager.accent
+            border.width: 1
+            implicitWidth: tagFilterRow.implicitWidth + 16
+
+            Row {
+                id: tagFilterRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "#" + filterModel.tagFilter
+                    font.pixelSize: themeManager.fontXs
+                    font.weight: Font.DemiBold
+                    color: themeManager.accent
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                }
+
+                Rectangle {
+                    width: 14
+                    height: 14
+                    radius: 7
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: activeTagMouse.containsMouse ? themeManager.danger : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        font.pixelSize: 8
+                        font.weight: Font.Bold
+                        color: activeTagMouse.containsMouse ? "#ffffff" : themeManager.accent
+                    }
+                }
+            }
+
+            ToolTip.visible: activeTagMouse.containsMouse
+            ToolTip.text: qsTr("Clear tag filter '%1'").arg(filterModel.tagFilter)
+
+            MouseArea {
+                id: activeTagMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: sessionController.clearTagFilter()
+            }
+        }
+
+        // Rating Filter Selector
+        ComboBox {
+            id: ratingCombo
+            width: root.width > 1020 ? 94 : 80
+            height: 32
+            anchors.verticalCenter: parent.verticalCenter
+            model: [
+                { text: qsTr("Rating"), value: 0 },
+                { text: "★ 5", value: 5 },
+                { text: "★ 4+", value: 4 },
+                { text: "★ 3+", value: 3 },
+                { text: "★ 2+", value: 2 },
+                { text: "★ 1+", value: 1 }
+            ]
+            textRole: "text"
+            valueRole: "value"
+            currentIndex: {
+                for (var i = 0; i < model.length; ++i) {
+                    if (model[i].value === filterModel.minRating) return i;
+                }
+                return 0;
+            }
+            font.pixelSize: themeManager.fontSm
+
+            background: Rectangle {
+                radius: themeManager.radiusMd
+                color: filterModel.minRating > 0 ? themeManager.surfaceSelected : themeManager.surfaceElevated
+                border.color: filterModel.minRating > 0 ? themeManager.accent : themeManager.border
+                border.width: 1
+            }
+
+            contentItem: Text {
+                leftPadding: 8
+                text: ratingCombo.displayText
+                font.pixelSize: themeManager.fontSm
+                color: filterModel.minRating > 0 ? themeManager.accent : themeManager.textPrimary
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+
+            onActivated: {
+                sessionController.setRatingFilter(currentValue)
+            }
+        }
+
+        // Color Label Filter Selector
+        ComboBox {
+            id: colorLabelCombo
+            width: root.width > 1020 ? 94 : 80
+            height: 32
+            anchors.verticalCenter: parent.verticalCenter
+            model: [
+                { text: qsTr("Color"), value: 0 },
+                { text: "🔴 Red", value: 1 },
+                { text: "🟡 Yellow", value: 2 },
+                { text: "🟢 Green", value: 3 },
+                { text: "🔵 Blue", value: 4 },
+                { text: "🟣 Purple", value: 5 }
+            ]
+            textRole: "text"
+            valueRole: "value"
+            currentIndex: {
+                for (var i = 0; i < model.length; ++i) {
+                    if (model[i].value === filterModel.colorLabelFilter) return i;
+                }
+                return 0;
+            }
+            font.pixelSize: themeManager.fontSm
+
+            background: Rectangle {
+                radius: themeManager.radiusMd
+                color: filterModel.colorLabelFilter > 0 ? themeManager.surfaceSelected : themeManager.surfaceElevated
+                border.color: filterModel.colorLabelFilter > 0 ? themeManager.accent : themeManager.border
+                border.width: 1
+            }
+
+            contentItem: Text {
+                leftPadding: 8
+                text: colorLabelCombo.displayText
+                font.pixelSize: themeManager.fontSm
+                color: filterModel.colorLabelFilter > 0 ? themeManager.accent : themeManager.textPrimary
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+
+            onActivated: {
+                sessionController.setColorLabelFilter(currentValue)
+            }
+        }
+
+        // Reset All Filters Button
+        Rectangle {
+            visible: filterModel.tagFilter.length > 0 || filterModel.minRating > 0 || filterModel.colorLabelFilter > 0 || filterModel.categoryFilter !== "all" || searchInput.text.length > 0
+            width: resetFiltersRow.implicitWidth + 14
+            height: 28
+            radius: themeManager.radiusSm
+            anchors.verticalCenter: parent.verticalCenter
+            color: resetFiltersMouse.containsMouse ? themeManager.surfaceHover : "transparent"
+            border.color: themeManager.border
+            border.width: 1
+
+            Row {
+                id: resetFiltersRow
+                anchors.centerIn: parent
+                spacing: 4
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "✕"
+                    font.pixelSize: 10
+                    color: themeManager.textSecondary
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Reset")
+                    font.pixelSize: 11
+                    color: themeManager.textSecondary
+                }
+            }
+
+            ToolTip.visible: resetFiltersMouse.containsMouse
+            ToolTip.text: qsTr("Clear all filters and search query")
+
+            MouseArea {
+                id: resetFiltersMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    searchInput.text = ""
+                    sessionController.clearAllFilters()
+                }
+            }
+        }
+
         // Sort Criterion Selector
         ComboBox {
             id: sortCombo
@@ -306,6 +676,12 @@ Rectangle {
             ]
             textRole: "text"
             valueRole: "value"
+            currentIndex: {
+                for (var i = 0; i < model.length; ++i) {
+                    if (model[i].value === filterModel.sortCriterion) return i;
+                }
+                return 0;
+            }
             font.pixelSize: themeManager.fontSm
 
             background: Rectangle {

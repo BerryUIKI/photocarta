@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "catalogmodel.h"
+#include "database/catalogdatabase.h"
+#include "metadata/exifparser.h"
+#include "metadata/xmpsidecar.h"
 
+#include <QFile>
 #include <QFileInfo>
 #include <QImageReader>
 #include <QMimeDatabase>
+#include <QSet>
 #include <QUuid>
 
 namespace PhotoCarta
@@ -81,12 +86,20 @@ QVariant CatalogModel::data(const QModelIndex &index, int role) const
         return item.isFlagged;
     case TagsRole:
         return item.tags;
+    case CaptionRole:
+        return item.caption;
+    case ColorLabelRole:
+        return item.colorLabel;
     case ThumbnailUrlRole:
         return item.thumbnailUrl;
     case PreviewUrlRole:
         return item.previewUrl;
     case IsDemoFixtureRole:
         return item.isDemoFixture;
+    case IsMissingRole:
+        return item.isMissing;
+    case CollectionIdRole:
+        return item.collectionId;
     case ItemMapRole:
         return item.toVariantMap();
     case Qt::DisplayRole:
@@ -103,6 +116,8 @@ QHash<int, QByteArray> CatalogModel::roleNames() const
         {FilePathRole, "filePath"},
         {FileNameRole, "fileName"},
         {TitleRole, "title"},
+        {CaptionRole, "caption"},
+        {ColorLabelRole, "colorLabel"},
         {FileSizeRole, "fileSizeBytes"},
         {FormattedFileSizeRole, "formattedFileSize"},
         {MimeTypeRole, "mimeType"},
@@ -125,6 +140,8 @@ QHash<int, QByteArray> CatalogModel::roleNames() const
         {ThumbnailUrlRole, "thumbnailUrl"},
         {PreviewUrlRole, "previewUrl"},
         {IsDemoFixtureRole, "isDemoFixture"},
+        {IsMissingRole, "isMissing"},
+        {CollectionIdRole, "collectionId"},
         {ItemMapRole, "itemMap"}
     };
 }
@@ -187,6 +204,8 @@ void CatalogModel::loadDemoFixtures()
     item1.filePath = QStringLiteral("qrc:/assets/demo/demo_landscape.svg");
     item1.fileName = QStringLiteral("Alpine_Sunrise_Oeschinen.jpg");
     item1.title = QStringLiteral("Alpine Sunrise at Lake Oeschinen");
+    item1.caption = QStringLiteral("Panoramic morning light over turquoise alpine lake waters surrounded by sheer limestone cliffs in the Bernese Alps.");
+    item1.colorLabel = 2; // Yellow
     item1.fileSizeBytes = 28430000;
     item1.formattedFileSize = CatalogItem::formatBytes(item1.fileSizeBytes);
     item1.mimeType = QStringLiteral("image/jpeg");
@@ -213,6 +232,8 @@ void CatalogModel::loadDemoFixtures()
     item2.filePath = QStringLiteral("qrc:/assets/demo/demo_portrait.svg");
     item2.fileName = QStringLiteral("Studio_Profile_AmberRim.jpg");
     item2.title = QStringLiteral("Studio Portrait in Amber & Cyan");
+    item2.caption = QStringLiteral("High-fashion editorial portrait with complementary warm amber edge lighting and cool cyan ambient fill.");
+    item2.colorLabel = 1; // Red
     item2.fileSizeBytes = 35120000;
     item2.formattedFileSize = CatalogItem::formatBytes(item2.fileSizeBytes);
     item2.mimeType = QStringLiteral("image/jpeg");
@@ -239,6 +260,8 @@ void CatalogModel::loadDemoFixtures()
     item3.filePath = QStringLiteral("qrc:/assets/demo/demo_architecture.svg");
     item3.fileName = QStringLiteral("Geometric_Concrete_Pavilion.jpg");
     item3.title = QStringLiteral("Geometric Concrete Pavilion");
+    item3.caption = QStringLiteral("Brutalist architecture study emphasizing diagonal cantilever lines and monolithic concrete textures.");
+    item3.colorLabel = 3; // Green
     item3.fileSizeBytes = 42680000;
     item3.formattedFileSize = CatalogItem::formatBytes(item3.fileSizeBytes);
     item3.mimeType = QStringLiteral("image/jpeg");
@@ -265,6 +288,8 @@ void CatalogModel::loadDemoFixtures()
     item4.filePath = QStringLiteral("qrc:/assets/demo/demo_street.svg");
     item4.fileName = QStringLiteral("Neon_Rain_Alleyway.jpg");
     item4.title = QStringLiteral("Neon Rain in Shinjuku Alleyway");
+    item4.caption = QStringLiteral("Atmospheric rainy night in Tokyo reflecting glowing cybernetic signage off wet pavement.");
+    item4.colorLabel = 4; // Blue
     item4.fileSizeBytes = 22840000;
     item4.formattedFileSize = CatalogItem::formatBytes(item4.fileSizeBytes);
     item4.mimeType = QStringLiteral("image/jpeg");
@@ -291,6 +316,8 @@ void CatalogModel::loadDemoFixtures()
     item5.filePath = QStringLiteral("qrc:/assets/demo/demo_macro.svg");
     item5.fileName = QStringLiteral("Monstera_Dew_Drops_Macro.jpg");
     item5.title = QStringLiteral("Monstera Dew Drops Macro");
+    item5.caption = QStringLiteral("Extreme macro detail capturing pristine condensation droplets along the deep green vein structure of a tropical leaf.");
+    item5.colorLabel = 5; // Purple
     item5.fileSizeBytes = 54200000;
     item5.formattedFileSize = CatalogItem::formatBytes(item5.fileSizeBytes);
     item5.mimeType = QStringLiteral("image/jpeg");
@@ -317,6 +344,8 @@ void CatalogModel::loadDemoFixtures()
     item6.filePath = QStringLiteral("qrc:/assets/demo/demo_astro.svg");
     item6.fileName = QStringLiteral("Milky_Way_Arc_Canyon.jpg");
     item6.title = QStringLiteral("Milky Way Arc over Arch Canyon");
+    item6.caption = QStringLiteral("Untouched dark sky panoramic long exposure revealing the galactic core framed through natural desert sandstone arches.");
+    item6.colorLabel = 2; // Yellow
     item6.fileSizeBytes = 18950000;
     item6.formattedFileSize = CatalogItem::formatBytes(item6.fileSizeBytes);
     item6.mimeType = QStringLiteral("image/jpeg");
@@ -346,6 +375,7 @@ void CatalogModel::loadDemoFixtures()
 
     endResetModel();
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(static_cast<int>(m_items.size()));
 }
 
@@ -387,22 +417,64 @@ CatalogItem CatalogModel::inspectLocalFile(const QString &filePath)
         item.formattedDimensions = QStringLiteral("Unknown dimensions");
     }
 
-    // EXIF metadata: Unknown without EXIF in this prototype
-    // Do not fabricate fake camera or lens names
-    item.cameraModel.clear();
-    item.lensModel.clear();
-    item.focalLength.clear();
-    item.aperture.clear();
-    item.shutterSpeed.clear();
-    item.iso = 0;
     item.rating = 0;
     item.isFlagged = false;
     item.tags = {QStringLiteral("Imported")};
-    item.thumbnailUrl = QUrl::fromLocalFile(item.filePath);
+    item.thumbnailUrl = QUrl(QStringLiteral("image://thumbnail/") + item.filePath);
     item.previewUrl = QUrl::fromLocalFile(item.filePath);
     item.isDemoFixture = false; // Real local file!
 
+    // Parse EXIF metadata
+    const ExifData exif = ExifParser::parseFile(item.filePath);
+    if (exif.isValid)
+    {
+        if (!exif.cameraModel.isEmpty())
+        {
+            item.cameraModel = exif.cameraModel;
+        }
+        if (!exif.lensModel.isEmpty())
+        {
+            item.lensModel = exif.lensModel;
+        }
+        if (!exif.focalLength.isEmpty())
+        {
+            item.focalLength = exif.focalLength;
+        }
+        if (!exif.aperture.isEmpty())
+        {
+            item.aperture = exif.aperture;
+        }
+        if (!exif.shutterSpeed.isEmpty())
+        {
+            item.shutterSpeed = exif.shutterSpeed;
+        }
+        if (exif.iso > 0)
+        {
+            item.iso = exif.iso;
+        }
+        if (exif.dateTaken.isValid())
+        {
+            item.dateTaken = exif.dateTaken;
+            item.formattedDate = exif.dateTaken.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+        }
+        if (item.dimensions.isEmpty() && exif.dimensions.isValid())
+        {
+            item.dimensions = exif.dimensions;
+            item.formattedDimensions = QString::asprintf("%d × %d", exif.dimensions.width(), exif.dimensions.height());
+        }
+    }
+
     return item;
+}
+
+void CatalogModel::setDatabase(CatalogDatabase *database)
+{
+    m_database = database;
+}
+
+CatalogDatabase *CatalogModel::database() const
+{
+    return m_database;
 }
 
 void CatalogModel::openUrls(const QList<QUrl> &urls)
@@ -417,6 +489,30 @@ void CatalogModel::openUrls(const QList<QUrl> &urls)
         }
     }
     addFilePaths(paths);
+}
+
+void CatalogModel::addItems(const QList<CatalogItem> &items)
+{
+    if (items.isEmpty())
+    {
+        return;
+    }
+
+    const int firstRow = static_cast<int>(m_items.size());
+    const int lastRow = firstRow + static_cast<int>(items.size()) - 1;
+
+    beginInsertRows(QModelIndex(), firstRow, lastRow);
+    m_items.append(items);
+    endInsertRows();
+
+    if (m_database && m_database->isOpen())
+    {
+        m_database->insertOrUpdateItems(items);
+    }
+
+    emit countChanged();
+    emit availableTagsChanged();
+    emit sessionLoaded(static_cast<int>(m_items.size()));
 }
 
 void CatalogModel::addFilePaths(const QStringList &filePaths)
@@ -442,20 +538,596 @@ void CatalogModel::addFilePaths(const QStringList &filePaths)
         newItems.append(item);
     }
 
-    if (newItems.isEmpty())
+    addItems(newItems);
+}
+
+bool CatalogModel::updateItemFilePath(int index, const QString &newFilePath, const QString &newFileName)
+{
+    if (index < 0 || index >= m_items.size() || newFilePath.isEmpty())
+    {
+        return false;
+    }
+
+    CatalogItem &item = m_items[index];
+    const QString oldFilePath = item.filePath;
+    item.filePath = newFilePath;
+    item.fileName = newFileName.isEmpty() ? QFileInfo(newFilePath).fileName() : newFileName;
+    item.previewUrl = QUrl::fromLocalFile(newFilePath);
+    item.thumbnailUrl = QUrl(QStringLiteral("image://thumbnail/") + newFilePath);
+
+    if (m_database && m_database->isOpen() && !item.isDemoFixture)
+    {
+        m_database->updateItemPath(oldFilePath, newFilePath, item.fileName);
+    }
+
+    const QModelIndex modelIdx = createIndex(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {FilePathRole, FileNameRole, PreviewUrlRole, ThumbnailUrlRole, ItemMapRole});
+    return true;
+}
+
+void CatalogModel::updateItemTitle(int index, const QString &title)
+{
+    if (index < 0 || index >= m_items.size())
     {
         return;
     }
 
-    const int firstRow = static_cast<int>(m_items.size());
-    const int lastRow = firstRow + static_cast<int>(newItems.size()) - 1;
+    if (m_items[index].title == title)
+    {
+        return;
+    }
 
-    beginInsertRows(QModelIndex(), firstRow, lastRow);
-    m_items.append(newItems);
-    endInsertRows();
+    m_items[index].title = title;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {TitleRole, Qt::DisplayRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemTitle(m_items[index].filePath, title);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
+    }
+}
+
+void CatalogModel::updateItemCaption(int index, const QString &caption)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    if (m_items[index].caption == caption)
+    {
+        return;
+    }
+
+    m_items[index].caption = caption;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {CaptionRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemCaption(m_items[index].filePath, caption);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
+    }
+}
+
+void CatalogModel::updateItemColorLabel(int index, int colorLabel)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    const int clamped = qBound(0, colorLabel, 5);
+    if (m_items[index].colorLabel == clamped)
+    {
+        return;
+    }
+
+    m_items[index].colorLabel = clamped;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {ColorLabelRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemColorLabel(m_items[index].filePath, clamped);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
+    }
+}
+
+void CatalogModel::updateItemRating(int index, int rating)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    if (m_items[index].rating == rating)
+    {
+        return;
+    }
+
+    m_items[index].rating = rating;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {RatingRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemRating(m_items[index].filePath, rating);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
+    }
+}
+
+void CatalogModel::updateItemFlagged(int index, bool flagged)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    if (m_items[index].isFlagged == flagged)
+    {
+        return;
+    }
+
+    m_items[index].isFlagged = flagged;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {IsFlaggedRole, ItemMapRole});
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->updateItemFlagged(m_items[index].filePath, flagged);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
+    }
+}
+
+void CatalogModel::updateItemTags(int index, const QStringList &tags)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    m_items[index].tags = tags;
+    const QModelIndex modelIdx = this->index(index, 0);
+    emit dataChanged(modelIdx, modelIdx, {TagsRole, ItemMapRole});
+    emit availableTagsChanged();
+
+    if (m_database && m_database->isOpen() && !m_items[index].isDemoFixture)
+    {
+        m_database->setItemTags(m_items[index].filePath, tags);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        writeXmpSidecar(index);
+    }
+}
+
+void CatalogModel::addTagToItem(int index, const QString &tag)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    const QString trimmed = tag.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return;
+    }
+
+    for (const auto &existing : m_items[index].tags)
+    {
+        if (existing.compare(trimmed, Qt::CaseInsensitive) == 0)
+        {
+            return;
+        }
+    }
+
+    QStringList updated = m_items[index].tags;
+    updated.append(trimmed);
+    updateItemTags(index, updated);
+}
+
+void CatalogModel::removeTagFromItem(int index, const QString &tag)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return;
+    }
+
+    const QString trimmed = tag.trimmed();
+    QStringList updated;
+    bool found = false;
+    for (const auto &existing : m_items[index].tags)
+    {
+        if (existing.compare(trimmed, Qt::CaseInsensitive) == 0)
+        {
+            found = true;
+        }
+        else
+        {
+            updated.append(existing);
+        }
+    }
+
+    if (found)
+    {
+        updateItemTags(index, updated);
+    }
+}
+
+void CatalogModel::updateItemsTitle(const QList<int> &indices, const QString &title)
+{
+    for (int idx : indices)
+    {
+        updateItemTitle(idx, title);
+    }
+}
+
+void CatalogModel::updateItemsCaption(const QList<int> &indices, const QString &caption)
+{
+    for (int idx : indices)
+    {
+        updateItemCaption(idx, caption);
+    }
+}
+
+void CatalogModel::updateItemsColorLabel(const QList<int> &indices, int colorLabel)
+{
+    for (int idx : indices)
+    {
+        updateItemColorLabel(idx, colorLabel);
+    }
+}
+
+void CatalogModel::updateItemsRating(const QList<int> &indices, int rating)
+{
+    const int clamped = qBound(0, rating, 5);
+    QList<int> changed;
+    QStringList paths;
+
+    for (int idx : indices)
+    {
+        if (idx < 0 || idx >= m_items.size() || m_items[idx].rating == clamped)
+        {
+            continue;
+        }
+
+        m_items[idx].rating = clamped;
+        changed.append(idx);
+        if (m_database && m_database->isOpen() && !m_items[idx].isDemoFixture)
+        {
+            paths.append(m_items[idx].filePath);
+        }
+    }
+
+    if (changed.isEmpty())
+    {
+        return;
+    }
+
+    int firstRow = changed.first();
+    int lastRow = firstRow;
+    for (int row : changed)
+    {
+        firstRow = qMin(firstRow, row);
+        lastRow = qMax(lastRow, row);
+    }
+    emit dataChanged(index(firstRow, 0), index(lastRow, 0), {RatingRole, ItemMapRole});
+
+    if (!paths.isEmpty())
+    {
+        m_database->updateItemsRating(paths, clamped);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        for (int idx : changed)
+        {
+            writeXmpSidecar(idx);
+        }
+    }
+}
+
+void CatalogModel::updateItemsFlagged(const QList<int> &indices, bool flagged)
+{
+    QList<int> changed;
+    QStringList paths;
+
+    for (int idx : indices)
+    {
+        if (idx < 0 || idx >= m_items.size() || m_items[idx].isFlagged == flagged)
+        {
+            continue;
+        }
+
+        m_items[idx].isFlagged = flagged;
+        changed.append(idx);
+        if (m_database && m_database->isOpen() && !m_items[idx].isDemoFixture)
+        {
+            paths.append(m_items[idx].filePath);
+        }
+    }
+
+    if (changed.isEmpty())
+    {
+        return;
+    }
+
+    int firstRow = changed.first();
+    int lastRow = firstRow;
+    for (int row : changed)
+    {
+        firstRow = qMin(firstRow, row);
+        lastRow = qMax(lastRow, row);
+    }
+    emit dataChanged(index(firstRow, 0), index(lastRow, 0), {IsFlaggedRole, ItemMapRole});
+
+    if (!paths.isEmpty())
+    {
+        m_database->updateItemsFlagged(paths, flagged);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        for (int idx : changed)
+        {
+            writeXmpSidecar(idx);
+        }
+    }
+}
+
+void CatalogModel::addTagToItems(const QList<int> &indices, const QString &tag)
+{
+    const QString trimmed = tag.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return;
+    }
+
+    QList<int> changed;
+    QStringList paths;
+
+    for (int idx : indices)
+    {
+        if (idx < 0 || idx >= m_items.size())
+        {
+            continue;
+        }
+
+        bool exists = false;
+        for (const auto &existing : m_items[idx].tags)
+        {
+            if (existing.compare(trimmed, Qt::CaseInsensitive) == 0)
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (exists)
+        {
+            continue;
+        }
+
+        m_items[idx].tags.append(trimmed);
+        changed.append(idx);
+        if (m_database && m_database->isOpen() && !m_items[idx].isDemoFixture)
+        {
+            paths.append(m_items[idx].filePath);
+        }
+    }
+
+    if (changed.isEmpty())
+    {
+        return;
+    }
+
+    int firstRow = changed.first();
+    int lastRow = firstRow;
+    for (int row : changed)
+    {
+        firstRow = qMin(firstRow, row);
+        lastRow = qMax(lastRow, row);
+    }
+    emit dataChanged(index(firstRow, 0), index(lastRow, 0), {TagsRole, ItemMapRole});
+    emit availableTagsChanged();
+
+    if (!paths.isEmpty())
+    {
+        m_database->addTagsToItems(paths, {trimmed});
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        for (int idx : changed)
+        {
+            writeXmpSidecar(idx);
+        }
+    }
+}
+
+void CatalogModel::removeTagFromItems(const QList<int> &indices, const QString &tag)
+{
+    const QString trimmed = tag.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return;
+    }
+
+    QList<int> changed;
+    QStringList paths;
+    QStringList removedTags;
+
+    for (int idx : indices)
+    {
+        if (idx < 0 || idx >= m_items.size())
+        {
+            continue;
+        }
+
+        QStringList updated;
+        bool found = false;
+        for (const auto &existing : m_items[idx].tags)
+        {
+            if (existing.compare(trimmed, Qt::CaseInsensitive) == 0)
+            {
+                found = true;
+                bool alreadyListed = false;
+                for (const auto &listed : removedTags)
+                {
+                    if (listed.compare(existing, Qt::CaseInsensitive) == 0)
+                    {
+                        alreadyListed = true;
+                        break;
+                    }
+                }
+                if (!alreadyListed)
+                {
+                    removedTags.append(existing);
+                }
+            }
+            else
+            {
+                updated.append(existing);
+            }
+        }
+
+        if (!found)
+        {
+            continue;
+        }
+
+        m_items[idx].tags = updated;
+        changed.append(idx);
+        if (m_database && m_database->isOpen() && !m_items[idx].isDemoFixture)
+        {
+            paths.append(m_items[idx].filePath);
+        }
+    }
+
+    if (changed.isEmpty())
+    {
+        return;
+    }
+
+    int firstRow = changed.first();
+    int lastRow = firstRow;
+    for (int row : changed)
+    {
+        firstRow = qMin(firstRow, row);
+        lastRow = qMax(lastRow, row);
+    }
+    emit dataChanged(index(firstRow, 0), index(lastRow, 0), {TagsRole, ItemMapRole});
+    emit availableTagsChanged();
+
+    if (!paths.isEmpty() && !removedTags.isEmpty())
+    {
+        m_database->removeTagsFromItems(paths, removedTags);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        for (int idx : changed)
+        {
+            writeXmpSidecar(idx);
+        }
+    }
+}
+
+QStringList CatalogModel::availableTags() const
+{
+    QSet<QString> unique;
+    for (const auto &item : m_items)
+    {
+        for (const auto &t : item.tags)
+        {
+            const QString trimmed = t.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                unique.insert(trimmed);
+            }
+        }
+    }
+
+    if (m_database && m_database->isOpen())
+    {
+        const QStringList dbTags = m_database->allTags();
+        for (const auto &t : dbTags)
+        {
+            const QString trimmed = t.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                unique.insert(trimmed);
+            }
+        }
+    }
+
+    QStringList list = unique.values();
+    list.sort(Qt::CaseInsensitive);
+    return list;
+}
+
+void CatalogModel::loadFromDatabase(int collectionId)
+{
+    if (!m_database || !m_database->isOpen())
+    {
+        return;
+    }
+
+    const QList<CatalogItem> dbItems = (collectionId > 0)
+                                           ? m_database->fetchItemsByCollection(collectionId)
+                                           : m_database->fetchAllItems();
+
+    beginResetModel();
+    m_items = dbItems;
+    endResetModel();
 
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(static_cast<int>(m_items.size()));
+}
+
+void CatalogModel::setCollectionAvailable(const QString &rootPath, bool available)
+{
+    if (m_database && m_database->isOpen())
+    {
+        m_database->setCollectionAvailable(rootPath, available);
+    }
+
+    for (int i = 0; i < m_items.size(); ++i)
+    {
+        if (m_items[i].filePath.startsWith(rootPath))
+        {
+            if (m_items[i].isMissing == available)
+            {
+                m_items[i].isMissing = !available;
+                const QModelIndex idx = index(i, 0);
+                emit dataChanged(idx, idx, {IsMissingRole, ItemMapRole});
+            }
+        }
+    }
 }
 
 void CatalogModel::clearSession()
@@ -470,7 +1142,120 @@ void CatalogModel::clearSession()
     endResetModel();
 
     emit countChanged();
+    emit availableTagsChanged();
     emit sessionLoaded(0);
+}
+
+bool CatalogModel::xmpSyncEnabled() const
+{
+    return m_xmpSyncEnabled;
+}
+
+void CatalogModel::setXmpSyncEnabled(bool enabled)
+{
+    m_xmpSyncEnabled = enabled;
+}
+
+bool CatalogModel::writeXmpSidecar(int index)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    const CatalogItem &item = m_items[index];
+    if (item.isDemoFixture || item.filePath.startsWith(QStringLiteral("qrc:/")) || !QFile::exists(item.filePath))
+    {
+        return false;
+    }
+
+    XmpMetadata xmp;
+    xmp.title = item.title;
+    xmp.caption = item.caption;
+    xmp.rating = item.rating;
+    xmp.colorLabel = item.colorLabel;
+    xmp.isFlagged = item.isFlagged;
+    xmp.tags = item.tags;
+    xmp.dateTaken = item.dateTaken;
+
+    const QString sidecarPath = XmpSidecar::sidecarPathForImage(item.filePath, false);
+    return XmpSidecar::writeToFile(sidecarPath, xmp);
+}
+
+bool CatalogModel::readXmpSidecar(int index)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    const CatalogItem &item = m_items[index];
+    if (item.isDemoFixture || item.filePath.startsWith(QStringLiteral("qrc:/")))
+    {
+        return false;
+    }
+
+    if (!XmpSidecar::hasSidecar(item.filePath))
+    {
+        return false;
+    }
+
+    const QString sidecarPath = XmpSidecar::sidecarPathForImage(item.filePath, true);
+    XmpMetadata xmp;
+    if (!XmpSidecar::readFromFile(sidecarPath, xmp))
+    {
+        return false;
+    }
+
+    if (!xmp.title.isEmpty())
+    {
+        updateItemTitle(index, xmp.title);
+    }
+    if (!xmp.caption.isEmpty())
+    {
+        updateItemCaption(index, xmp.caption);
+    }
+    if (xmp.rating > 0)
+    {
+        updateItemRating(index, xmp.rating);
+    }
+    if (xmp.colorLabel > 0)
+    {
+        updateItemColorLabel(index, xmp.colorLabel);
+    }
+    updateItemFlagged(index, xmp.isFlagged);
+    if (!xmp.tags.isEmpty())
+    {
+        updateItemTags(index, xmp.tags);
+    }
+
+    return true;
+}
+
+int CatalogModel::writeXmpSidecars(const QList<int> &indices)
+{
+    int count = 0;
+    for (int idx : indices)
+    {
+        if (writeXmpSidecar(idx))
+        {
+            ++count;
+        }
+    }
+    return count;
+}
+
+int CatalogModel::readXmpSidecars(const QList<int> &indices)
+{
+    int count = 0;
+    for (int idx : indices)
+    {
+        if (readXmpSidecar(idx))
+        {
+            ++count;
+        }
+    }
+    return count;
 }
 
 } // namespace PhotoCarta

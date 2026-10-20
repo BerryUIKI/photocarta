@@ -15,8 +15,10 @@ class CatalogFilterModel : public QSortFilterProxyModel
     Q_OBJECT
     Q_PROPERTY(QString searchQuery READ searchQuery WRITE setSearchQuery NOTIFY searchQueryChanged)
     Q_PROPERTY(QString categoryFilter READ categoryFilter WRITE setCategoryFilter NOTIFY categoryFilterChanged)
+    Q_PROPERTY(int collectionFilter READ collectionFilter WRITE setCollectionFilter NOTIFY collectionFilterChanged)
     Q_PROPERTY(QString tagFilter READ tagFilter WRITE setTagFilter NOTIFY tagFilterChanged)
     Q_PROPERTY(int minRating READ minRating WRITE setMinRating NOTIFY minRatingChanged)
+    Q_PROPERTY(int colorLabelFilter READ colorLabelFilter WRITE setColorLabelFilter NOTIFY colorLabelFilterChanged)
     Q_PROPERTY(QString sortCriterion READ sortCriterion WRITE setSortCriterion NOTIFY sortCriterionChanged)
     Q_PROPERTY(bool sortAscending READ sortAscending WRITE setSortAscending NOTIFY sortAscendingChanged)
     Q_PROPERTY(int count READ count NOTIFY countChanged)
@@ -31,11 +33,17 @@ public:
     [[nodiscard]] QString categoryFilter() const;
     void setCategoryFilter(const QString &category);
 
+    [[nodiscard]] int collectionFilter() const;
+    void setCollectionFilter(int collectionId);
+
     [[nodiscard]] QString tagFilter() const;
     void setTagFilter(const QString &tag);
 
     [[nodiscard]] int minRating() const;
     void setMinRating(int rating);
+
+    [[nodiscard]] int colorLabelFilter() const;
+    void setColorLabelFilter(int colorLabel);
 
     [[nodiscard]] QString sortCriterion() const;
     void setSortCriterion(const QString &criterion);
@@ -52,8 +60,10 @@ public:
 signals:
     void searchQueryChanged();
     void categoryFilterChanged();
+    void collectionFilterChanged();
     void tagFilterChanged();
     void minRatingChanged();
+    void colorLabelFilterChanged();
     void sortCriterionChanged();
     void sortAscendingChanged();
     void countChanged();
@@ -67,8 +77,10 @@ private:
 
     QString m_searchQuery;
     QString m_categoryFilter = QStringLiteral("all"); // "all", "demo", "imported", "favorites"
+    int m_collectionFilter = 0; // 0 = all collections
     QString m_tagFilter;
     int m_minRating = 0;
+    int m_colorLabelFilter = 0; // 0 = all, 1=Red, 2=Yellow, 3=Green, 4=Blue, 5=Purple
     QString m_sortCriterion = QStringLiteral("date"); // "date", "name", "size", "rating"
     bool m_sortAscending = false;
 };

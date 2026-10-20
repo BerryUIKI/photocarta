@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(PhotoCarta
-    VERSION 0.0.1
+    VERSION 0.1.0
     DESCRIPTION "Modern desktop photo management based on digiKam"
     HOMEPAGE_URL "https://github.com/BerryUIKI/photocarta"
     LANGUAGES CXX
@@ -38,6 +38,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     Quick
     QuickControls2
     Concurrent
+    Sql
     Test
 )
 
@@ -49,3 +50,6 @@ add_subdirectory(src)
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
+
+# CPack packaging configuration
+include(cmake/Packaging.cmake)
