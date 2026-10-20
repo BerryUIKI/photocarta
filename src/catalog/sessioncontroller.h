@@ -12,13 +12,15 @@
 #include <QList>
 #include <QObject>
 #include <QString>
-#include <QStringList>
 #include <QUrl>
 
 class QQuickWindow;
 
 namespace PhotoCarta
 {
+
+class ImageExporter;
+class HistogramCalculator;
 
 class SessionController : public QObject
 {
@@ -40,6 +42,24 @@ class SessionController : public QObject
     Q_PROPERTY(double viewerZoom READ viewerZoom WRITE setViewerZoom NOTIFY viewerZoomChanged)
     Q_PROPERTY(int viewerRotation READ viewerRotation WRITE setViewerRotation NOTIFY viewerRotationChanged)
     Q_PROPERTY(bool isFullscreen READ isFullscreen WRITE setFullscreen NOTIFY fullscreenChanged)
+    Q_PROPERTY(bool isExporting READ isExporting NOTIFY exportProgressChanged)
+    Q_PROPERTY(int exportProgress READ exportProgress NOTIFY exportProgressChanged)
+    Q_PROPERTY(bool exportDialogOpen READ exportDialogOpen WRITE setExportDialogOpen NOTIFY exportDialogOpenChanged)
+    Q_PROPERTY(bool compareMode READ compareMode WRITE setCompareMode NOTIFY compareModeChanged)
+    Q_PROPERTY(bool syncZoomPan READ syncZoomPan WRITE setSyncZoomPan NOTIFY syncZoomPanChanged)
+    Q_PROPERTY(QVariantList compareItems READ compareItems NOTIFY compareItemsChanged)
+    Q_PROPERTY(int compareCount READ compareCount NOTIFY compareItemsChanged)
+    Q_PROPERTY(double compareZoom READ compareZoom WRITE setCompareZoom NOTIFY compareZoomChanged)
+    Q_PROPERTY(double comparePanX READ comparePanX WRITE setComparePanX NOTIFY comparePanChanged)
+    Q_PROPERTY(double comparePanY READ comparePanY WRITE setComparePanY NOTIFY comparePanChanged)
+    Q_PROPERTY(int activeCompareSlot READ activeCompareSlot WRITE setActiveCompareSlot NOTIFY activeCompareSlotChanged)
+    Q_PROPERTY(QString winnerId READ winnerId NOTIFY winnerIdChanged)
+    Q_PROPERTY(QVariantMap currentHistogram READ currentHistogram NOTIFY currentHistogramChanged)
+    Q_PROPERTY(QString histogramChannel READ histogramChannel WRITE setHistogramChannel NOTIFY histogramChannelChanged)
+    Q_PROPERTY(bool histogramLogScale READ histogramLogScale WRITE setHistogramLogScale NOTIFY histogramLogScaleChanged)
+    Q_PROPERTY(bool histogramVisible READ histogramVisible WRITE setHistogramVisible NOTIFY histogramVisibleChanged)
+    Q_PROPERTY(bool xmpSyncEnabled READ xmpSyncEnabled WRITE setXmpSyncEnabled NOTIFY xmpSyncEnabledChanged)
+    Q_PROPERTY(bool batchRenameDialogOpen READ batchRenameDialogOpen WRITE setBatchRenameDialogOpen NOTIFY batchRenameDialogOpenChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -89,12 +109,32 @@ public:
     Q_INVOKABLE void cancelScan();
     Q_INVOKABLE void setItemRating(int proxyIndex, int rating);
     Q_INVOKABLE void toggleItemFlagged(int proxyIndex);
+    Q_INVOKABLE void setItemTitle(int proxyIndex, const QString &title);
+    Q_INVOKABLE void setItemCaption(int proxyIndex, const QString &caption);
+    Q_INVOKABLE void setItemColorLabel(int proxyIndex, int colorLabel);
     Q_INVOKABLE void setItemTags(int proxyIndex, const QStringList &tags);
-    Q_INVOKABLE void setSelectionRating(int rating);
-    Q_INVOKABLE void setSelectionFlagged(bool flagged);
-    Q_INVOKABLE void addTagToSelection(const QString &tag);
-    Q_INVOKABLE void removeTagFromSelection(const QString &tag);
+    Q_INVOKABLE void addTagToItem(int proxyIndex, const QString &tag);
+    Q_INVOKABLE void removeTagFromItem(int proxyIndex, const QString &tag);
+    Q_INVOKABLE void setTagFilter(const QString &tag);
+    Q_INVOKABLE void clearTagFilter();
+    Q_INVOKABLE void setRatingFilter(int minRating);
+    Q_INVOKABLE void clearRatingFilter();
+    Q_INVOKABLE void setColorLabelFilter(int colorLabel);
+    Q_INVOKABLE void clearColorLabelFilter();
+    Q_INVOKABLE void clearAllFilters();
+    Q_INVOKABLE void setTitleForSelected(const QString &title);
+    Q_INVOKABLE void setCaptionForSelected(const QString &caption);
+    Q_INVOKABLE void setColorLabelForSelected(int colorLabel);
+    Q_INVOKABLE void setRatingForSelected(int rating);
+    Q_INVOKABLE void setFlaggedForSelected(bool flagged);
+    Q_INVOKABLE void toggleFlaggedForSelected();
+    Q_INVOKABLE void addTagToSelected(const QString &tag);
+    Q_INVOKABLE void removeTagFromSelected(const QString &tag);
+    Q_INVOKABLE void copySelectedPathsToClipboard();
+    Q_INVOKABLE void revealInFileManager(int proxyIndex = -1);
     Q_INVOKABLE void loadDatabaseCatalog(int collectionId = 0);
+    Q_INVOKABLE void openDatabase(const QString &databasePath);
+    Q_INVOKABLE void importDigikamDatabase(const QString &databasePath);
     Q_INVOKABLE void selectCollection(int collectionId);
     Q_INVOKABLE void rescanCollection(int collectionId);
     Q_INVOKABLE void removeCollection(int collectionId);
@@ -122,6 +162,87 @@ public:
     Q_INVOKABLE void setFullscreen(bool fullscreen);
     Q_INVOKABLE void toggleFullscreen();
 
+    // Batch Photo Export
+    [[nodiscard]] bool isExporting() const;
+    [[nodiscard]] int exportProgress() const;
+    [[nodiscard]] int exportTotal() const;
+    [[nodiscard]] bool exportDialogOpen() const;
+    void setExportDialogOpen(bool open);
+
+    Q_INVOKABLE void openExportDialog();
+    Q_INVOKABLE void closeExportDialog();
+    Q_INVOKABLE void startExportSelected(const QVariantMap &options);
+    Q_INVOKABLE void cancelExport();
+    Q_INVOKABLE QString defaultExportDirectory() const;
+
+    // Side-by-Side Photo Comparison (Light Table)
+    [[nodiscard]] bool compareMode() const;
+    Q_INVOKABLE void setCompareMode(bool active);
+    Q_INVOKABLE void toggleCompareMode();
+
+    [[nodiscard]] bool syncZoomPan() const;
+    Q_INVOKABLE void setSyncZoomPan(bool sync);
+    Q_INVOKABLE void toggleSyncZoomPan();
+
+    [[nodiscard]] QVariantList compareItems() const;
+    [[nodiscard]] int compareCount() const;
+
+    [[nodiscard]] double compareZoom() const;
+    Q_INVOKABLE void setCompareZoom(double zoom);
+    Q_INVOKABLE void zoomInCompare(double step = 0.25);
+    Q_INVOKABLE void zoomOutCompare(double step = 0.25);
+    Q_INVOKABLE void resetCompareZoom();
+
+    [[nodiscard]] double comparePanX() const;
+    Q_INVOKABLE void setComparePanX(double x);
+
+    [[nodiscard]] double comparePanY() const;
+    Q_INVOKABLE void setComparePanY(double y);
+    Q_INVOKABLE void setComparePan(double x, double y);
+
+    [[nodiscard]] int activeCompareSlot() const;
+    Q_INVOKABLE void setActiveCompareSlot(int slot);
+
+    [[nodiscard]] QString winnerId() const;
+    Q_INVOKABLE void setAsWinner(int slotIndex);
+    Q_INVOKABLE void clearWinner();
+
+    Q_INVOKABLE void removeCompareItem(int slotIndex);
+    Q_INVOKABLE void swapCompareItems(int slotA, int slotB);
+    Q_INVOKABLE void setCompareRating(int slotIndex, int rating);
+    Q_INVOKABLE void toggleCompareFlagged(int slotIndex);
+    Q_INVOKABLE void setCompareColorLabel(int slotIndex, int colorLabel);
+    Q_INVOKABLE void addAdjacentToCompare(bool next = true);
+
+    // Image Histogram Service
+    [[nodiscard]] QVariantMap currentHistogram() const;
+    [[nodiscard]] QString histogramChannel() const;
+    Q_INVOKABLE void setHistogramChannel(const QString &channel);
+    [[nodiscard]] bool histogramLogScale() const;
+    Q_INVOKABLE void setHistogramLogScale(bool logScale);
+    Q_INVOKABLE void toggleHistogramLogScale();
+    [[nodiscard]] bool histogramVisible() const;
+    Q_INVOKABLE void setHistogramVisible(bool visible);
+    Q_INVOKABLE void toggleHistogramVisible();
+    Q_INVOKABLE void requestHistogram(const QString &filePath);
+    [[nodiscard]] HistogramCalculator *histogramCalculator() const;
+
+    // XMP Sidecar Metadata Sync
+    [[nodiscard]] bool xmpSyncEnabled() const;
+    Q_INVOKABLE void setXmpSyncEnabled(bool enabled);
+    Q_INVOKABLE void exportXmpSidecarsForSelected();
+    Q_INVOKABLE void importXmpSidecarsForSelected();
+    Q_INVOKABLE void exportXmpSidecar(int proxyIndex);
+    Q_INVOKABLE void importXmpSidecar(int proxyIndex);
+
+    // Batch Photo Renamer
+    [[nodiscard]] bool batchRenameDialogOpen() const;
+    void setBatchRenameDialogOpen(bool open);
+    Q_INVOKABLE void openBatchRenameDialog();
+    Q_INVOKABLE void closeBatchRenameDialog();
+    Q_INVOKABLE QVariantList previewBatchRename(const QVariantMap &ruleOptions);
+    Q_INVOKABLE QVariantMap executeBatchRename(const QVariantMap &ruleOptions);
+
 signals:
     void previewModeChanged();
     void leftPaneVisibleChanged();
@@ -138,6 +259,23 @@ signals:
     void viewerRotationChanged();
     void fullscreenChanged();
     void screenshotCompleted(const QString &path, bool success);
+    void exportProgressChanged();
+    void exportDialogOpenChanged();
+    void exportCompleted(int successCount, int failCount, const QString &outputDir);
+    void compareModeChanged();
+    void syncZoomPanChanged();
+    void compareItemsChanged();
+    void compareZoomChanged();
+    void comparePanChanged();
+    void activeCompareSlotChanged();
+    void winnerIdChanged();
+    void currentHistogramChanged();
+    void histogramChannelChanged();
+    void histogramLogScaleChanged();
+    void histogramVisibleChanged();
+    void xmpSyncEnabledChanged();
+    void batchRenameDialogOpenChanged();
+    void batchRenameCompleted(int successCount, int failCount);
 
 private slots:
     void onModelCountChanged();
@@ -149,7 +287,6 @@ private slots:
 
 private:
     [[nodiscard]] int sourceRowForProxy(int proxyIndex) const;
-    [[nodiscard]] QStringList targetItemIds() const;
 
     CatalogModel *m_model = nullptr;
     CatalogFilterModel *m_filterModel = nullptr;
@@ -169,6 +306,28 @@ private:
     double m_viewerZoom = 1.0;
     int m_viewerRotation = 0;
     bool m_isFullscreen = false;
+
+    ImageExporter *m_exporter = nullptr;
+    bool m_exportDialogOpen = false;
+
+    // Side-by-side comparison (Light Table)
+    bool m_compareMode = false;
+    bool m_syncZoomPan = true;
+    double m_compareZoom = 1.0;
+    double m_comparePanX = 0.0;
+    double m_comparePanY = 0.0;
+    int m_activeCompareSlot = 0;
+    QString m_winnerId;
+    QList<int> m_compareProxyRows;
+
+    // Image Histogram Service
+    HistogramCalculator *m_histogramCalculator = nullptr;
+    QVariantMap m_currentHistogram;
+    QString m_histogramChannel = QStringLiteral("rgb");
+    bool m_histogramLogScale = false;
+    bool m_histogramVisible = true;
+    bool m_xmpSyncEnabled = true;
+    bool m_batchRenameDialogOpen = false;
 };
 
 } // namespace PhotoCarta

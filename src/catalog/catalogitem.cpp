@@ -41,6 +41,8 @@ QVariantMap CatalogItem::toVariantMap() const
     map.insert(QStringLiteral("filePath"), filePath);
     map.insert(QStringLiteral("fileName"), fileName);
     map.insert(QStringLiteral("title"), title);
+    map.insert(QStringLiteral("caption"), caption);
+    map.insert(QStringLiteral("colorLabel"), colorLabel);
     map.insert(QStringLiteral("fileSizeBytes"), fileSizeBytes);
     map.insert(QStringLiteral("formattedFileSize"), formattedFileSize);
     map.insert(QStringLiteral("mimeType"), mimeType);

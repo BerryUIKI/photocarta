@@ -22,6 +22,9 @@ class SelectionManager : public QObject
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
     Q_PROPERTY(int selectedCount READ selectedCount NOTIFY selectionChanged)
     Q_PROPERTY(QVariantMap selectedItem READ selectedItem NOTIFY selectionChanged)
+    Q_PROPERTY(QStringList commonTags READ commonTags NOTIFY selectionChanged)
+    Q_PROPERTY(QStringList allSelectedTags READ allSelectedTags NOTIFY selectionChanged)
+    Q_PROPERTY(QList<int> selectedProxyRows READ selectedProxyRows NOTIFY selectionChanged)
 
 public:
     explicit SelectionManager(CatalogFilterModel *filterModel, QObject *parent = nullptr);
@@ -36,12 +39,16 @@ public:
     [[nodiscard]] bool hasSelection() const;
     [[nodiscard]] int selectedCount() const;
     [[nodiscard]] QVariantMap selectedItem() const;
+    [[nodiscard]] QStringList commonTags() const;
+    [[nodiscard]] QStringList allSelectedTags() const;
+    [[nodiscard]] QList<int> selectedProxyRows() const;
 
     Q_INVOKABLE [[nodiscard]] bool isSelected(int index) const;
     Q_INVOKABLE [[nodiscard]] bool isSelectedId(const QString &id) const;
 
     Q_INVOKABLE void select(int index);
     Q_INVOKABLE void selectById(const QString &id);
+    Q_INVOKABLE void selectRange(int toIndex);
     Q_INVOKABLE void toggleSelect(int index);
     Q_INVOKABLE void toggleSelectById(const QString &id);
     Q_INVOKABLE void selectAll();
@@ -50,6 +57,7 @@ public:
     Q_INVOKABLE void selectPrevious();
     Q_INVOKABLE void selectFirst();
     Q_INVOKABLE void selectLast();
+    Q_INVOKABLE [[nodiscard]] QVariantList selectedItemsSummary(int maxItems = 4) const;
 
 signals:
     void selectionChanged();
@@ -65,6 +73,7 @@ private:
 
     CatalogFilterModel *m_filterModel = nullptr;
     QString m_currentId;
+    QString m_anchorId;
     QSet<QString> m_selectedIds;
     QVariantMap m_selectedItem;
 };

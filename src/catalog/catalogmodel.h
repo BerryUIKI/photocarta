@@ -8,7 +8,6 @@
 #include <QAbstractListModel>
 #include <QHash>
 #include <QList>
-#include <QSet>
 #include <QStringList>
 #include <QUrl>
 #include <QVector>
@@ -49,6 +48,8 @@ public:
         RatingRole,
         IsFlaggedRole,
         TagsRole,
+        CaptionRole,
+        ColorLabelRole,
         ThumbnailUrlRole,
         PreviewUrlRole,
         IsDemoFixtureRole,
@@ -67,9 +68,9 @@ public:
 
     [[nodiscard]] int count() const;
     [[nodiscard]] bool hasDemoContent() const;
-    [[nodiscard]] QStringList availableTags() const;
     [[nodiscard]] const QList<CatalogItem> &items() const;
     [[nodiscard]] const CatalogItem *itemAt(int index) const;
+    [[nodiscard]] QStringList availableTags() const;
 
     void setDatabase(class CatalogDatabase *database);
     [[nodiscard]] class CatalogDatabase *database() const;
@@ -79,16 +80,32 @@ public:
     Q_INVOKABLE void openUrls(const QList<QUrl> &urls);
     Q_INVOKABLE void addFilePaths(const QStringList &filePaths);
     Q_INVOKABLE void addItems(const QList<CatalogItem> &items);
+    Q_INVOKABLE bool updateItemFilePath(int index, const QString &newFilePath, const QString &newFileName);
+    Q_INVOKABLE void updateItemTitle(int index, const QString &title);
+    Q_INVOKABLE void updateItemCaption(int index, const QString &caption);
+    Q_INVOKABLE void updateItemColorLabel(int index, int colorLabel);
     Q_INVOKABLE void updateItemRating(int index, int rating);
     Q_INVOKABLE void updateItemFlagged(int index, bool flagged);
     Q_INVOKABLE void updateItemTags(int index, const QStringList &tags);
-    void updateItemsRating(const QStringList &itemIds, int rating);
-    void updateItemsFlagged(const QStringList &itemIds, bool flagged);
-    void addTagsToItems(const QStringList &itemIds, const QStringList &tags);
-    void removeTagsFromItems(const QStringList &itemIds, const QStringList &tags);
+    Q_INVOKABLE void addTagToItem(int index, const QString &tag);
+    Q_INVOKABLE void removeTagFromItem(int index, const QString &tag);
+    Q_INVOKABLE void updateItemsTitle(const QList<int> &indices, const QString &title);
+    Q_INVOKABLE void updateItemsCaption(const QList<int> &indices, const QString &caption);
+    Q_INVOKABLE void updateItemsColorLabel(const QList<int> &indices, int colorLabel);
+    Q_INVOKABLE void updateItemsRating(const QList<int> &indices, int rating);
+    Q_INVOKABLE void updateItemsFlagged(const QList<int> &indices, bool flagged);
+    Q_INVOKABLE void addTagToItems(const QList<int> &indices, const QString &tag);
+    Q_INVOKABLE void removeTagFromItems(const QList<int> &indices, const QString &tag);
     Q_INVOKABLE void loadFromDatabase(int collectionId = 0);
     Q_INVOKABLE void setCollectionAvailable(const QString &rootPath, bool available);
     Q_INVOKABLE void clearSession();
+
+    [[nodiscard]] bool xmpSyncEnabled() const;
+    void setXmpSyncEnabled(bool enabled);
+    Q_INVOKABLE bool writeXmpSidecar(int index);
+    Q_INVOKABLE bool readXmpSidecar(int index);
+    Q_INVOKABLE int writeXmpSidecars(const QList<int> &indices);
+    Q_INVOKABLE int readXmpSidecars(const QList<int> &indices);
 
 signals:
     void countChanged();
@@ -98,16 +115,11 @@ signals:
 
 private:
     void appendItem(const CatalogItem &item);
-    void rebuildTagUsage();
-    void adjustTagUsage(const QStringList &oldTags, const QStringList &newTags);
-    void invalidateAvailableTags();
     [[nodiscard]] static CatalogItem inspectLocalFile(const QString &filePath);
 
     QList<CatalogItem> m_items;
-    QHash<QString, int> m_tagUsage;
-    mutable QStringList m_availableTagsCache;
-    mutable bool m_availableTagsDirty = true;
     class CatalogDatabase *m_database = nullptr;
+    bool m_xmpSyncEnabled = false;
 };
 
 } // namespace PhotoCarta

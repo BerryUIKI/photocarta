@@ -12,13 +12,21 @@ ApplicationWindow {
     id: window
 
     title: qsTr("PhotoCarta — Photo Management")
-    width: 1280
-    height: 800
+    width: settingsManager ? settingsManager.windowWidth : 1280
+    height: settingsManager ? settingsManager.windowHeight : 800
     minimumWidth: 840
     minimumHeight: 560
     visible: true
-    visibility: sessionController.isFullscreen ? Window.FullScreen : Window.Windowed
+    visibility: sessionController.isFullscreen
+                ? Window.FullScreen
+                : (settingsManager && settingsManager.windowMaximized ? Window.Maximized : Window.Windowed)
     color: themeManager.background
+
+    onClosing: {
+        if (settingsManager && !sessionController.isFullscreen) {
+            settingsManager.saveWindowGeometry(x, y, width, height, visibility === Window.Maximized)
+        }
+    }
 
     header: AppToolbar {
         id: appToolbar
@@ -79,15 +87,30 @@ ApplicationWindow {
 
             ThumbnailGridView {
                 anchors.fill: parent
-                visible: !sessionController.previewMode
+                visible: !sessionController.previewMode && !sessionController.compareMode
                 onRequestOpenFiles: openDialog.open()
             }
 
             ImagePreviewView {
                 anchors.fill: parent
-                visible: sessionController.previewMode
+                visible: sessionController.previewMode && !sessionController.compareMode
+            }
+
+            PhotoCompareView {
+                anchors.fill: parent
+                visible: sessionController.compareMode
             }
         }
+    }
+
+    // Modal Export Dialog
+    ExportDialog {
+        id: exportDialog
+    }
+
+    // Modal Batch Rename Dialog
+    BatchRenameDialog {
+        id: batchRenameDialog
     }
 
     // Real Native File Dialog for Temporary Session
@@ -155,12 +178,76 @@ ApplicationWindow {
     }
 
     Shortcut {
+        sequence: "Ctrl+E"
+        onActivated: {
+            if (selectionManager.hasSelection || selectionManager.selectedCount > 0) {
+                sessionController.openExportDialog()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "F2"
+        onActivated: {
+            if (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0) {
+                sessionController.openBatchRenameDialog()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: StandardKey.SelectAll
+        onActivated: {
+            if (!sessionController.previewMode) {
+                selectionManager.selectAll()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: StandardKey.Copy
+        onActivated: {
+            if (selectionManager.hasSelection) {
+                sessionController.copySelectedPathsToClipboard()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Alt+C"
+        onActivated: {
+            if (sessionController.compareMode) {
+                sessionController.setCompareMode(false)
+            } else if (selectionManager.selectedCount >= 2 || selectionManager.hasSelection) {
+                sessionController.setCompareMode(true)
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "C"
+        onActivated: {
+            if (!sessionController.previewMode) {
+                if (sessionController.compareMode) {
+                    sessionController.setCompareMode(false)
+                } else if (selectionManager.selectedCount >= 2 || selectionManager.hasSelection) {
+                    sessionController.setCompareMode(true)
+                }
+            }
+        }
+    }
+
+    Shortcut {
         sequence: "Escape"
         onActivated: {
             if (sessionController.isFullscreen) {
                 sessionController.setFullscreen(false)
+            } else if (sessionController.compareMode) {
+                sessionController.setCompareMode(false)
             } else if (sessionController.previewMode) {
                 sessionController.setPreviewMode(false)
+            } else if (selectionManager.selectedCount > 1) {
+                selectionManager.clearSelection()
             } else if (filterModel.searchQuery) {
                 filterModel.searchQuery = ""
             }

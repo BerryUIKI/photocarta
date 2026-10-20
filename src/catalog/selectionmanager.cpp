@@ -84,6 +84,7 @@ void SelectionManager::selectById(const QString &id)
     m_selectedIds.clear();
     m_selectedIds.insert(id);
     m_currentId = id;
+    m_anchorId = id;
     updateSelectedItem();
     emit selectionChanged();
 }
@@ -117,6 +118,8 @@ void SelectionManager::toggleSelectById(const QString &id)
     {
         return;
     }
+
+    m_anchorId = id;
 
     if (m_selectedIds.contains(id))
     {
@@ -170,6 +173,179 @@ void SelectionManager::toggleSelect(int index)
     {
         toggleSelectById(id);
     }
+}
+
+void SelectionManager::selectRange(int toIndex)
+{
+    if (!m_filterModel)
+    {
+        return;
+    }
+
+    const int total = m_filterModel->rowCount();
+    if (total == 0)
+    {
+        clearSelection();
+        return;
+    }
+
+    int anchor = findRowForId(m_anchorId);
+    if (anchor < 0)
+    {
+        anchor = currentIndex();
+    }
+    if (anchor < 0)
+    {
+        anchor = 0;
+    }
+
+    toIndex = std::clamp(toIndex, 0, total - 1);
+    const int start = std::min(anchor, toIndex);
+    const int end = std::max(anchor, toIndex);
+
+    m_selectedIds.clear();
+    for (int i = start; i <= end; ++i)
+    {
+        const QString id = idForRow(i);
+        if (!id.isEmpty())
+        {
+            m_selectedIds.insert(id);
+        }
+    }
+
+    m_currentId = idForRow(toIndex);
+    updateSelectedItem();
+    emit selectionChanged();
+}
+
+QList<int> SelectionManager::selectedProxyRows() const
+{
+    QList<int> rows;
+    if (!m_filterModel || m_selectedIds.isEmpty())
+    {
+        return rows;
+    }
+
+    const int count = m_filterModel->rowCount();
+    for (int i = 0; i < count; ++i)
+    {
+        const QString id = idForRow(i);
+        if (m_selectedIds.contains(id))
+        {
+            rows.append(i);
+        }
+    }
+    return rows;
+}
+
+QStringList SelectionManager::commonTags() const
+{
+    if (!m_filterModel || m_selectedIds.isEmpty())
+    {
+        return {};
+    }
+
+    QSet<QString> common;
+    bool first = true;
+
+    const int count = m_filterModel->rowCount();
+    for (int i = 0; i < count; ++i)
+    {
+        const QString id = idForRow(i);
+        if (m_selectedIds.contains(id))
+        {
+            const QModelIndex idx = m_filterModel->index(i, 0);
+            const QStringList tags = idx.data(CatalogModel::TagsRole).toStringList();
+            QSet<QString> itemTags;
+            for (const auto &t : tags)
+            {
+                const QString trimmed = t.trimmed();
+                if (!trimmed.isEmpty())
+                {
+                    itemTags.insert(trimmed);
+                }
+            }
+
+            if (first)
+            {
+                common = itemTags;
+                first = false;
+            }
+            else
+            {
+                common.intersect(itemTags);
+            }
+
+            if (common.isEmpty())
+            {
+                break;
+            }
+        }
+    }
+
+    QStringList list = common.values();
+    list.sort(Qt::CaseInsensitive);
+    return list;
+}
+
+QStringList SelectionManager::allSelectedTags() const
+{
+    if (!m_filterModel || m_selectedIds.isEmpty())
+    {
+        return {};
+    }
+
+    QSet<QString> unionTags;
+    const int count = m_filterModel->rowCount();
+    for (int i = 0; i < count; ++i)
+    {
+        const QString id = idForRow(i);
+        if (m_selectedIds.contains(id))
+        {
+            const QModelIndex idx = m_filterModel->index(i, 0);
+            const QStringList tags = idx.data(CatalogModel::TagsRole).toStringList();
+            for (const auto &t : tags)
+            {
+                const QString trimmed = t.trimmed();
+                if (!trimmed.isEmpty())
+                {
+                    unionTags.insert(trimmed);
+                }
+            }
+        }
+    }
+
+    QStringList list = unionTags.values();
+    list.sort(Qt::CaseInsensitive);
+    return list;
+}
+
+QVariantList SelectionManager::selectedItemsSummary(int maxItems) const
+{
+    QVariantList list;
+    if (!m_filterModel || m_selectedIds.isEmpty())
+    {
+        return list;
+    }
+
+    int added = 0;
+    const int count = m_filterModel->rowCount();
+    for (int i = 0; i < count && added < maxItems; ++i)
+    {
+        const QString id = idForRow(i);
+        if (m_selectedIds.contains(id))
+        {
+            const QModelIndex idx = m_filterModel->index(i, 0);
+            QVariantMap itemSummary;
+            itemSummary[QStringLiteral("id")] = id;
+            itemSummary[QStringLiteral("thumbnailUrl")] = idx.data(CatalogModel::ThumbnailUrlRole);
+            itemSummary[QStringLiteral("fileName")] = idx.data(CatalogModel::FileNameRole);
+            itemSummary[QStringLiteral("title")] = idx.data(CatalogModel::TitleRole);
+            list.append(itemSummary);
+            ++added;
+        }
+    }
+    return list;
 }
 
 void SelectionManager::selectAll()

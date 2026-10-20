@@ -12,9 +12,9 @@ Rectangle {
     property bool interactive: true
     property bool removable: false
     signal clicked()
-    signal removeClicked()
+    signal removeRequested()
 
-    implicitWidth: contentRow.implicitWidth + 18
+    implicitWidth: contentRow.implicitWidth + (removable ? 20 : 16)
     implicitHeight: 24
     radius: 12
 
@@ -35,7 +35,7 @@ Rectangle {
     Row {
         id: contentRow
         anchors.centerIn: parent
-        spacing: 4
+        spacing: 6
 
         Text {
             id: chipLabel
@@ -46,20 +46,37 @@ Rectangle {
             color: root.active ? themeManager.accentText : themeManager.textPrimary
         }
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
+        // Removable 'x' button
+        Rectangle {
+            id: removeBtn
             visible: root.removable
-            text: "×"
-            font.pixelSize: themeManager.fontSm
-            color: removeMouseArea.containsMouse ? themeManager.textPrimary : themeManager.textMuted
+            width: 14
+            height: 14
+            radius: 7
+            anchors.verticalCenter: parent.verticalCenter
+            color: removeMouseArea.containsMouse
+                   ? (root.active ? "#33ffffff" : themeManager.danger)
+                   : "transparent"
+
+            Text {
+                anchors.centerIn: parent
+                text: "✕"
+                font.pixelSize: 8
+                font.weight: Font.Bold
+                color: root.active
+                       ? themeManager.accentText
+                       : (removeMouseArea.containsMouse ? "#ffffff" : themeManager.textSecondary)
+            }
 
             MouseArea {
                 id: removeMouseArea
                 anchors.fill: parent
-                anchors.margins: -4
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.removeClicked()
+                onClicked: (mouse) => {
+                    mouse.accepted = true
+                    root.removeRequested()
+                }
             }
         }
     }
@@ -70,6 +87,11 @@ Rectangle {
         enabled: root.interactive
         hoverEnabled: root.interactive
         cursorShape: root.interactive ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: root.clicked()
+        onClicked: (mouse) => {
+            if (root.removable && removeMouseArea.containsMouse) {
+                return
+            }
+            root.clicked()
+        }
     }
 }

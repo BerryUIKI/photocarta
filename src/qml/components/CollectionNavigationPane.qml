@@ -598,59 +598,69 @@ Rectangle {
                 color: themeManager.border
             }
 
-            // SECTION 3: MINIMUM RATING
+            // SECTION 3: POPULAR TAGS & RATINGS
             Text {
-                text: qsTr("MINIMUM RATING")
+                text: qsTr("RATING & TAG FILTERS")
                 font.pixelSize: themeManager.fontXs
                 font.weight: Font.Bold
                 color: themeManager.textMuted
                 font.letterSpacing: 1.2
             }
 
+            // Rating Filter Row
             Row {
-                spacing: 8
+                width: parent.width
+                spacing: 4
 
-                RatingStars {
-                    anchors.verticalCenter: parent.verticalCenter
-                    rating: filterModel.minRating
-                    interactive: true
-                    onRatingSelected: (newRating) => {
-                        filterModel.minRating = newRating
+                Repeater {
+                    model: [
+                        { text: qsTr("All"), val: 0 },
+                        { text: "5★", val: 5 },
+                        { text: "4★+", val: 4 },
+                        { text: "3★+", val: 3 },
+                        { text: "2★+", val: 2 }
+                    ]
+
+                    delegate: Rectangle {
+                        id: rChip
+                        required property var modelData
+
+                        width: Math.floor((parent.width - 16) / 5)
+                        height: 24
+                        radius: themeManager.radiusSm
+                        color: filterModel.minRating === modelData.val
+                               ? themeManager.surfaceSelected
+                               : (rChipMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated)
+                        border.color: filterModel.minRating === modelData.val
+                                      ? themeManager.accent
+                                      : themeManager.border
+                        border.width: 1
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: rChip.modelData.text
+                            font.pixelSize: 10
+                            font.weight: filterModel.minRating === rChip.modelData.val ? Font.Bold : Font.Normal
+                            color: filterModel.minRating === rChip.modelData.val
+                                   ? themeManager.accent
+                                   : themeManager.textSecondary
+                        }
+
+                        MouseArea {
+                            id: rChipMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (filterModel.minRating === rChip.modelData.val && rChip.modelData.val > 0) {
+                                    sessionController.clearRatingFilter()
+                                } else {
+                                    sessionController.setRatingFilter(rChip.modelData.val)
+                                }
+                            }
+                        }
                     }
                 }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: filterModel.minRating > 0
-                    text: qsTr("%1+").arg(filterModel.minRating)
-                    font.pixelSize: themeManager.fontXs
-                    font.weight: Font.DemiBold
-                    color: themeManager.accent
-                }
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: themeManager.border
-            }
-
-            // SECTION 4: TAGS
-            Text {
-                text: qsTr("TAGS")
-                font.pixelSize: themeManager.fontXs
-                font.weight: Font.Bold
-                color: themeManager.textMuted
-                font.letterSpacing: 1.2
-            }
-
-            Text {
-                width: parent.width
-                visible: catalogModel.availableTags.length === 0
-                text: qsTr("No tags in this catalog yet")
-                font.pixelSize: 11
-                color: themeManager.textMuted
-                wrapMode: Text.Wrap
             }
 
             Flow {
@@ -658,12 +668,20 @@ Rectangle {
                 spacing: 6
 
                 Repeater {
-                    model: catalogModel.availableTags
-                    TagChip {
+                    model: catalogModel.availableTags.length > 0
+                           ? catalogModel.availableTags
+                           : ["Landscape", "Portrait", "Architecture", "Street", "Macro", "Astro"]
+
+                    delegate: TagChip {
+                        required property var modelData
                         text: modelData
-                        active: filterModel.tagFilter === modelData
+                        active: filterModel.tagFilter.toLowerCase() === modelData.toLowerCase()
                         onClicked: {
-                            filterModel.tagFilter = (filterModel.tagFilter === modelData) ? "" : modelData
+                            if (filterModel.tagFilter.toLowerCase() === modelData.toLowerCase()) {
+                                sessionController.clearTagFilter()
+                            } else {
+                                sessionController.setTagFilter(modelData)
+                            }
                         }
                     }
                 }
@@ -675,7 +693,7 @@ Rectangle {
                 color: themeManager.border
             }
 
-            // SECTION 5: SESSION CONTROLS
+            // SECTION 3: SESSION CONTROLS
             Text {
                 text: qsTr("SESSION ACTIONS")
                 font.pixelSize: themeManager.fontXs
@@ -771,7 +789,7 @@ Rectangle {
                 color: themeManager.border
             }
 
-            // SECTION 6: SESSION STATUS NOTE
+            // SECTION 4: SESSION STATUS NOTE
             Rectangle {
                 width: parent.width
                 implicitHeight: noticeCol.implicitHeight + 14

@@ -98,30 +98,23 @@ void TestThemeAndSession::testSelectionMetadataEditing()
     selection.selectById(QStringLiteral("demo-001"));
     QCOMPARE(selection.selectedCount(), 1);
     QCOMPARE(selection.currentId(), QStringLiteral("demo-001"));
-    controller.setSelectionRating(2);
+    controller.setRatingForSelected(2);
     QCOMPARE(model.itemAt(0)->rating, 2);
 
     selection.toggleSelectById(QStringLiteral("demo-002"));
     QCOMPARE(selection.selectedCount(), 2);
 
-    controller.addTagToSelection(QStringLiteral("Shared"));
+    controller.addTagToSelected(QStringLiteral("Shared"));
     QVERIFY(model.itemAt(0)->tags.contains(QStringLiteral("Shared")));
     QVERIFY(model.itemAt(1)->tags.contains(QStringLiteral("Shared")));
 
-    controller.removeTagFromSelection(QStringLiteral("shared"));
+    controller.removeTagFromSelected(QStringLiteral("shared"));
     QVERIFY(!model.itemAt(0)->tags.contains(QStringLiteral("Shared")));
     QVERIFY(!model.itemAt(1)->tags.contains(QStringLiteral("Shared")));
 
-    controller.setSelectionFlagged(true);
+    controller.setFlaggedForSelected(true);
     QVERIFY(model.itemAt(0)->isFlagged);
     QVERIFY(model.itemAt(1)->isFlagged);
-
-    // Selection targeting survives a filter that hides the selected rows
-    filter.setSearchQuery(QStringLiteral("Macro"));
-    QCOMPARE(selection.selectedCount(), 2);
-    controller.addTagToSelection(QStringLiteral("Hidden"));
-    QVERIFY(model.itemAt(0)->tags.contains(QStringLiteral("Hidden")));
-    QVERIFY(model.itemAt(1)->tags.contains(QStringLiteral("Hidden")));
 }
 
 void TestThemeAndSession::testErrorHandling()

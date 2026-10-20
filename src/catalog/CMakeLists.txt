@@ -18,6 +18,8 @@ add_library(photocarta_catalog STATIC
     sessioncontroller.cpp
     database/catalogdatabase.h
     database/catalogdatabase.cpp
+    database/digikamdatabaseadapter.h
+    database/digikamdatabaseadapter.cpp
     ingestion/directoryscanner.h
     ingestion/directoryscanner.cpp
     thumbnails/thumbnailcache.h
@@ -27,6 +29,16 @@ add_library(photocarta_catalog STATIC
     metadata/exifdata.h
     metadata/exifparser.h
     metadata/exifparser.cpp
+    metadata/xmpsidecar.h
+    metadata/xmpsidecar.cpp
+    export/imageexporter.h
+    export/imageexporter.cpp
+    settings/settingsmanager.h
+    settings/settingsmanager.cpp
+    histogram/histogramcalculator.h
+    histogram/histogramcalculator.cpp
+    organization/batchrenamer.h
+    organization/batchrenamer.cpp
 )
 
 target_include_directories(photocarta_catalog PUBLIC
