@@ -289,28 +289,6 @@ Rectangle {
                         }
                     }
 
-                    Flow {
-                        width: parent.width
-                        spacing: 6
-
-                        Text {
-                            visible: !root.item.tags || root.item.tags.length === 0
-                            text: qsTr("No tags")
-                            font.pixelSize: 11
-                            color: themeManager.textMuted
-                        }
-
-                        Repeater {
-                            model: root.item.tags ? root.item.tags : []
-                            TagChip {
-                                text: modelData
-                                interactive: false
-                                removable: true
-                                onRemoveClicked: sessionController.removeTagFromSelection(modelData)
-                            }
-                        }
-                    }
-
                     Rectangle {
                         width: parent.width
                         height: 28
@@ -343,6 +321,28 @@ Rectangle {
                             onAccepted: {
                                 sessionController.addTagToSelection(text)
                                 text = ""
+                            }
+                        }
+                    }
+
+                    Flow {
+                        width: parent.width
+                        spacing: 6
+
+                        Text {
+                            visible: !root.item.tags || root.item.tags.length === 0
+                            text: qsTr("No tags")
+                            font.pixelSize: 11
+                            color: themeManager.textMuted
+                        }
+
+                        Repeater {
+                            model: root.item.tags ? root.item.tags : []
+                            TagChip {
+                                text: modelData
+                                interactive: false
+                                removable: true
+                                onRemoveClicked: sessionController.removeTagFromSelection(modelData)
                             }
                         }
                     }
