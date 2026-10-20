@@ -19,6 +19,7 @@ private slots:
     void testSearchQuery();
     void testCategoryFilter();
     void testRatingFilter();
+    void testTagFilter();
     void testSorting();
     void testRowMapping();
 
@@ -98,6 +99,30 @@ void TestFilterModel::testRatingFilter()
     m_filterModel->setMinRating(4);
     QCOMPARE(m_filterModel->count(), 5); // 5 demo items have rating >= 4
 
+    m_filterModel->setMinRating(0);
+    QCOMPARE(m_filterModel->count(), 6);
+}
+
+void TestFilterModel::testTagFilter()
+{
+    m_filterModel->setTagFilter(QStringLiteral("Landscape"));
+    QCOMPARE(m_filterModel->count(), 2);
+
+    // Tag matching is case-insensitive
+    m_filterModel->setTagFilter(QStringLiteral("landscape"));
+    QCOMPARE(m_filterModel->count(), 2);
+
+    // Tag and rating filters combine
+    m_filterModel->setMinRating(5);
+    QCOMPARE(m_filterModel->count(), 2);
+
+    m_filterModel->setTagFilter(QStringLiteral("Night"));
+    QCOMPARE(m_filterModel->count(), 1); // Only the 5-star astro item has Night
+
+    m_filterModel->setTagFilter(QStringLiteral("NoSuchTag"));
+    QCOMPARE(m_filterModel->count(), 0);
+
+    m_filterModel->setTagFilter(QString());
     m_filterModel->setMinRating(0);
     QCOMPARE(m_filterModel->count(), 6);
 }

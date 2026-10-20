@@ -20,6 +20,8 @@ private slots:
     void testGetVariantMap();
     void testClearSession();
     void testFileLoadError();
+    void testAvailableTags();
+    void testBatchItemUpdates();
 };
 
 void TestCatalogModel::testFormatBytes()
@@ -133,6 +135,64 @@ void TestCatalogModel::testFileLoadError()
 
     QCOMPARE(errorSpy.count(), 1);
     QCOMPARE(model.count(), 0);
+}
+
+void TestCatalogModel::testAvailableTags()
+{
+    CatalogModel model;
+    QSignalSpy tagsSpy(&model, &CatalogModel::availableTagsChanged);
+    model.loadDemoFixtures();
+    QCOMPARE(tagsSpy.count(), 1);
+
+    QStringList tags = model.availableTags();
+    QVERIFY(tags.contains(QStringLiteral("Landscape")));
+    QVERIFY(tags.contains(QStringLiteral("Astro")));
+    QVERIFY(tags.contains(QStringLiteral("Demo")));
+    QCOMPARE(tags.first(), QStringLiteral("Architecture"));
+
+    model.addTagsToItems({QStringLiteral("demo-001")}, {QStringLiteral("BatchTag")});
+    tags = model.availableTags();
+    QVERIFY(tags.contains(QStringLiteral("BatchTag")));
+
+    model.removeTagsFromItems({QStringLiteral("demo-001")}, {QStringLiteral("BatchTag")});
+    tags = model.availableTags();
+    QVERIFY(!tags.contains(QStringLiteral("BatchTag")));
+
+    model.clearSession();
+    QVERIFY(model.availableTags().isEmpty());
+}
+
+void TestCatalogModel::testBatchItemUpdates()
+{
+    CatalogModel model;
+    model.loadDemoFixtures();
+
+    QSignalSpy dataSpy(&model, &QAbstractItemModel::dataChanged);
+
+    model.updateItemsRating({QStringLiteral("demo-001"), QStringLiteral("demo-002")}, 2);
+    QCOMPARE(dataSpy.count(), 1);
+    QCOMPARE(model.itemAt(0)->rating, 2);
+    QCOMPARE(model.itemAt(1)->rating, 2);
+    QCOMPARE(model.itemAt(2)->rating, 4);
+
+    model.updateItemsFlagged({QStringLiteral("demo-004")}, true);
+    QCOMPARE(model.itemAt(3)->isFlagged, true);
+    QCOMPARE(model.itemAt(0)->isFlagged, true); // demo-001 is flagged in fixtures
+
+    model.addTagsToItems({QStringLiteral("demo-001"), QStringLiteral("demo-002")},
+                         {QStringLiteral("Trip")});
+    QVERIFY(model.itemAt(0)->tags.contains(QStringLiteral("Trip")));
+    QVERIFY(model.itemAt(1)->tags.contains(QStringLiteral("Trip")));
+    QVERIFY(!model.itemAt(2)->tags.contains(QStringLiteral("Trip")));
+
+    model.removeTagsFromItems({QStringLiteral("demo-001"), QStringLiteral("demo-002")},
+                              {QStringLiteral("trip")});
+    QVERIFY(!model.itemAt(0)->tags.contains(QStringLiteral("Trip")));
+    QVERIFY(!model.itemAt(1)->tags.contains(QStringLiteral("Trip")));
+
+    const int signalsBefore = dataSpy.count();
+    model.updateItemsRating({QStringLiteral("missing-id")}, 5);
+    QCOMPARE(dataSpy.count(), signalsBefore);
 }
 
 QTEST_MAIN(TestCatalogModel)
