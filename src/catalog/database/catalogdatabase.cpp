@@ -811,6 +811,245 @@ bool CatalogDatabase::setItemTags(const QString &filePath, const QStringList &ta
     return true;
 }
 
+bool CatalogDatabase::updateItemsRating(const QStringList &filePaths, int rating)
+{
+    if (!isOpen() || filePaths.isEmpty())
+    {
+        return false;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    if (!db.transaction())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("UPDATE items SET rating = :rating WHERE file_path = :path;"));
+    const int boundedRating = qBound(0, rating, 5);
+
+    for (const QString &filePath : filePaths)
+    {
+        if (filePath.isEmpty())
+        {
+            continue;
+        }
+
+        query.bindValue(QStringLiteral(":rating"), boundedRating);
+        query.bindValue(QStringLiteral(":path"), QDir::fromNativeSeparators(filePath));
+        if (!query.exec())
+        {
+            m_lastError = query.lastError().text();
+            db.rollback();
+            return false;
+        }
+    }
+
+    if (!db.commit())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    emit itemsChanged();
+    return true;
+}
+
+bool CatalogDatabase::updateItemsFlagged(const QStringList &filePaths, bool flagged)
+{
+    if (!isOpen() || filePaths.isEmpty())
+    {
+        return false;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    if (!db.transaction())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("UPDATE items SET is_flagged = :flag WHERE file_path = :path;"));
+
+    for (const QString &filePath : filePaths)
+    {
+        if (filePath.isEmpty())
+        {
+            continue;
+        }
+
+        query.bindValue(QStringLiteral(":flag"), flagged ? 1 : 0);
+        query.bindValue(QStringLiteral(":path"), QDir::fromNativeSeparators(filePath));
+        if (!query.exec())
+        {
+            m_lastError = query.lastError().text();
+            db.rollback();
+            return false;
+        }
+    }
+
+    if (!db.commit())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    emit itemsChanged();
+    return true;
+}
+
+bool CatalogDatabase::addTagsToItems(const QStringList &filePaths, const QStringList &tags)
+{
+    if (!isOpen() || filePaths.isEmpty() || tags.isEmpty())
+    {
+        return false;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    if (!db.transaction())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery tagInsertQuery(db);
+    tagInsertQuery.prepare(QStringLiteral("INSERT OR IGNORE INTO tags (name) VALUES (:name);"));
+
+    QSqlQuery tagSelectQuery(db);
+    tagSelectQuery.prepare(QStringLiteral("SELECT id FROM tags WHERE name = :name;"));
+
+    QSqlQuery linkQuery(db);
+    linkQuery.prepare(QStringLiteral(
+        "INSERT OR IGNORE INTO item_tags (item_id, tag_id) "
+        "SELECT id, :tag_id FROM items WHERE file_path = :path;"));
+
+    for (const QString &tag : tags)
+    {
+        const QString trimmed = tag.trimmed();
+        if (trimmed.isEmpty())
+        {
+            continue;
+        }
+
+        tagInsertQuery.bindValue(QStringLiteral(":name"), trimmed);
+        if (!tagInsertQuery.exec())
+        {
+            m_lastError = tagInsertQuery.lastError().text();
+            db.rollback();
+            return false;
+        }
+
+        tagSelectQuery.bindValue(QStringLiteral(":name"), trimmed);
+        if (!tagSelectQuery.exec() || !tagSelectQuery.next())
+        {
+            m_lastError = tagSelectQuery.lastError().text();
+            db.rollback();
+            return false;
+        }
+
+        const int tagId = tagSelectQuery.value(0).toInt();
+        for (const QString &filePath : filePaths)
+        {
+            if (filePath.isEmpty())
+            {
+                continue;
+            }
+
+            linkQuery.bindValue(QStringLiteral(":tag_id"), tagId);
+            linkQuery.bindValue(QStringLiteral(":path"), QDir::fromNativeSeparators(filePath));
+            if (!linkQuery.exec())
+            {
+                m_lastError = linkQuery.lastError().text();
+                db.rollback();
+                return false;
+            }
+        }
+    }
+
+    if (!db.commit())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    emit itemsChanged();
+    return true;
+}
+
+bool CatalogDatabase::removeTagsFromItems(const QStringList &filePaths, const QStringList &tags)
+{
+    if (!isOpen() || filePaths.isEmpty() || tags.isEmpty())
+    {
+        return false;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+    if (!db.transaction())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery tagSelectQuery(db);
+    tagSelectQuery.prepare(QStringLiteral("SELECT id FROM tags WHERE name = :name;"));
+
+    QSqlQuery unlinkQuery(db);
+    unlinkQuery.prepare(QStringLiteral(
+        "DELETE FROM item_tags WHERE tag_id = :tag_id "
+        "AND item_id = (SELECT id FROM items WHERE file_path = :path);"));
+
+    for (const QString &tag : tags)
+    {
+        const QString trimmed = tag.trimmed();
+        if (trimmed.isEmpty())
+        {
+            continue;
+        }
+
+        tagSelectQuery.bindValue(QStringLiteral(":name"), trimmed);
+        if (!tagSelectQuery.exec())
+        {
+            m_lastError = tagSelectQuery.lastError().text();
+            db.rollback();
+            return false;
+        }
+
+        if (!tagSelectQuery.next())
+        {
+            continue;
+        }
+
+        const int tagId = tagSelectQuery.value(0).toInt();
+        for (const QString &filePath : filePaths)
+        {
+            if (filePath.isEmpty())
+            {
+                continue;
+            }
+
+            unlinkQuery.bindValue(QStringLiteral(":tag_id"), tagId);
+            unlinkQuery.bindValue(QStringLiteral(":path"), QDir::fromNativeSeparators(filePath));
+            if (!unlinkQuery.exec())
+            {
+                m_lastError = unlinkQuery.lastError().text();
+                db.rollback();
+                return false;
+            }
+        }
+    }
+
+    if (!db.commit())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    emit itemsChanged();
+    return true;
+}
+
 QStringList CatalogDatabase::allTags() const
 {
     QStringList list;
