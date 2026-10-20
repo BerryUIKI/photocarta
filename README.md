@@ -34,6 +34,10 @@ It delivers a photo-focused desktop interface with dark and light themes, respon
 metadata sidebars, a virtualized thumbnail grid, keyboard navigation, a large-image preview mode,
 and procedural SVG demo fixtures.
 
+Metadata editing is available in the details pane: ratings, favorites, and tags are written to the
+local SQLite catalog for a single photo or the whole selection, the sidebar tag list is derived from
+the catalog, and the grid can be filtered by tag or minimum rating.
+
 Local images can be opened into an ephemeral, non-destructive browsing session via the native file
 dialog. The presentation interface is decoupled from backend engines; digiKam database integration
 and metadata write operations will be introduced in subsequent milestones.

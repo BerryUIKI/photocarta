@@ -805,17 +805,97 @@ void CatalogModel::updateItemsColorLabel(const QList<int> &indices, int colorLab
 void CatalogModel::updateItemsRating(const QList<int> &indices, int rating)
 {
     const int clamped = qBound(0, rating, 5);
+    QList<int> changed;
+    QStringList paths;
+
     for (int idx : indices)
     {
-        updateItemRating(idx, clamped);
+        if (idx < 0 || idx >= m_items.size() || m_items[idx].rating == clamped)
+        {
+            continue;
+        }
+
+        m_items[idx].rating = clamped;
+        changed.append(idx);
+        if (m_database && m_database->isOpen() && !m_items[idx].isDemoFixture)
+        {
+            paths.append(m_items[idx].filePath);
+        }
+    }
+
+    if (changed.isEmpty())
+    {
+        return;
+    }
+
+    int firstRow = changed.first();
+    int lastRow = firstRow;
+    for (int row : changed)
+    {
+        firstRow = qMin(firstRow, row);
+        lastRow = qMax(lastRow, row);
+    }
+    emit dataChanged(index(firstRow, 0), index(lastRow, 0), {RatingRole, ItemMapRole});
+
+    if (!paths.isEmpty())
+    {
+        m_database->updateItemsRating(paths, clamped);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        for (int idx : changed)
+        {
+            writeXmpSidecar(idx);
+        }
     }
 }
 
 void CatalogModel::updateItemsFlagged(const QList<int> &indices, bool flagged)
 {
+    QList<int> changed;
+    QStringList paths;
+
     for (int idx : indices)
     {
-        updateItemFlagged(idx, flagged);
+        if (idx < 0 || idx >= m_items.size() || m_items[idx].isFlagged == flagged)
+        {
+            continue;
+        }
+
+        m_items[idx].isFlagged = flagged;
+        changed.append(idx);
+        if (m_database && m_database->isOpen() && !m_items[idx].isDemoFixture)
+        {
+            paths.append(m_items[idx].filePath);
+        }
+    }
+
+    if (changed.isEmpty())
+    {
+        return;
+    }
+
+    int firstRow = changed.first();
+    int lastRow = firstRow;
+    for (int row : changed)
+    {
+        firstRow = qMin(firstRow, row);
+        lastRow = qMax(lastRow, row);
+    }
+    emit dataChanged(index(firstRow, 0), index(lastRow, 0), {IsFlaggedRole, ItemMapRole});
+
+    if (!paths.isEmpty())
+    {
+        m_database->updateItemsFlagged(paths, flagged);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        for (int idx : changed)
+        {
+            writeXmpSidecar(idx);
+        }
     }
 }
 
@@ -827,9 +907,64 @@ void CatalogModel::addTagToItems(const QList<int> &indices, const QString &tag)
         return;
     }
 
+    QList<int> changed;
+    QStringList paths;
+
     for (int idx : indices)
     {
-        addTagToItem(idx, trimmed);
+        if (idx < 0 || idx >= m_items.size())
+        {
+            continue;
+        }
+
+        bool exists = false;
+        for (const auto &existing : m_items[idx].tags)
+        {
+            if (existing.compare(trimmed, Qt::CaseInsensitive) == 0)
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (exists)
+        {
+            continue;
+        }
+
+        m_items[idx].tags.append(trimmed);
+        changed.append(idx);
+        if (m_database && m_database->isOpen() && !m_items[idx].isDemoFixture)
+        {
+            paths.append(m_items[idx].filePath);
+        }
+    }
+
+    if (changed.isEmpty())
+    {
+        return;
+    }
+
+    int firstRow = changed.first();
+    int lastRow = firstRow;
+    for (int row : changed)
+    {
+        firstRow = qMin(firstRow, row);
+        lastRow = qMax(lastRow, row);
+    }
+    emit dataChanged(index(firstRow, 0), index(lastRow, 0), {TagsRole, ItemMapRole});
+    emit availableTagsChanged();
+
+    if (!paths.isEmpty())
+    {
+        m_database->addTagsToItems(paths, {trimmed});
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        for (int idx : changed)
+        {
+            writeXmpSidecar(idx);
+        }
     }
 }
 
@@ -841,9 +976,83 @@ void CatalogModel::removeTagFromItems(const QList<int> &indices, const QString &
         return;
     }
 
+    QList<int> changed;
+    QStringList paths;
+    QStringList removedTags;
+
     for (int idx : indices)
     {
-        removeTagFromItem(idx, trimmed);
+        if (idx < 0 || idx >= m_items.size())
+        {
+            continue;
+        }
+
+        QStringList updated;
+        bool found = false;
+        for (const auto &existing : m_items[idx].tags)
+        {
+            if (existing.compare(trimmed, Qt::CaseInsensitive) == 0)
+            {
+                found = true;
+                bool alreadyListed = false;
+                for (const auto &listed : removedTags)
+                {
+                    if (listed.compare(existing, Qt::CaseInsensitive) == 0)
+                    {
+                        alreadyListed = true;
+                        break;
+                    }
+                }
+                if (!alreadyListed)
+                {
+                    removedTags.append(existing);
+                }
+            }
+            else
+            {
+                updated.append(existing);
+            }
+        }
+
+        if (!found)
+        {
+            continue;
+        }
+
+        m_items[idx].tags = updated;
+        changed.append(idx);
+        if (m_database && m_database->isOpen() && !m_items[idx].isDemoFixture)
+        {
+            paths.append(m_items[idx].filePath);
+        }
+    }
+
+    if (changed.isEmpty())
+    {
+        return;
+    }
+
+    int firstRow = changed.first();
+    int lastRow = firstRow;
+    for (int row : changed)
+    {
+        firstRow = qMin(firstRow, row);
+        lastRow = qMax(lastRow, row);
+    }
+    emit dataChanged(index(firstRow, 0), index(lastRow, 0), {TagsRole, ItemMapRole});
+    emit availableTagsChanged();
+
+    if (!paths.isEmpty() && !removedTags.isEmpty())
+    {
+        m_database->removeTagsFromItems(paths, removedTags);
+    }
+
+    if (m_xmpSyncEnabled)
+    {
+        for (int idx : changed)
+        {
+            writeXmpSidecar(idx);
+        }
     }
 }
 

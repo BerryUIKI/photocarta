@@ -87,6 +87,12 @@ public:
     bool setItemTags(const QString &filePath, const QStringList &tags);
     [[nodiscard]] QStringList allTags() const;
 
+    // Batch metadata persistence (one transaction per call)
+    bool updateItemsRating(const QStringList &filePaths, int rating);
+    bool updateItemsFlagged(const QStringList &filePaths, bool flagged);
+    bool addTagsToItems(const QStringList &filePaths, const QStringList &tags);
+    bool removeTagsFromItems(const QStringList &filePaths, const QStringList &tags);
+
     // Migration / Synchronization
     bool importFromDigikamDatabase(const QString &digikamDatabasePath);
 

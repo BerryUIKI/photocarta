@@ -23,6 +23,7 @@ private slots:
     void testItemInsertionAndFetch();
     void testRatingAndFlagPersistence();
     void testTagsPersistence();
+    void testBatchMetadataPersistence();
     void testOfflineCollectionPreservation();
     void testPerformanceOptimizationAndNPlusOneElimination();
     void testPagingSupport();
@@ -169,6 +170,46 @@ void TestDatabase::testTagsPersistence()
     QCOMPARE(fetched.tags.size(), 2);
     QVERIFY(fetched.tags.contains(QStringLiteral("Coast")));
     QVERIFY(fetched.tags.contains(QStringLiteral("Sunset")));
+}
+
+void TestDatabase::testBatchMetadataPersistence()
+{
+    CatalogDatabase db(QStringLiteral("test_conn_batch"));
+    QVERIFY(db.open(QStringLiteral(":memory:")));
+
+    CatalogItem item1;
+    item1.id = QStringLiteral("batch-1");
+    item1.filePath = QStringLiteral("C:/Photos/first.jpg");
+    item1.fileName = QStringLiteral("first.jpg");
+
+    CatalogItem item2;
+    item2.id = QStringLiteral("batch-2");
+    item2.filePath = QStringLiteral("C:/Photos/second.jpg");
+    item2.fileName = QStringLiteral("second.jpg");
+
+    QVERIFY(db.insertOrUpdateItems({item1, item2}));
+    const QStringList paths = {item1.filePath, item2.filePath};
+
+    QSignalSpy itemsChangedSpy(&db, &CatalogDatabase::itemsChanged);
+
+    QVERIFY(db.updateItemsRating(paths, 3));
+    QCOMPARE(itemsChangedSpy.count(), 1);
+    QCOMPARE(db.fetchItemByPath(item1.filePath).rating, 3);
+    QCOMPARE(db.fetchItemByPath(item2.filePath).rating, 3);
+
+    QVERIFY(db.updateItemsFlagged({item1.filePath}, true));
+    QCOMPARE(db.fetchItemByPath(item1.filePath).isFlagged, true);
+    QCOMPARE(db.fetchItemByPath(item2.filePath).isFlagged, false);
+
+    QVERIFY(db.addTagsToItems(paths, {QStringLiteral("Shared"), QStringLiteral("Beach")}));
+    QCOMPARE(db.fetchItemByPath(item1.filePath).tags.size(), 2);
+    QVERIFY(db.fetchItemByPath(item1.filePath).tags.contains(QStringLiteral("Shared")));
+    QVERIFY(db.fetchItemByPath(item2.filePath).tags.contains(QStringLiteral("Beach")));
+
+    QVERIFY(db.removeTagsFromItems(paths, {QStringLiteral("Beach")}));
+    QVERIFY(!db.fetchItemByPath(item1.filePath).tags.contains(QStringLiteral("Beach")));
+    QVERIFY(db.fetchItemByPath(item1.filePath).tags.contains(QStringLiteral("Shared")));
+    QCOMPARE(db.fetchItemByPath(item2.filePath).tags.size(), 1);
 }
 
 void TestDatabase::testOfflineCollectionPreservation()

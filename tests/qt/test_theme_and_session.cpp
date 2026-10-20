@@ -19,6 +19,7 @@ class TestThemeAndSession : public QObject
 private slots:
     void testThemeManager();
     void testSessionController();
+    void testSelectionMetadataEditing();
     void testErrorHandling();
     void testZoomFactorClamping();
     void testViewerZoomAndRotation();
@@ -82,6 +83,38 @@ void TestThemeAndSession::testSessionController()
     controller.loadDemoSamples();
     QCOMPARE(model.count(), 6);
     QVERIFY(controller.sessionTypeDescription().contains(QStringLiteral("Demo Fixtures")));
+}
+
+void TestThemeAndSession::testSelectionMetadataEditing()
+{
+    CatalogModel model;
+    CatalogFilterModel filter;
+    filter.setSourceModel(&model);
+    SelectionManager selection(&filter);
+    SessionController controller(&model, &filter, &selection);
+
+    model.loadDemoFixtures();
+
+    selection.selectById(QStringLiteral("demo-001"));
+    QCOMPARE(selection.selectedCount(), 1);
+    QCOMPARE(selection.currentId(), QStringLiteral("demo-001"));
+    controller.setRatingForSelected(2);
+    QCOMPARE(model.itemAt(0)->rating, 2);
+
+    selection.toggleSelectById(QStringLiteral("demo-002"));
+    QCOMPARE(selection.selectedCount(), 2);
+
+    controller.addTagToSelected(QStringLiteral("Shared"));
+    QVERIFY(model.itemAt(0)->tags.contains(QStringLiteral("Shared")));
+    QVERIFY(model.itemAt(1)->tags.contains(QStringLiteral("Shared")));
+
+    controller.removeTagFromSelected(QStringLiteral("shared"));
+    QVERIFY(!model.itemAt(0)->tags.contains(QStringLiteral("Shared")));
+    QVERIFY(!model.itemAt(1)->tags.contains(QStringLiteral("Shared")));
+
+    controller.setFlaggedForSelected(true);
+    QVERIFY(model.itemAt(0)->isFlagged);
+    QVERIFY(model.itemAt(1)->isFlagged);
 }
 
 void TestThemeAndSession::testErrorHandling()
