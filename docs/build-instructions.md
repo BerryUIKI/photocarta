@@ -182,8 +182,9 @@ python scripts/verify_package.py --package-dir packages
 ```
 
 The script extracts the platform archive into a temporary directory and runs the packaged
-executable with `--smoke-test -platform offscreen`, which loads the QML engine and exits
-cleanly. CI performs the same check after packaging on all three platforms.
+executable with `--smoke-test`, loading the QML engine and exiting cleanly. Headless offscreen
+startup is tried first and the platform's default QPA plugin is used as a fallback. CI performs
+the same check after packaging on all three platforms.
 
 You can also use standard CPack from the build directory:
 ```bash

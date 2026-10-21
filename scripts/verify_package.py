@@ -7,7 +7,8 @@ directory, outside the build tree, and runs the packaged executable with
 ``--smoke-test``.
 
 The startup smoke test loads and closes the QML engine, so it covers installation,
-startup, and a clean exit for the packaged layout.
+startup, and a clean exit for the packaged layout. Headless offscreen startup is
+tried first, with the platform's default QPA plugin as a fallback.
 """
 
 import argparse
@@ -20,7 +21,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-SMOKE_ARGUMENTS = ("--smoke-test", "-platform", "offscreen")
+SMOKE_OFFSCREEN_ARGUMENTS = ("--smoke-test", "-platform", "offscreen")
+SMOKE_DEFAULT_ARGUMENTS = ("--smoke-test",)
 SMOKE_TIMEOUT_SECONDS = 120
 
 # Archive extraction should apply the data filter where the interpreter supports
@@ -63,10 +65,16 @@ def find_executable(root, system=None):
     return sorted(candidates)[0] if candidates else None
 
 
-def extract_archive(archive, destination):
+def extract_archive(archive, destination, system=None):
     """Extract a ZIP or gzipped tarball artifact into destination."""
+    system = (system or platform.system()).lower()
     archive = Path(archive)
-    if archive.suffix == ".zip":
+
+    if system == "darwin" and archive.suffix == ".zip":
+        # ditto restores the symlinks and permissions inside a deployed .app
+        # bundle; Python's zipfile extraction does not.
+        subprocess.run(["ditto", "-x", "-k", str(archive), str(destination)], check=True)
+    elif archive.suffix == ".zip":
         shutil.unpack_archive(str(archive), str(destination), "zip")
     elif archive.name.endswith((".tar.gz", ".tgz")):
         shutil.unpack_archive(str(archive), str(destination), "gztar", **_UNPACK_KWARGS)
@@ -74,9 +82,12 @@ def extract_archive(archive, destination):
         shutil.unpack_archive(str(archive), str(destination))
 
 
-def _smoke_environment(executable):
+def _smoke_environment(executable, force_offscreen):
     environment = os.environ.copy()
-    environment["QT_QPA_PLATFORM"] = "offscreen"
+    if force_offscreen:
+        environment["QT_QPA_PLATFORM"] = "offscreen"
+    else:
+        environment.pop("QT_QPA_PLATFORM", None)
 
     executable_dir = str(executable.parent)
     environment["PATH"] = executable_dir + os.pathsep + environment.get("PATH", "")
@@ -93,8 +104,26 @@ def _smoke_environment(executable):
     return environment
 
 
+def _run_smoke(executable, arguments, force_offscreen):
+    """Run one startup attempt. Returns the completed process or None on timeout."""
+    print(f"Running: {executable} {' '.join(arguments)}")
+    try:
+        return subprocess.run(
+            [str(executable), *arguments],
+            cwd=str(executable.parent),
+            env=_smoke_environment(executable, force_offscreen),
+            capture_output=True,
+            text=True,
+            timeout=SMOKE_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"Error: packaged application did not exit within {SMOKE_TIMEOUT_SECONDS}s", file=sys.stderr)
+        return None
+
+
 def verify_archive(archive, system=None):
     """Extract one package and run the packaged executable. Returns True on success."""
+    system = (system or platform.system()).lower()
     archive = Path(archive)
     print(f"Verifying packaged application: {archive}")
 
@@ -102,8 +131,8 @@ def verify_archive(archive, system=None):
         extracted = Path(temporary) / "extracted"
         extracted.mkdir()
         try:
-            extract_archive(archive, extracted)
-        except (OSError, shutil.ReadError) as error:
+            extract_archive(archive, extracted, system)
+        except (OSError, shutil.ReadError, subprocess.SubprocessError) as error:
             print(f"Error: could not extract {archive}: {error}", file=sys.stderr)
             return False
 
@@ -112,34 +141,46 @@ def verify_archive(archive, system=None):
             print(f"Error: no PhotoCarta executable found in {archive}", file=sys.stderr)
             return False
 
-        print(f"Running: {executable} {' '.join(SMOKE_ARGUMENTS)}")
-        try:
-            completed = subprocess.run(
-                [str(executable), *SMOKE_ARGUMENTS],
-                cwd=str(executable.parent),
-                env=_smoke_environment(executable),
-                capture_output=True,
-                text=True,
-                timeout=SMOKE_TIMEOUT_SECONDS,
-            )
-        except subprocess.TimeoutExpired:
-            print(f"Error: packaged application did not exit within {SMOKE_TIMEOUT_SECONDS}s", file=sys.stderr)
-            return False
-        except OSError as error:
-            print(f"Error: could not start packaged application: {error}", file=sys.stderr)
-            return False
+        # Archive extraction tools do not always restore the executable bit.
+        if system != "windows":
+            try:
+                executable.chmod(executable.stat().st_mode | 0o111)
+            except OSError as error:
+                print(f"Error: could not make {executable} executable: {error}", file=sys.stderr)
+                return False
 
-        if completed.stdout:
-            print(completed.stdout, end="")
-        if completed.stderr:
-            print(completed.stderr, end="", file=sys.stderr)
+        # Prefer headless startup; fall back to the platform plugin when the
+        # package does not ship the offscreen plugin.
+        attempts = (
+            (SMOKE_OFFSCREEN_ARGUMENTS, True),
+            (SMOKE_DEFAULT_ARGUMENTS, False),
+        )
+        last_returncode = None
+        for arguments, force_offscreen in attempts:
+            try:
+                completed = _run_smoke(executable, arguments, force_offscreen)
+            except OSError as error:
+                print(f"Error: could not start packaged application: {error}", file=sys.stderr)
+                return False
 
-        if completed.returncode != 0:
-            print(f"Error: packaged application exited with {completed.returncode}", file=sys.stderr)
-            return False
+            if completed is None:
+                continue
 
-    print("Packaged application started and exited cleanly.")
-    return True
+            if completed.stdout:
+                print(completed.stdout, end="")
+            if completed.stderr:
+                print(completed.stderr, end="", file=sys.stderr)
+
+            if completed.returncode == 0:
+                print("Packaged application started and exited cleanly.")
+                return True
+
+            last_returncode = completed.returncode
+            print(f"Notice: startup attempt exited with {last_returncode}; trying the next platform plugin.",
+                  file=sys.stderr)
+
+    print(f"Error: packaged application failed to start (last exit code {last_returncode})", file=sys.stderr)
+    return False
 
 
 def main():
