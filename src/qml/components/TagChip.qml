@@ -18,6 +18,25 @@ Rectangle {
     implicitHeight: 24
     radius: 12
 
+    activeFocusOnTab: interactive
+    Accessible.role: Accessible.Button
+    Accessible.name: "#" + root.text
+    Accessible.description: root.removable
+                            ? qsTr("Tag filter. Press Delete to remove this tag.")
+                            : qsTr("Filter photos by this tag")
+    Accessible.checkable: true
+    Accessible.checked: root.active
+    Accessible.onPressAction: root.clicked()
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            root.clicked()
+            event.accepted = true
+        } else if (root.removable && (event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace)) {
+            root.removeRequested()
+            event.accepted = true
+        }
+    }
+
     color: active
            ? themeManager.accent
            : (chipMouseArea.containsMouse && interactive)
@@ -94,4 +113,6 @@ Rectangle {
             root.clicked()
         }
     }
+
+    FocusRing { targetRadius: themeManager.radiusPill }
 }

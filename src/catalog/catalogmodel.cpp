@@ -13,6 +13,8 @@
 #include <QSet>
 #include <QUuid>
 
+#include <algorithm>
+
 namespace PhotoCarta
 {
 
@@ -1128,6 +1130,55 @@ void CatalogModel::setCollectionAvailable(const QString &rootPath, bool availabl
             }
         }
     }
+}
+
+bool CatalogModel::removeItems(const QList<int> &indices)
+{
+    if (indices.isEmpty())
+    {
+        return false;
+    }
+
+    // Sort descending so removal from m_items keeps earlier indices valid
+    QList<int> rows;
+    rows.reserve(indices.size());
+    for (int idx : indices)
+    {
+        if (idx >= 0 && idx < m_items.size())
+        {
+            rows.append(idx);
+        }
+    }
+    if (rows.isEmpty())
+    {
+        return false;
+    }
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+
+    QStringList paths;
+    for (int row : rows)
+    {
+        if (m_database && m_database->isOpen() && !m_items[row].isDemoFixture)
+        {
+            paths.append(m_items[row].filePath);
+        }
+    }
+
+    for (int row : rows)
+    {
+        beginRemoveRows(QModelIndex(), row, row);
+        m_items.removeAt(row);
+        endRemoveRows();
+    }
+
+    if (!paths.isEmpty())
+    {
+        m_database->removeItems(paths);
+    }
+
+    emit countChanged();
+    emit availableTagsChanged();
+    return true;
 }
 
 void CatalogModel::clearSession()

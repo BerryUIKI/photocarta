@@ -86,6 +86,7 @@ ApplicationWindow {
             clip: true
 
             ThumbnailGridView {
+                id: thumbnailGrid
                 anchors.fill: parent
                 visible: !sessionController.previewMode && !sessionController.compareMode
                 onRequestOpenFiles: openDialog.open()
@@ -106,11 +107,19 @@ ApplicationWindow {
     // Modal Export Dialog
     ExportDialog {
         id: exportDialog
+        onClosed: thumbnailGrid.focusGrid()
     }
 
     // Modal Batch Rename Dialog
     BatchRenameDialog {
         id: batchRenameDialog
+        onClosed: thumbnailGrid.focusGrid()
+    }
+
+    // Modal Move-to-Trash Confirmation Dialog
+    TrashConfirmDialog {
+        id: trashConfirmDialog
+        onClosed: thumbnailGrid.focusGrid()
     }
 
     // Real Native File Dialog for Temporary Session
@@ -170,6 +179,11 @@ ApplicationWindow {
     Shortcut {
         sequence: "Ctrl+L"
         onActivated: themeManager.toggleTheme()
+    }
+
+    Shortcut {
+        sequence: StandardKey.Find
+        onActivated: appToolbar.focusSearch()
     }
 
     Shortcut {
@@ -233,6 +247,16 @@ ApplicationWindow {
                 } else if (selectionManager.selectedCount >= 2 || selectionManager.hasSelection) {
                     sessionController.setCompareMode(true)
                 }
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "Delete"
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (!sessionController.previewMode && (selectionManager.hasSelection || selectionManager.selectedCount > 0)) {
+                sessionController.openTrashDialog()
             }
         }
     }

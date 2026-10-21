@@ -66,6 +66,10 @@ Rectangle {
                 value: sessionController.zoomFactor
                 onMoved: sessionController.zoomFactor = value
 
+                Accessible.role: Accessible.Slider
+                Accessible.name: qsTr("Thumbnail size")
+                Accessible.description: qsTr("Changes the size of thumbnails in the photo grid")
+
                 background: Rectangle {
                     x: zoomSlider.leftPadding
                     y: zoomSlider.topPadding + Math.round((zoomSlider.availableHeight - height) / 2)

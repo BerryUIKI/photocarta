@@ -60,6 +60,9 @@ class SessionController : public QObject
     Q_PROPERTY(bool histogramVisible READ histogramVisible WRITE setHistogramVisible NOTIFY histogramVisibleChanged)
     Q_PROPERTY(bool xmpSyncEnabled READ xmpSyncEnabled WRITE setXmpSyncEnabled NOTIFY xmpSyncEnabledChanged)
     Q_PROPERTY(bool batchRenameDialogOpen READ batchRenameDialogOpen WRITE setBatchRenameDialogOpen NOTIFY batchRenameDialogOpenChanged)
+    Q_PROPERTY(bool trashDialogOpen READ trashDialogOpen WRITE setTrashDialogOpen NOTIFY trashDialogOpenChanged)
+    Q_PROPERTY(int trashCandidateCount READ trashCandidateCount NOTIFY trashCandidatesChanged)
+    Q_PROPERTY(int trashSkippedCount READ trashSkippedCount NOTIFY trashCandidatesChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -243,6 +246,15 @@ public:
     Q_INVOKABLE QVariantList previewBatchRename(const QVariantMap &ruleOptions);
     Q_INVOKABLE QVariantMap executeBatchRename(const QVariantMap &ruleOptions);
 
+    // Move to Trash
+    [[nodiscard]] bool trashDialogOpen() const;
+    void setTrashDialogOpen(bool open);
+    [[nodiscard]] int trashCandidateCount() const;
+    [[nodiscard]] int trashSkippedCount() const;
+    Q_INVOKABLE void openTrashDialog();
+    Q_INVOKABLE void closeTrashDialog();
+    Q_INVOKABLE void confirmTrashSelected();
+
 signals:
     void previewModeChanged();
     void leftPaneVisibleChanged();
@@ -276,6 +288,8 @@ signals:
     void xmpSyncEnabledChanged();
     void batchRenameDialogOpenChanged();
     void batchRenameCompleted(int successCount, int failCount);
+    void trashDialogOpenChanged();
+    void trashCandidatesChanged();
 
 private slots:
     void onModelCountChanged();
@@ -328,6 +342,13 @@ private:
     bool m_histogramVisible = true;
     bool m_xmpSyncEnabled = true;
     bool m_batchRenameDialogOpen = false;
+
+    // Move to Trash
+    bool m_trashDialogOpen = false;
+    QList<int> m_trashSourceRows;
+    QStringList m_trashErrorMessages;
+    int m_trashCandidateCount = 0;
+    int m_trashSkippedCount = 0;
 };
 
 } // namespace PhotoCarta
