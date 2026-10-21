@@ -7,10 +7,26 @@ import QtQuick.Controls
 Rectangle {
     id: root
 
+    signal closed()
+
     visible: sessionController.trashDialogOpen
     anchors.fill: parent
     color: Qt.rgba(0, 0, 0, 0.65)
     z: 220
+
+    focus: visible
+    Accessible.role: Accessible.Dialog
+    Accessible.name: qsTr("Move photos to trash confirmation")
+
+    onVisibleChanged: {
+        if (visible) {
+            cancelButton.forceActiveFocus()
+        } else {
+            root.closed()
+        }
+    }
+
+    Keys.onEscapePressed: sessionController.closeTrashDialog()
 
     // Dismiss on background click
     MouseArea {
@@ -105,12 +121,25 @@ Rectangle {
 
                     // Cancel Button
                     Rectangle {
+                        id: cancelButton
                         width: 90
                         height: 32
                         radius: themeManager.radiusMd
                         color: cancelBtnMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
                         border.color: themeManager.border
                         border.width: 1
+
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Cancel")
+                        Accessible.description: qsTr("Close this dialog without removing any photos")
+                        Accessible.onPressAction: sessionController.closeTrashDialog()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                sessionController.closeTrashDialog()
+                                event.accepted = true
+                            }
+                        }
 
                         Text {
                             anchors.centerIn: parent
@@ -127,6 +156,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: sessionController.closeTrashDialog()
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusMd }
                     }
 
                     // Confirm Move to Trash Button (destructive styling)
@@ -140,6 +171,24 @@ Rectangle {
                         opacity: sessionController.trashCandidateCount > 0 ? 1.0 : 0.5
                         border.color: "#dc2626"
                         border.width: 1
+
+                        activeFocusOnTab: sessionController.trashCandidateCount > 0
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Move %1 photos to trash").arg(sessionController.trashCandidateCount)
+                        Accessible.description: qsTr("Remove the catalog entries and send the files to the system trash")
+                        Accessible.onPressAction: {
+                            if (sessionController.trashCandidateCount > 0) {
+                                sessionController.confirmTrashSelected()
+                            }
+                        }
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                if (sessionController.trashCandidateCount > 0) {
+                                    sessionController.confirmTrashSelected()
+                                }
+                                event.accepted = true
+                            }
+                        }
 
                         Text {
                             id: confirmBtnText
@@ -158,6 +207,8 @@ Rectangle {
                             enabled: sessionController.trashCandidateCount > 0
                             onClicked: sessionController.confirmTrashSelected()
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusMd }
                     }
                 }
             }

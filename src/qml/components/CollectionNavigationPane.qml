@@ -99,6 +99,26 @@ Rectangle {
                         }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.ListItem
+                    Accessible.name: qsTr("All Photos")
+                    Accessible.selected: filterModel.categoryFilter === "all" && !filterModel.tagFilter
+                    Accessible.onPressAction: {
+                        filterModel.categoryFilter = "all"
+                        filterModel.tagFilter = ""
+                        filterModel.minRating = 0
+                        sessionController.selectCollection(0)
+                    }
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            filterModel.categoryFilter = "all"
+                            filterModel.tagFilter = ""
+                            filterModel.minRating = 0
+                            sessionController.selectCollection(0)
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: allNavMouse
                         anchors.fill: parent
@@ -111,6 +131,8 @@ Rectangle {
                             sessionController.selectCollection(0)
                         }
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
 
                 // Demo Fixtures Nav Row
@@ -162,6 +184,26 @@ Rectangle {
                         }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.ListItem
+                    Accessible.name: qsTr("Demo Fixtures")
+                    Accessible.selected: filterModel.categoryFilter === "demo"
+                    Accessible.onPressAction: {
+                        filterModel.categoryFilter = "demo"
+                        filterModel.tagFilter = ""
+                        filterModel.minRating = 0
+                        sessionController.selectCollection(0)
+                    }
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            filterModel.categoryFilter = "demo"
+                            filterModel.tagFilter = ""
+                            filterModel.minRating = 0
+                            sessionController.selectCollection(0)
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: demoNavMouse
                         anchors.fill: parent
@@ -174,6 +216,8 @@ Rectangle {
                             sessionController.selectCollection(0)
                         }
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
 
                 // Imported Photos Nav Row
@@ -207,6 +251,24 @@ Rectangle {
                         }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.ListItem
+                    Accessible.name: qsTr("Imported Photos")
+                    Accessible.selected: filterModel.categoryFilter === "imported"
+                    Accessible.onPressAction: {
+                        filterModel.categoryFilter = "imported"
+                        filterModel.tagFilter = ""
+                        filterModel.minRating = 0
+                    }
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            filterModel.categoryFilter = "imported"
+                            filterModel.tagFilter = ""
+                            filterModel.minRating = 0
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: importedNavMouse
                         anchors.fill: parent
@@ -218,6 +280,8 @@ Rectangle {
                             filterModel.minRating = 0
                         }
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
 
                 // Favorites Nav Row
@@ -251,6 +315,22 @@ Rectangle {
                         }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.ListItem
+                    Accessible.name: qsTr("Favorites, four stars and above")
+                    Accessible.selected: filterModel.categoryFilter === "favorites"
+                    Accessible.onPressAction: {
+                        filterModel.categoryFilter = "favorites"
+                        filterModel.tagFilter = ""
+                    }
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            filterModel.categoryFilter = "favorites"
+                            filterModel.tagFilter = ""
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: favNavMouse
                         anchors.fill: parent
@@ -261,6 +341,8 @@ Rectangle {
                             filterModel.tagFilter = ""
                         }
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
             }
 
@@ -302,6 +384,17 @@ Rectangle {
                         color: addAlbumMouse.containsMouse ? themeManager.accent : themeManager.textSecondary
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Add or scan a photo folder")
+                    Accessible.onPressAction: root.requestScanFolder()
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            root.requestScanFolder()
+                            event.accepted = true
+                        }
+                    }
+
                     ToolTip.visible: addAlbumMouse.containsMouse
                     ToolTip.text: qsTr("Add / Scan Photo Folder...")
                     ToolTip.delay: 400
@@ -313,6 +406,8 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: root.requestScanFolder()
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusSm }
                 }
             }
 
@@ -364,6 +459,17 @@ Rectangle {
                             color: themeManager.accent
                         }
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Scan directory")
+                        Accessible.onPressAction: root.requestScanFolder()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                root.requestScanFolder()
+                                event.accepted = true
+                            }
+                        }
+
                         MouseArea {
                             id: scanPromptMouse
                             anchors.fill: parent
@@ -371,6 +477,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.requestScanFolder()
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusSm }
                     }
                 }
             }
@@ -411,6 +519,22 @@ Rectangle {
                         }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.ListItem
+                    Accessible.name: qsTr("All Albums")
+                    Accessible.selected: sessionController.currentCollectionId === 0 && filterModel.categoryFilter === "all"
+                    Accessible.onPressAction: {
+                        filterModel.categoryFilter = "all"
+                        sessionController.selectCollection(0)
+                    }
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            filterModel.categoryFilter = "all"
+                            sessionController.selectCollection(0)
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: allCollMouse
                         anchors.fill: parent
@@ -421,6 +545,8 @@ Rectangle {
                             sessionController.selectCollection(0)
                         }
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
 
                 // Individual Collection Rows
@@ -518,11 +644,12 @@ Rectangle {
 
                             // Actions Button (···)
                             Rectangle {
+                                id: menuBtn
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 20
                                 height: 20
                                 radius: 4
-                                visible: rowMouse.containsMouse || collMenu.visible
+                                visible: rowMouse.containsMouse || collMenu.visible || menuBtn.activeFocus
                                 color: menuBtnMouse.containsMouse ? themeManager.surfaceElevated : "transparent"
 
                                 Text {
@@ -532,6 +659,17 @@ Rectangle {
                                     color: themeManager.textSecondary
                                 }
 
+                                activeFocusOnTab: true
+                                Accessible.role: Accessible.Button
+                                Accessible.name: qsTr("Album actions for %1").arg(collRow.name)
+                                Accessible.onPressAction: collMenu.open()
+                                Keys.onPressed: (event) => {
+                                    if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                        collMenu.open()
+                                        event.accepted = true
+                                    }
+                                }
+
                                 MouseArea {
                                     id: menuBtnMouse
                                     anchors.fill: parent
@@ -539,6 +677,8 @@ Rectangle {
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: collMenu.open()
                                 }
+
+                                FocusRing { targetRadius: themeManager.radiusSm }
 
                                 Menu {
                                     id: collMenu
@@ -569,6 +709,25 @@ Rectangle {
                             }
                         }
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.ListItem
+                        Accessible.name: collRow.name
+                        Accessible.description: collRow.rootPath + ", "
+                                                + qsTr("%1 items").arg(collRow.itemCount) + ", "
+                                                + (collRow.isAvailable ? qsTr("online") : qsTr("offline, preserved"))
+                        Accessible.selected: collRow.isActive
+                        Accessible.onPressAction: {
+                            filterModel.categoryFilter = "all"
+                            sessionController.selectCollection(collRow.id)
+                        }
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                filterModel.categoryFilter = "all"
+                                sessionController.selectCollection(collRow.id)
+                                event.accepted = true
+                            }
+                        }
+
                         ToolTip.visible: rowMouse.containsMouse && !menuBtnMouse.containsMouse && !statusDotMouse.containsMouse
                         ToolTip.text: collRow.name + "\n" + collRow.rootPath + "\n" + qsTr("Items: ") + collRow.itemCount + (collRow.lastScannedAt ? ("\n" + qsTr("Last scan: ") + collRow.lastScannedAt) : "")
                         ToolTip.delay: 800
@@ -588,6 +747,8 @@ Rectangle {
                                 }
                             }
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusMd }
                     }
                 }
             }
@@ -646,6 +807,31 @@ Rectangle {
                                    : themeManager.textSecondary
                         }
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.RadioButton
+                        Accessible.name: rChip.modelData.val === 0
+                                        ? qsTr("All ratings")
+                                        : qsTr("%1 stars and above").arg(rChip.modelData.val)
+                        Accessible.checkable: true
+                        Accessible.checked: filterModel.minRating === rChip.modelData.val
+                        Accessible.onPressAction: {
+                            if (filterModel.minRating === rChip.modelData.val && rChip.modelData.val > 0) {
+                                sessionController.clearRatingFilter()
+                            } else {
+                                sessionController.setRatingFilter(rChip.modelData.val)
+                            }
+                        }
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                if (filterModel.minRating === rChip.modelData.val && rChip.modelData.val > 0) {
+                                    sessionController.clearRatingFilter()
+                                } else {
+                                    sessionController.setRatingFilter(rChip.modelData.val)
+                                }
+                                event.accepted = true
+                            }
+                        }
+
                         MouseArea {
                             id: rChipMouse
                             anchors.fill: parent
@@ -659,6 +845,8 @@ Rectangle {
                                 }
                             }
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusSm }
                     }
                 }
             }
@@ -735,6 +923,17 @@ Rectangle {
                         }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Reset demo fixtures")
+                    Accessible.onPressAction: sessionController.loadDemoSamples()
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            sessionController.loadDemoSamples()
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: loadDemoMouse
                         anchors.fill: parent
@@ -742,6 +941,8 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: sessionController.loadDemoSamples()
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
 
                 // Clear Session Button
@@ -773,6 +974,18 @@ Rectangle {
                         }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Clear session")
+                    Accessible.description: qsTr("Remove photos from this temporary browsing session")
+                    Accessible.onPressAction: sessionController.clearSession()
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            sessionController.clearSession()
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: clearMouse
                         anchors.fill: parent
@@ -780,6 +993,8 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: sessionController.clearSession()
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
             }
 

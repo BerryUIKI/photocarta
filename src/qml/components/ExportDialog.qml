@@ -9,10 +9,46 @@ import QtQuick.Dialogs
 Rectangle {
     id: root
 
+    signal closed()
+
     visible: sessionController.exportDialogOpen
     anchors.fill: parent
     color: Qt.rgba(0, 0, 0, 0.65)
     z: 200
+
+    focus: visible
+    Accessible.role: Accessible.Dialog
+    Accessible.name: qsTr("Export photos")
+
+    Keys.onEscapePressed: {
+        if (!sessionController.isExporting) {
+            sessionController.closeExportDialog()
+        }
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            destPathInput.forceActiveFocus()
+        } else {
+            root.closed()
+        }
+    }
+
+    function startExport() {
+        if (sessionController.isExporting || !(selectionManager.selectedCount > 0 || selectionManager.hasSelection)) {
+            return
+        }
+        sessionController.startExportSelected({
+            outputDirectory: destPathInput.text.trim(),
+            format: formatCombo.currentValue,
+            quality: Math.round(qualitySlider.value),
+            maxDimension: scaleCombo.currentValue,
+            preserveMetadata: metadataCheck.checked,
+            filenamePrefix: prefixInput.text,
+            filenameSuffix: suffixInput.text,
+            overwriteExisting: overwriteCheck.checked
+        })
+    }
 
     // Prevent clicks from penetrating to the views below
     MouseArea {
@@ -98,6 +134,17 @@ Rectangle {
                     radius: 14
                     color: closeMouse.containsMouse ? themeManager.surfaceHover : "transparent"
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Close export dialog")
+                    Accessible.onPressAction: sessionController.closeExportDialog()
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            sessionController.closeExportDialog()
+                            event.accepted = true
+                        }
+                    }
+
                     Text {
                         anchors.centerIn: parent
                         text: "✕"
@@ -113,6 +160,8 @@ Rectangle {
                         enabled: !sessionController.isExporting
                         onClicked: sessionController.closeExportDialog()
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusPill }
                 }
             }
 
@@ -155,6 +204,9 @@ Rectangle {
                             font.pixelSize: themeManager.fontSm
                             color: themeManager.textPrimary
                             selectByMouse: true
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.EditableText
+                            Accessible.name: qsTr("Destination folder")
                             text: sessionController.defaultExportDirectory() + "/PhotoCarta_Export"
                         }
                     }
@@ -183,6 +235,19 @@ Rectangle {
                             enabled: !sessionController.isExporting
                             onClicked: exportFolderDialog.open()
                         }
+
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Browse for destination folder")
+                        Accessible.onPressAction: exportFolderDialog.open()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                exportFolderDialog.open()
+                                event.accepted = true
+                            }
+                        }
+
+                        FocusRing { targetRadius: themeManager.radiusMd }
                     }
                 }
             }
@@ -352,6 +417,9 @@ Rectangle {
                             color: themeManager.textPrimary
                             selectByMouse: true
                             enabled: !sessionController.isExporting
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.EditableText
+                            Accessible.name: qsTr("Filename prefix")
                         }
                     }
                 }
@@ -385,6 +453,9 @@ Rectangle {
                             color: themeManager.textPrimary
                             selectByMouse: true
                             enabled: !sessionController.isExporting
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.EditableText
+                            Accessible.name: qsTr("Filename suffix")
                         }
                     }
                 }
@@ -472,6 +543,27 @@ Rectangle {
                         border.color: themeManager.border
                         border.width: 1
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: sessionController.isExporting ? qsTr("Cancel export") : qsTr("Cancel")
+                        Accessible.onPressAction: {
+                            if (sessionController.isExporting) {
+                                sessionController.cancelExport()
+                            } else {
+                                sessionController.closeExportDialog()
+                            }
+                        }
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                if (sessionController.isExporting) {
+                                    sessionController.cancelExport()
+                                } else {
+                                    sessionController.closeExportDialog()
+                                }
+                                event.accepted = true
+                            }
+                        }
+
                         Text {
                             id: cancelBtnText
                             anchors.centerIn: parent
@@ -494,6 +586,8 @@ Rectangle {
                                 }
                             }
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusMd }
                     }
 
                     // Export Action Button
@@ -505,6 +599,19 @@ Rectangle {
                                ? themeManager.surfaceHover
                                : (exportMouse.containsMouse ? Qt.darker(themeManager.accent, 1.1) : themeManager.accent)
                         opacity: (selectionManager.selectedCount > 0 || selectionManager.hasSelection) && !sessionController.isExporting ? 1.0 : 0.6
+                        activeFocusOnTab: (selectionManager.selectedCount > 0 || selectionManager.hasSelection) && !sessionController.isExporting
+
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Export now")
+                        Accessible.onPressAction: root.startExport()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                if (exportMouse.enabled) {
+                                    root.startExport()
+                                }
+                                event.accepted = true
+                            }
+                        }
 
                         Text {
                             id: exportBtnText
@@ -521,19 +628,10 @@ Rectangle {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             enabled: (selectionManager.selectedCount > 0 || selectionManager.hasSelection) && !sessionController.isExporting
-                            onClicked: {
-                                sessionController.startExportSelected({
-                                    outputDirectory: destPathInput.text.trim(),
-                                    format: formatCombo.currentValue,
-                                    quality: Math.round(qualitySlider.value),
-                                    maxDimension: scaleCombo.currentValue,
-                                    preserveMetadata: metadataCheck.checked,
-                                    filenamePrefix: prefixInput.text,
-                                    filenameSuffix: suffixInput.text,
-                                    overwriteExisting: overwriteCheck.checked
-                                })
-                            }
+                            onClicked: root.startExport()
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusMd }
                     }
                 }
             }

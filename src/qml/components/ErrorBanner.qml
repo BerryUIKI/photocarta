@@ -54,6 +54,17 @@ Rectangle {
                ? (themeManager.isDark ? "#7f1d1d" : "#fee2e2")
                : "transparent"
 
+        activeFocusOnTab: root.visible
+        Accessible.role: Accessible.Button
+        Accessible.name: qsTr("Dismiss error message")
+        Accessible.onPressAction: sessionController.dismissError()
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                sessionController.dismissError()
+                event.accepted = true
+            }
+        }
+
         Image {
             anchors.centerIn: parent
             width: 14
@@ -69,5 +80,7 @@ Rectangle {
             cursorShape: Qt.PointingHandCursor
             onClicked: sessionController.dismissError()
         }
+
+        FocusRing { targetRadius: themeManager.radiusPill }
     }
 }

@@ -10,6 +10,11 @@ Rectangle {
     signal requestOpenFiles()
     signal requestScanFolder()
 
+    // Keyboard entry point for the search field (Ctrl+F)
+    function focusSearch() {
+        searchInput.forceActiveFocus()
+    }
+
     implicitHeight: 52
     color: themeManager.surface
     border.color: themeManager.border
@@ -89,6 +94,20 @@ Rectangle {
                 fillMode: Image.PreserveAspectFit
             }
 
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Toggle navigation pane")
+            Accessible.description: qsTr("Show or hide the collections sidebar (Ctrl+1)")
+            Accessible.checkable: true
+            Accessible.checked: sessionController.leftPaneVisible
+            Accessible.onPressAction: sessionController.toggleLeftPane()
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    sessionController.toggleLeftPane()
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: toggleLeftMouse.containsMouse
             ToolTip.text: qsTr("Toggle Navigation Pane (Ctrl+1)")
 
@@ -99,6 +118,8 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: sessionController.toggleLeftPane()
             }
+
+            FocusRing { targetRadius: themeManager.radiusMd }
         }
 
         // Open Photos Button
@@ -134,6 +155,18 @@ Rectangle {
                 }
             }
 
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Open photos")
+            Accessible.description: qsTr("Add local photos to a temporary session (Ctrl+O)")
+            Accessible.onPressAction: root.requestOpenFiles()
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    root.requestOpenFiles()
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: openMouse.containsMouse
             ToolTip.text: qsTr("Add local photos to session (Ctrl+O)")
 
@@ -144,6 +177,8 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.requestOpenFiles()
             }
+
+            FocusRing { targetRadius: themeManager.radiusMd }
         }
 
         // Scan Directory Button
@@ -179,6 +214,30 @@ Rectangle {
                 }
             }
 
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: sessionController.isScanning ? qsTr("Cancel scanning") : qsTr("Scan folder")
+            Accessible.description: sessionController.isScanning
+                                    ? qsTr("Stop the running directory scan")
+                                    : qsTr("Scan a directory recursively into the catalog (Ctrl+Shift+O)")
+            Accessible.onPressAction: {
+                if (sessionController.isScanning) {
+                    sessionController.cancelScan()
+                } else {
+                    root.requestScanFolder()
+                }
+            }
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    if (sessionController.isScanning) {
+                        sessionController.cancelScan()
+                    } else {
+                        root.requestScanFolder()
+                    }
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: scanMouse.containsMouse
             ToolTip.text: sessionController.isScanning
                           ? qsTr("Scanning in progress... Click to cancel")
@@ -197,6 +256,8 @@ Rectangle {
                     }
                 }
             }
+
+            FocusRing { targetRadius: themeManager.radiusMd }
         }
 
         // Export Photos Button
@@ -233,6 +294,19 @@ Rectangle {
                 }
             }
 
+            activeFocusOnTab: enabled
+            enabled: (selectionManager.hasSelection || selectionManager.selectedCount > 0) && !sessionController.isExporting
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Export photos")
+            Accessible.description: qsTr("Export the selected photos with format conversion and resizing (Ctrl+E)")
+            Accessible.onPressAction: sessionController.openExportDialog()
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    sessionController.openExportDialog()
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: exportToolbarMouse.containsMouse
             ToolTip.text: qsTr("Export selected photos with format conversion and resizing (Ctrl+E)")
 
@@ -244,6 +318,8 @@ Rectangle {
                 enabled: (selectionManager.hasSelection || selectionManager.selectedCount > 0) && !sessionController.isExporting
                 onClicked: sessionController.openExportDialog()
             }
+
+            FocusRing { targetRadius: themeManager.radiusMd }
         }
 
         // Batch Rename Photos Button
@@ -278,6 +354,19 @@ Rectangle {
                 }
             }
 
+            activeFocusOnTab: enabled
+            enabled: (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0)
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Batch rename photos")
+            Accessible.description: qsTr("Rename photos using custom templates (F2)")
+            Accessible.onPressAction: sessionController.openBatchRenameDialog()
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    sessionController.openBatchRenameDialog()
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: renameToolbarMouse.containsMouse
             ToolTip.text: qsTr("Batch rename photos using custom templates (F2)")
 
@@ -289,6 +378,8 @@ Rectangle {
                 enabled: (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0)
                 onClicked: sessionController.openBatchRenameDialog()
             }
+
+            FocusRing { targetRadius: themeManager.radiusMd }
         }
 
         // View Mode Switcher: Grid vs Loupe vs Compare
@@ -319,6 +410,23 @@ Rectangle {
                         fillMode: Image.PreserveAspectFit
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: qsTr("Grid view")
+                    Accessible.checkable: true
+                    Accessible.checked: !sessionController.previewMode && !sessionController.compareMode
+                    Accessible.onPressAction: {
+                        if (sessionController.compareMode) sessionController.setCompareMode(false)
+                        if (sessionController.previewMode) sessionController.setPreviewMode(false)
+                    }
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            if (sessionController.compareMode) sessionController.setCompareMode(false)
+                            if (sessionController.previewMode) sessionController.setPreviewMode(false)
+                            event.accepted = true
+                        }
+                    }
+
                     ToolTip.visible: gridBtnMouse.containsMouse
                     ToolTip.text: qsTr("Grid View (Esc)")
 
@@ -332,6 +440,8 @@ Rectangle {
                             if (sessionController.previewMode) sessionController.setPreviewMode(false)
                         }
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
 
                 // Loupe / Preview Button
@@ -349,6 +459,23 @@ Rectangle {
                         fillMode: Image.PreserveAspectFit
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: qsTr("Preview view")
+                    Accessible.checkable: true
+                    Accessible.checked: sessionController.previewMode && !sessionController.compareMode
+                    Accessible.onPressAction: {
+                        if (sessionController.compareMode) sessionController.setCompareMode(false)
+                        sessionController.setPreviewMode(true)
+                    }
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            if (sessionController.compareMode) sessionController.setCompareMode(false)
+                            sessionController.setPreviewMode(true)
+                            event.accepted = true
+                        }
+                    }
+
                     ToolTip.visible: loupeBtnMouse.containsMouse
                     ToolTip.text: qsTr("Preview / Loupe View (Enter)")
 
@@ -362,6 +489,8 @@ Rectangle {
                             sessionController.setPreviewMode(true)
                         }
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
 
                 // Side-by-Side Compare Button (Light Table)
@@ -379,6 +508,19 @@ Rectangle {
                         color: sessionController.compareMode ? "#ffffff" : themeManager.textSecondary
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: qsTr("Compare view")
+                    Accessible.checkable: true
+                    Accessible.checked: sessionController.compareMode
+                    Accessible.onPressAction: sessionController.toggleCompareMode()
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            sessionController.toggleCompareMode()
+                            event.accepted = true
+                        }
+                    }
+
                     ToolTip.visible: compareBtnMouse.containsMouse
                     ToolTip.text: qsTr("Compare Selected Photos / Light Table (C)")
 
@@ -389,6 +531,8 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: sessionController.toggleCompareMode()
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusMd }
                 }
             }
         }
@@ -435,6 +579,10 @@ Rectangle {
                     color: themeManager.textPrimary
                     clip: true
                     selectByMouse: true
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.EditableText
+                    Accessible.name: qsTr("Search photos and tags")
+                    Accessible.description: qsTr("Filters the photo grid as you type")
 
                     Text {
                         anchors.fill: parent
@@ -514,6 +662,17 @@ Rectangle {
                 }
             }
 
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Clear tag filter %1").arg(filterModel.tagFilter)
+            Accessible.onPressAction: sessionController.clearTagFilter()
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    sessionController.clearTagFilter()
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: activeTagMouse.containsMouse
             ToolTip.text: qsTr("Clear tag filter '%1'").arg(filterModel.tagFilter)
 
@@ -524,6 +683,8 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: sessionController.clearTagFilter()
             }
+
+            FocusRing { targetRadius: themeManager.radiusPill }
         }
 
         // Rating Filter Selector
@@ -647,6 +808,22 @@ Rectangle {
                 }
             }
 
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Reset all filters")
+            Accessible.description: qsTr("Clear the search query, tag, rating, color label, and category filters")
+            Accessible.onPressAction: {
+                searchInput.text = ""
+                sessionController.clearAllFilters()
+            }
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    searchInput.text = ""
+                    sessionController.clearAllFilters()
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: resetFiltersMouse.containsMouse
             ToolTip.text: qsTr("Clear all filters and search query")
 
@@ -660,6 +837,8 @@ Rectangle {
                     sessionController.clearAllFilters()
                 }
             }
+
+            FocusRing { targetRadius: themeManager.radiusSm }
         }
 
         // Sort Criterion Selector
@@ -722,6 +901,18 @@ Rectangle {
                 color: themeManager.textPrimary
             }
 
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: filterModel.sortAscending ? qsTr("Sort ascending") : qsTr("Sort descending")
+            Accessible.description: qsTr("Toggle the sort direction of the photo grid")
+            Accessible.onPressAction: filterModel.sortAscending = !filterModel.sortAscending
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    filterModel.sortAscending = !filterModel.sortAscending
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: sortOrderMouse.containsMouse
             ToolTip.text: filterModel.sortAscending ? qsTr("Sort Ascending") : qsTr("Sort Descending")
 
@@ -732,6 +923,8 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: filterModel.sortAscending = !filterModel.sortAscending
             }
+
+            FocusRing { targetRadius: themeManager.radiusMd }
         }
 
         // Right Panel Toggle
@@ -754,6 +947,20 @@ Rectangle {
                 fillMode: Image.PreserveAspectFit
             }
 
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Toggle details pane")
+            Accessible.description: qsTr("Show or hide the metadata panel (Ctrl+2)")
+            Accessible.checkable: true
+            Accessible.checked: sessionController.rightPaneVisible
+            Accessible.onPressAction: sessionController.toggleRightPane()
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    sessionController.toggleRightPane()
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: toggleRightMouse.containsMouse
             ToolTip.text: qsTr("Toggle Details Pane (Ctrl+2)")
 
@@ -764,6 +971,8 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: sessionController.toggleRightPane()
             }
+
+            FocusRing { targetRadius: themeManager.radiusMd }
         }
 
         // Theme Toggle Button
@@ -784,6 +993,18 @@ Rectangle {
                 fillMode: Image.PreserveAspectFit
             }
 
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: themeManager.isDark ? qsTr("Switch to light theme") : qsTr("Switch to dark theme")
+            Accessible.description: qsTr("Toggle the application color theme (Ctrl+L)")
+            Accessible.onPressAction: themeManager.toggleTheme()
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    themeManager.toggleTheme()
+                    event.accepted = true
+                }
+            }
+
             ToolTip.visible: themeBtnMouse.containsMouse
             ToolTip.text: themeManager.isDark ? qsTr("Switch to Light Theme") : qsTr("Switch to Dark Theme")
 
@@ -794,6 +1015,8 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: themeManager.toggleTheme()
             }
+
+            FocusRing { targetRadius: themeManager.radiusMd }
         }
     }
 }

@@ -69,6 +69,7 @@ Item {
 
             // If search empty, offer reset filters button
             Rectangle {
+                activeFocusOnTab: root.isSearchEmpty
                 visible: root.isSearchEmpty
                 width: resetFiltersText.implicitWidth + 24
                 height: 36
@@ -84,6 +85,24 @@ Item {
                     color: themeManager.accentText
                 }
 
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Clear all filters")
+                Accessible.onPressAction: {
+                    filterModel.searchQuery = ""
+                    filterModel.categoryFilter = "all"
+                    filterModel.tagFilter = ""
+                    filterModel.minRating = 0
+                }
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        filterModel.searchQuery = ""
+                        filterModel.categoryFilter = "all"
+                        filterModel.tagFilter = ""
+                        filterModel.minRating = 0
+                        event.accepted = true
+                    }
+                }
+
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
@@ -94,15 +113,28 @@ Item {
                         filterModel.minRating = 0
                     }
                 }
+
+                FocusRing { targetRadius: themeManager.radiusMd }
             }
 
             // If library empty: Load Demo Samples
             Rectangle {
                 visible: !root.isSearchEmpty
+                activeFocusOnTab: !root.isSearchEmpty
                 width: loadDemoText.implicitWidth + 24
                 height: 36
                 radius: themeManager.radiusMd
                 color: themeManager.accent
+
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Load demo samples")
+                Accessible.onPressAction: sessionController.loadDemoSamples()
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        sessionController.loadDemoSamples()
+                        event.accepted = true
+                    }
+                }
 
                 Text {
                     id: loadDemoText
@@ -118,17 +150,30 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: sessionController.loadDemoSamples()
                 }
+
+                FocusRing { targetRadius: themeManager.radiusMd }
             }
 
             // If library empty: Open Photos
             Rectangle {
                 visible: !root.isSearchEmpty
+                activeFocusOnTab: !root.isSearchEmpty
                 width: openPhotosText.implicitWidth + 24
                 height: 36
                 radius: themeManager.radiusMd
                 color: themeManager.surfaceElevated
                 border.color: themeManager.border
                 border.width: 1
+
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Open local photos")
+                Accessible.onPressAction: root.requestOpenFiles()
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        root.requestOpenFiles()
+                        event.accepted = true
+                    }
+                }
 
                 Text {
                     id: openPhotosText
@@ -144,6 +189,8 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.requestOpenFiles()
                 }
+
+                FocusRing { targetRadius: themeManager.radiusMd }
             }
         }
     }
