@@ -17,6 +17,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QIcon>
 #include <QImage>
 #include <QQmlApplicationEngine>
@@ -29,6 +30,11 @@ using namespace PhotoCarta;
 
 int main(int argc, char *argv[])
 {
+    // Keep fractional display scaling exact (125%, 150%, ...) instead of rounding
+    // to whole factors, so layouts stay proportional on high-DPI displays.
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
+        Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+
     // Use QApplication (Qt Widgets) to preserve compatibility for later digiKam tool windows
     QApplication app(argc, argv);
     QQuickStyle::setStyle(QStringLiteral("Basic"));
@@ -331,7 +337,9 @@ int main(int argc, char *argv[])
 
             if (image.save(screenshotPath))
             {
-                qInfo() << "Screenshot successfully saved to" << screenshotPath;
+                qInfo() << "Screenshot successfully saved to" << screenshotPath
+                        << "size:" << image.width() << "x" << image.height()
+                        << "devicePixelRatio:" << image.devicePixelRatio();
                 app.exit(0);
             }
             else

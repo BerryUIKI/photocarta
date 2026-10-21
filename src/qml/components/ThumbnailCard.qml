@@ -12,6 +12,31 @@ Rectangle {
 
     signal activated()
 
+    Accessible.role: Accessible.ListItem
+    Accessible.name: model.title ? model.title : model.fileName
+    Accessible.description: {
+        const parts = [];
+        if (model.formattedFileSize) {
+            parts.push(model.formattedFileSize);
+        }
+        if ((model.rating || 0) > 0) {
+            parts.push(qsTr("%1 of 5 stars").arg(model.rating));
+        }
+        if (model.isDemoFixture) {
+            parts.push(qsTr("Demo fixture"));
+        }
+        if (model.isMissing === true && !model.isDemoFixture) {
+            parts.push(qsTr("Collection offline"));
+        }
+        return parts.join(", ");
+    }
+    Accessible.selectable: true
+    Accessible.selected: root.isSelected
+    Accessible.onPressAction: {
+        selectionManager.select(root.itemIndex)
+        sessionController.setPreviewMode(true)
+    }
+
     width: GridView.view.cellWidth - 12
     height: GridView.view.cellHeight - 12
     x: 6

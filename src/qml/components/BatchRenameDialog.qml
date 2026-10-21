@@ -8,10 +8,41 @@ import QtQuick.Layouts
 Rectangle {
     id: root
 
+    signal closed()
+
     visible: sessionController.batchRenameDialogOpen
     anchors.fill: parent
     color: Qt.rgba(0, 0, 0, 0.65)
     z: 210
+
+    focus: visible
+    Accessible.role: Accessible.Dialog
+    Accessible.name: qsTr("Batch rename photos")
+
+    Keys.onEscapePressed: {
+        if (!root.isExecuting) {
+            sessionController.closeBatchRenameDialog()
+        }
+    }
+
+    function executeRename() {
+        if (root.okCount <= 0 || root.isExecuting) {
+            return
+        }
+        root.isExecuting = true;
+        var rule = {
+            pattern: patternInput.text,
+            startSequence: parseInt(startSeqInput.text) || 1,
+            sequenceStep: parseInt(stepInput.text) || 1,
+            findText: findInput.text,
+            replaceText: replaceInput.text,
+            matchCase: matchCaseCheck.checked,
+            caseConversion: caseCombo.currentIndex
+        };
+        sessionController.executeBatchRename(rule);
+        root.isExecuting = false;
+        sessionController.closeBatchRenameDialog();
+    }
 
     // Internal state
     property var previewCandidates: []
@@ -49,6 +80,9 @@ Rectangle {
     onVisibleChanged: {
         if (visible) {
             updatePreview();
+            patternInput.forceActiveFocus();
+        } else {
+            root.closed();
         }
     }
 
@@ -133,6 +167,17 @@ Rectangle {
                     radius: 14
                     color: closeMouse.containsMouse ? themeManager.surfaceHover : "transparent"
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Close batch rename dialog")
+                    Accessible.onPressAction: sessionController.closeBatchRenameDialog()
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            sessionController.closeBatchRenameDialog()
+                            event.accepted = true
+                        }
+                    }
+
                     Text {
                         anchors.centerIn: parent
                         text: "✕"
@@ -151,6 +196,8 @@ Rectangle {
                             }
                         }
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusPill }
                 }
             }
 
@@ -680,6 +727,19 @@ Rectangle {
                         border.color: themeManager.border
                         border.width: 1
 
+                        activeFocusOnTab: !root.isExecuting
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Cancel")
+                        Accessible.onPressAction: sessionController.closeBatchRenameDialog()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                if (!root.isExecuting) {
+                                    sessionController.closeBatchRenameDialog()
+                                }
+                                event.accepted = true
+                            }
+                        }
+
                         Text {
                             anchors.centerIn: parent
                             text: qsTr("Cancel")
@@ -696,6 +756,8 @@ Rectangle {
                             enabled: !root.isExecuting
                             onClicked: sessionController.closeBatchRenameDialog()
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusMd }
                     }
 
                     // Execute Rename Button
@@ -709,6 +771,17 @@ Rectangle {
                         opacity: (root.okCount > 0 && !root.isExecuting) ? 1.0 : 0.5
                         border.color: themeManager.accent
                         border.width: 1
+
+                        activeFocusOnTab: root.okCount > 0 && !root.isExecuting
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Rename %1 photos").arg(root.okCount)
+                        Accessible.onPressAction: root.executeRename()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                root.executeRename()
+                                event.accepted = true
+                            }
+                        }
 
                         Text {
                             id: renameBtnText
@@ -727,22 +800,10 @@ Rectangle {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             enabled: root.okCount > 0 && !root.isExecuting
-                            onClicked: {
-                                root.isExecuting = true;
-                                var rule = {
-                                    pattern: patternInput.text,
-                                    startSequence: parseInt(startSeqInput.text) || 1,
-                                    sequenceStep: parseInt(stepInput.text) || 1,
-                                    findText: findInput.text,
-                                    replaceText: replaceInput.text,
-                                    matchCase: matchCaseCheck.checked,
-                                    caseConversion: caseCombo.currentIndex
-                                };
-                                sessionController.executeBatchRename(rule);
-                                root.isExecuting = false;
-                                sessionController.closeBatchRenameDialog();
-                            }
+                            onClicked: root.executeRename()
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusMd }
                     }
                 }
             }

@@ -171,6 +171,17 @@ Rectangle {
                             color: themeManager.textSecondary
                         }
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Deselect all photos")
+                        Accessible.onPressAction: selectionManager.clearSelection()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                selectionManager.clearSelection()
+                                event.accepted = true
+                            }
+                        }
+
                         MouseArea {
                             id: clearSelMouse
                             anchors.fill: parent
@@ -178,6 +189,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: selectionManager.clearSelection()
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusSm }
                     }
                 }
 
@@ -261,6 +274,17 @@ Rectangle {
                             Text { text: qsTr("Flag All"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
                         }
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Flag all selected photos as favorites")
+                        Accessible.onPressAction: sessionController.setFlaggedForSelected(true)
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                sessionController.setFlaggedForSelected(true)
+                                event.accepted = true
+                            }
+                        }
+
                         MouseArea {
                             id: flagAllMouse
                             anchors.fill: parent
@@ -268,6 +292,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: sessionController.setFlaggedForSelected(true)
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusSm }
                     }
 
                     Rectangle {
@@ -285,6 +311,17 @@ Rectangle {
                             Text { text: qsTr("Unflag All"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
                         }
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Unflag all selected photos")
+                        Accessible.onPressAction: sessionController.setFlaggedForSelected(false)
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                sessionController.setFlaggedForSelected(false)
+                                event.accepted = true
+                            }
+                        }
+
                         MouseArea {
                             id: unflagAllMouse
                             anchors.fill: parent
@@ -292,6 +329,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: sessionController.setFlaggedForSelected(false)
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusSm }
                     }
                 }
 
@@ -340,6 +379,19 @@ Rectangle {
                                 color: themeManager.textMuted
                             }
 
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.RadioButton
+                            Accessible.name: modelData.label
+                            Accessible.checkable: true
+                            Accessible.checked: false
+                            Accessible.onPressAction: sessionController.setColorLabelForSelected(modelData.id)
+                            Keys.onPressed: (event) => {
+                                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    sessionController.setColorLabelForSelected(modelData.id)
+                                    event.accepted = true
+                                }
+                            }
+
                             ToolTip.visible: batchColMouse.containsMouse
                             ToolTip.text: modelData.label
 
@@ -350,6 +402,8 @@ Rectangle {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: sessionController.setColorLabelForSelected(modelData.id)
                             }
+
+                            FocusRing { targetRadius: themeManager.radiusPill }
                         }
                     }
                 }
@@ -426,6 +480,17 @@ Rectangle {
                             font.pixelSize: 11
                             color: themeManager.textPrimary
                             selectByMouse: true
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.EditableText
+                            Accessible.name: qsTr("New tag for all selected photos")
+
+                            function applyTag() {
+                                const trimmed = text.trim()
+                                if (trimmed.length > 0) {
+                                    sessionController.addTagToSelected(trimmed)
+                                    text = ""
+                                }
+                            }
 
                             Text {
                                 anchors.fill: parent
@@ -461,6 +526,17 @@ Rectangle {
                             color: themeManager.accentText
                         }
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Add tag to all selected photos")
+                        Accessible.onPressAction: batchTagInput.applyTag()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                batchTagInput.applyTag()
+                                event.accepted = true
+                            }
+                        }
+
                         MouseArea {
                             id: addBatchTagMouse
                             anchors.fill: parent
@@ -474,6 +550,8 @@ Rectangle {
                                 }
                             }
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusSm }
                     }
                 }
 
@@ -507,6 +585,17 @@ Rectangle {
                         Text { text: qsTr("Copy File Paths"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Copy file paths")
+                    Accessible.onPressAction: sessionController.copySelectedPathsToClipboard()
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            sessionController.copySelectedPathsToClipboard()
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: copyPathsMouse
                         anchors.fill: parent
@@ -514,6 +603,8 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: sessionController.copySelectedPathsToClipboard()
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusSm }
                 }
 
                 Rectangle {
@@ -531,6 +622,17 @@ Rectangle {
                         Text { text: qsTr("Export Selected... (Ctrl+E)"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Export selected photos")
+                    Accessible.onPressAction: sessionController.openExportDialog()
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            sessionController.openExportDialog()
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: exportBatchMouse
                         anchors.fill: parent
@@ -538,6 +640,8 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: sessionController.openExportDialog()
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusSm }
                 }
 
                 Row {
@@ -562,6 +666,17 @@ Rectangle {
                         ToolTip.visible: batchSaveXmpMouse.containsMouse
                         ToolTip.text: qsTr("Write metadata to companion .xmp sidecar files")
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Save metadata to XMP sidecars")
+                        Accessible.onPressAction: sessionController.exportXmpSidecarsForSelected()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                sessionController.exportXmpSidecarsForSelected()
+                                event.accepted = true
+                            }
+                        }
+
                         MouseArea {
                             id: batchSaveXmpMouse
                             anchors.fill: parent
@@ -569,6 +684,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: sessionController.exportXmpSidecarsForSelected()
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusSm }
                     }
 
                     Rectangle {
@@ -589,6 +706,17 @@ Rectangle {
                         ToolTip.visible: batchReloadXmpMouse.containsMouse
                         ToolTip.text: qsTr("Reload metadata from companion .xmp sidecars")
 
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Reload metadata from XMP sidecars")
+                        Accessible.onPressAction: sessionController.importXmpSidecarsForSelected()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                sessionController.importXmpSidecarsForSelected()
+                                event.accepted = true
+                            }
+                        }
+
                         MouseArea {
                             id: batchReloadXmpMouse
                             anchors.fill: parent
@@ -596,6 +724,8 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: sessionController.importXmpSidecarsForSelected()
                         }
+
+                        FocusRing { targetRadius: themeManager.radiusSm }
                     }
                 }
             }
@@ -669,6 +799,9 @@ Rectangle {
                             font.weight: Font.Bold
                             color: themeManager.textPrimary
                             clip: true
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.EditableText
+                            Accessible.name: qsTr("Photo title")
                             selectByMouse: true
                             text: root.item.title || ""
 
@@ -742,6 +875,9 @@ Rectangle {
                                 wrapMode: TextEdit.Wrap
                                 font.pixelSize: 11
                                 color: themeManager.textPrimary
+                                activeFocusOnTab: true
+                                Accessible.role: Accessible.EditableText
+                                Accessible.name: qsTr("Caption or notes")
                                 selectByMouse: true
                                 text: root.item.caption || ""
 
@@ -800,6 +936,28 @@ Rectangle {
                         font.pixelSize: 10
                         font.weight: Font.Medium
                         color: themeManager.accent
+
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.Button
+                        Accessible.name: sessionController.histogramVisible ? qsTr("Hide histogram") : qsTr("Show histogram")
+                        Accessible.onPressAction: sessionController.toggleHistogramVisible()
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                sessionController.toggleHistogramVisible()
+                                event.accepted = true
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.margins: -2
+                            radius: 3
+                            color: "transparent"
+                            border.color: themeManager.borderFocus
+                            border.width: 1
+                            visible: parent.activeFocus
+                            Accessible.ignored: true
+                        }
 
                         MouseArea {
                             anchors.fill: parent
@@ -909,6 +1067,17 @@ Rectangle {
                                 Text { text: qsTr("Save XMP"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
                             }
 
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.Button
+                            Accessible.name: qsTr("Save metadata to an XMP sidecar")
+                            Accessible.onPressAction: sessionController.exportXmpSidecarsForSelected()
+                            Keys.onPressed: (event) => {
+                                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    sessionController.exportXmpSidecarsForSelected()
+                                    event.accepted = true
+                                }
+                            }
+
                             ToolTip.visible: exportXmpMouse.containsMouse
                             ToolTip.text: qsTr("Write metadata to companion .xmp sidecar file")
 
@@ -919,6 +1088,8 @@ Rectangle {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: sessionController.exportXmpSidecarsForSelected()
                             }
+
+                            FocusRing { targetRadius: themeManager.radiusSm }
                         }
 
                         Rectangle {
@@ -936,6 +1107,17 @@ Rectangle {
                                 Text { text: qsTr("Reload XMP"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
                             }
 
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.Button
+                            Accessible.name: qsTr("Reload metadata from the XMP sidecar")
+                            Accessible.onPressAction: sessionController.importXmpSidecarsForSelected()
+                            Keys.onPressed: (event) => {
+                                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    sessionController.importXmpSidecarsForSelected()
+                                    event.accepted = true
+                                }
+                            }
+
                             ToolTip.visible: importXmpMouse.containsMouse
                             ToolTip.text: qsTr("Reload metadata from companion .xmp sidecar file")
 
@@ -946,6 +1128,8 @@ Rectangle {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: sessionController.importXmpSidecarsForSelected()
                             }
+
+                            FocusRing { targetRadius: themeManager.radiusSm }
                         }
                     }
 
@@ -960,6 +1144,30 @@ Rectangle {
                             color: sessionController.xmpSyncEnabled ? themeManager.accent : themeManager.surfaceElevated
                             border.color: sessionController.xmpSyncEnabled ? themeManager.accent : themeManager.border
                             border.width: 1
+
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.CheckBox
+                            Accessible.name: qsTr("Automatically sync edits with XMP sidecars")
+                            Accessible.checkable: true
+                            Accessible.checked: sessionController.xmpSyncEnabled
+                            Accessible.onPressAction: sessionController.setXmpSyncEnabled(!sessionController.xmpSyncEnabled)
+                            Keys.onPressed: (event) => {
+                                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    sessionController.setXmpSyncEnabled(!sessionController.xmpSyncEnabled)
+                                    event.accepted = true
+                                }
+                            }
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: -3
+                                radius: 4
+                                color: "transparent"
+                                border.color: themeManager.borderFocus
+                                border.width: 1
+                                visible: parent.activeFocus
+                                Accessible.ignored: true
+                            }
 
                             Text {
                                 anchors.centerIn: parent
@@ -1139,6 +1347,19 @@ Rectangle {
                                         color: themeManager.textMuted
                                     }
 
+                                    activeFocusOnTab: true
+                                    Accessible.role: Accessible.RadioButton
+                                    Accessible.name: modelData.label
+                                    Accessible.checkable: true
+                                    Accessible.checked: (root.item.colorLabel || 0) === modelData.id
+                                    Accessible.onPressAction: sessionController.setItemColorLabel(selectionManager.currentIndex, modelData.id)
+                                    Keys.onPressed: (event) => {
+                                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                            sessionController.setItemColorLabel(selectionManager.currentIndex, modelData.id)
+                                            event.accepted = true
+                                        }
+                                    }
+
                                     ToolTip.visible: colMouse.containsMouse
                                     ToolTip.text: modelData.label
 
@@ -1149,6 +1370,8 @@ Rectangle {
                                         cursorShape: Qt.PointingHandCursor
                                         onClicked: sessionController.setItemColorLabel(selectionManager.currentIndex, modelData.id)
                                     }
+
+                                    FocusRing { targetRadius: themeManager.radiusPill }
                                 }
                             }
                         }
@@ -1208,6 +1431,9 @@ Rectangle {
                                 verticalAlignment: TextInput.AlignVCenter
                                 font.pixelSize: 11
                                 color: themeManager.textPrimary
+                                activeFocusOnTab: true
+                                Accessible.role: Accessible.EditableText
+                                Accessible.name: qsTr("New tag for this photo")
                                 selectByMouse: true
 
                                 Text {
@@ -1220,6 +1446,14 @@ Rectangle {
                                 }
 
                                 onAccepted: {
+                                    const trimmed = tagInput.text.trim()
+                                    if (trimmed.length > 0) {
+                                        sessionController.addTagToItem(selectionManager.currentIndex, trimmed)
+                                        tagInput.text = ""
+                                    }
+                                }
+
+                                function addTag() {
                                     const trimmed = tagInput.text.trim()
                                     if (trimmed.length > 0) {
                                         sessionController.addTagToItem(selectionManager.currentIndex, trimmed)
@@ -1244,6 +1478,17 @@ Rectangle {
                                 color: themeManager.accentText
                             }
 
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.Button
+                            Accessible.name: qsTr("Add tag to this photo")
+                            Accessible.onPressAction: tagInput.addTag()
+                            Keys.onPressed: (event) => {
+                                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                    tagInput.addTag()
+                                    event.accepted = true
+                                }
+                            }
+
                             MouseArea {
                                 id: addTagMouseArea
                                 anchors.fill: parent
@@ -1257,6 +1502,8 @@ Rectangle {
                                     }
                                 }
                             }
+
+                            FocusRing { targetRadius: themeManager.radiusSm }
                         }
                     }
                 }
@@ -1300,6 +1547,17 @@ Rectangle {
                         Text { text: qsTr("Export Photo... (Ctrl+E)"); font.pixelSize: 11; font.weight: Font.Medium; color: themeManager.textPrimary }
                     }
 
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Export this photo")
+                    Accessible.onPressAction: sessionController.openExportDialog()
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            sessionController.openExportDialog()
+                            event.accepted = true
+                        }
+                    }
+
                     MouseArea {
                         id: exportSingleMouse
                         anchors.fill: parent
@@ -1307,6 +1565,8 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: sessionController.openExportDialog()
                     }
+
+                    FocusRing { targetRadius: themeManager.radiusSm }
                 }
             }
         }
