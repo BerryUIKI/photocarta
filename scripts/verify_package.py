@@ -121,6 +121,28 @@ def _run_smoke(executable, arguments, force_offscreen):
         return None
 
 
+def _print_package_diagnostics(executable, system):
+    """Print bundle details when startup fails, to explain deployment problems."""
+    print("Package diagnostics:", file=sys.stderr)
+    contents_dir = executable.parent.parent if system == "darwin" else executable.parent
+    frameworks = contents_dir / "Frameworks"
+    print(f"  Frameworks directory present: {frameworks.is_dir()}", file=sys.stderr)
+    if frameworks.is_dir():
+        entries = sorted(path.name for path in frameworks.iterdir())[:12]
+        print(f"  Frameworks entries: {', '.join(entries)}", file=sys.stderr)
+
+    if system == "darwin" and shutil.which("otool"):
+        completed = subprocess.run(["otool", "-l", str(executable)], capture_output=True, text=True)
+        interesting = [
+            line.strip()
+            for line in completed.stdout.splitlines()
+            if "LC_RPATH" in line or line.strip().startswith("path ")
+        ]
+        print("  otool rpath entries:", file=sys.stderr)
+        for line in interesting[:10]:
+            print(f"    {line}", file=sys.stderr)
+
+
 def verify_archive(archive, system=None):
     """Extract one package and run the packaged executable. Returns True on success."""
     system = (system or platform.system()).lower()
@@ -180,6 +202,7 @@ def verify_archive(archive, system=None):
                   file=sys.stderr)
 
     print(f"Error: packaged application failed to start (last exit code {last_returncode})", file=sys.stderr)
+    _print_package_diagnostics(executable, system)
     return False
 
 
