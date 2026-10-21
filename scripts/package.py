@@ -220,6 +220,10 @@ def main():
                 str(ROOT / "src" / "qml"),
                 "--compiler-runtime",
                 "--no-translations",
+                # Keep the offscreen platform plugin so packaged builds can be
+                # started headlessly by scripts/verify_package.py.
+                "--include-plugins",
+                "qoffscreen",
                 str(executable),
             ]
             print(f"Running: {' '.join(deploy_cmd)}")

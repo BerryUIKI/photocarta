@@ -173,7 +173,17 @@ python scripts/package.py --build-dir build --output-dir packages
 Output packages by platform:
 - **Windows**: `packages/PhotoCarta-<version>-windows-x86_64.zip` (self-contained portable bundle deployed with Qt runtime DLLs and QML plugins via `windeployqt`).
 - **macOS**: `packages/PhotoCarta-<version>-macos-<arch>.dmg` (drag-and-drop installer disk image) and `.zip` bundle deployed via `macdeployqt`.
-- **Linux**: `packages/PhotoCarta-<version>-linux-x86_64.tar.gz` (portable tarball).
+- **Linux**: `packages/PhotoCarta-<version>-linux-x86_64.tar.gz` (portable tarball that uses the system Qt 6 runtime).
+
+Verify that a packaged artifact starts outside the build tree:
+
+```bash
+python scripts/verify_package.py --package-dir packages
+```
+
+The script extracts the platform archive into a temporary directory and runs the packaged
+executable with `--smoke-test -platform offscreen`, which loads the QML engine and exits
+cleanly. CI performs the same check after packaging on all three platforms.
 
 You can also use standard CPack from the build directory:
 ```bash
