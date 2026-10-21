@@ -10,6 +10,7 @@
         <file alias="components/ImagePreviewView.qml">../qml/components/ImagePreviewView.qml</file>
         <file alias="components/EmptyStateView.qml">../qml/components/EmptyStateView.qml</file>
         <file alias="components/ErrorBanner.qml">../qml/components/ErrorBanner.qml</file>
+        <file alias="components/FocusRing.qml">../qml/components/FocusRing.qml</file>
         <file alias="components/RatingStars.qml">../qml/components/RatingStars.qml</file>
         <file alias="components/TagChip.qml">../qml/components/TagChip.qml</file>
         <file alias="components/ExportDialog.qml">../qml/components/ExportDialog.qml</file>

@@ -15,12 +15,24 @@ Item {
     readonly property real dynamicCellWidth: Math.floor(availableGridWidth / columns)
     readonly property real dynamicCellHeight: Math.floor(dynamicCellWidth * 0.85)
 
+    // Restore grid keyboard focus after a modal dialog closes
+    function focusGrid() {
+        if (!sessionController.previewMode && !sessionController.compareMode) {
+            grid.forceActiveFocus()
+        }
+    }
+
     GridView {
         id: grid
         anchors.fill: parent
         anchors.margins: 8
         clip: true
         focus: !sessionController.previewMode
+        activeFocusOnTab: !sessionController.previewMode
+
+        Accessible.role: Accessible.List
+        Accessible.name: qsTr("Photo grid")
+        Accessible.description: qsTr("Arrow keys move the selection, Space toggles selection, Enter opens the preview")
 
         model: filterModel
         delegate: ThumbnailCard {}
@@ -114,6 +126,17 @@ Item {
                 }
             }
         }
+    }
+
+    // Visible keyboard focus indicator for the grid itself (delegates draw their own selection ring)
+    Rectangle {
+        anchors.fill: grid
+        color: "transparent"
+        border.color: themeManager.borderFocus
+        border.width: 1
+        visible: grid.activeFocus && !sessionController.compareMode
+        z: 10
+        Accessible.ignored: true
     }
 
     // Contextual Empty State

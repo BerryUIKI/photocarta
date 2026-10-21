@@ -11,6 +11,10 @@ macro(add_photocarta_test test_name)
         ${CMAKE_SOURCE_DIR}/src
     )
 
+    target_compile_definitions(${test_name} PRIVATE
+        PHOTOCARTA_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    )
+
     target_link_libraries(${test_name} PRIVATE
         photocarta_catalog
         Qt6::Core
@@ -43,6 +47,7 @@ add_photocarta_test(test_metadata_editing)
 add_photocarta_test(test_xmp_sidecar)
 add_photocarta_test(test_batch_renamer)
 add_photocarta_test(test_trash)
+add_photocarta_test(test_accessibility)
 
 # Automated startup smoke tests for main application executable
 add_test(NAME app_startup_smoke_test
@@ -51,4 +56,13 @@ add_test(NAME app_startup_smoke_test
 
 add_test(NAME app_screenshot_smoke_test
     COMMAND photocarta --screenshot "${CMAKE_CURRENT_BINARY_DIR}/smoke_screenshot.png" -platform offscreen
+)
+
+# Render the same interface with a fractional display scale to catch layouts
+# that break on 150% Windows/HiDPI scaling.
+add_test(NAME app_screenshot_scaled_smoke_test
+    COMMAND ${CMAKE_COMMAND} -E env QT_SCALE_FACTOR=1.5
+            $<TARGET_FILE:photocarta>
+            --screenshot "${CMAKE_CURRENT_BINARY_DIR}/smoke_screenshot_150pct.png"
+            -platform offscreen
 )
