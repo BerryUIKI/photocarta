@@ -66,3 +66,31 @@ add_test(NAME app_screenshot_scaled_smoke_test
             --screenshot "${CMAKE_CURRENT_BINARY_DIR}/smoke_screenshot_150pct.png"
             -platform offscreen
 )
+
+# Behavioral keyboard test: loads QML components into an offscreen window and
+# exercises Tab focus, Space activation, Delete, and the focus ring. Unlike
+# test_accessibility, this needs the Qt Quick runtime.
+add_executable(test_qml_keyboard
+    test_qml_keyboard.cpp
+    ../../src/resources/qml.qrc
+)
+
+target_include_directories(test_qml_keyboard PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(test_qml_keyboard PRIVATE
+    photocarta_catalog
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Qml
+    Qt6::Quick
+    Qt6::Test
+)
+
+set_target_properties(test_qml_keyboard PROPERTIES
+    AUTOMOC ON
+    AUTORCC ON
+)
+
+add_test(NAME test_qml_keyboard COMMAND test_qml_keyboard -platform offscreen)

@@ -64,8 +64,10 @@ documented limits, notices, and packaging dependencies in
   those captures, but typography must be checked on a real desktop session.
 - Custom-drawn controls expose accessible roles, names, states, and keyboard
   activation, and dialogs take focus on open, respond to Escape, and return focus
-  to the photo grid. This has not yet been validated with NVDA, VoiceOver, or
-  Orca, so screen reader behavior is not a tested claim.
+  to the photo grid. Tab focus, Space activation, Delete removal, and focus-ring
+  visibility are covered by an automated Qt Quick test. Screen reader behavior has
+  not yet been validated with NVDA, VoiceOver, or Orca, so it is not a tested
+  claim.
 - Tab order follows QML item order: toolbar, collection pane, photo grid, details
   pane, and status bar.
 
