@@ -223,13 +223,20 @@ void TestTrash::testModelRemoveItems()
     model.loadFromDatabase();
     QCOMPARE(model.count(), 3);
 
+    // The catalog decides row order (date/name sorting), so capture the loaded
+    // order instead of assuming insertion order.
+    const QString pathAt0 = model.itemAt(0)->filePath;
+    const QString pathAt1 = model.itemAt(1)->filePath;
+    const QString pathAt2 = model.itemAt(2)->filePath;
+
     // Remove rows 0 and 2 (unsorted order to exercise index handling)
     QVERIFY(model.removeItems({2, 0}));
     QCOMPARE(model.count(), 1);
-    QCOMPARE(model.itemAt(0)->filePath, fileB);
+    QCOMPARE(model.itemAt(0)->filePath, pathAt1);
     QCOMPARE(db.itemCount(), 1);
-    QCOMPARE(db.fetchItemByPath(fileA).filePath, QString());
-    QCOMPARE(db.fetchItemByPath(fileB).filePath, fileB);
+    QCOMPARE(db.fetchItemByPath(pathAt0).filePath, QString());
+    QCOMPARE(db.fetchItemByPath(pathAt1).filePath, pathAt1);
+    QCOMPARE(db.fetchItemByPath(pathAt2).filePath, QString());
 
     // Out-of-range indices are ignored
     QVERIFY(!model.removeItems({99}));
