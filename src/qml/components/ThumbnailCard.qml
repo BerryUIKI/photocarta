@@ -465,6 +465,18 @@ Rectangle {
             onTriggered: sessionController.openExportDialog()
         }
 
+        MenuItem {
+            text: (selectionManager.selectedCount > 1 && root.isSelected)
+                  ? qsTr("Move Selected to Trash (Del)")
+                  : qsTr("Move to Trash (Del)")
+            onTriggered: {
+                if (!root.isSelected) {
+                    selectionManager.select(root.itemIndex)
+                }
+                sessionController.openTrashDialog()
+            }
+        }
+
         MenuSeparator {}
 
         MenuItem {

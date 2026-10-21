@@ -113,6 +113,11 @@ ApplicationWindow {
         id: batchRenameDialog
     }
 
+    // Modal Move-to-Trash Confirmation Dialog
+    TrashConfirmDialog {
+        id: trashConfirmDialog
+    }
+
     // Real Native File Dialog for Temporary Session
     FileDialog {
         id: openDialog
@@ -233,6 +238,16 @@ ApplicationWindow {
                 } else if (selectionManager.selectedCount >= 2 || selectionManager.hasSelection) {
                     sessionController.setCompareMode(true)
                 }
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "Delete"
+        context: Qt.ApplicationShortcut
+        onActivated: {
+            if (!sessionController.previewMode && (selectionManager.hasSelection || selectionManager.selectedCount > 0)) {
+                sessionController.openTrashDialog()
             }
         }
     }

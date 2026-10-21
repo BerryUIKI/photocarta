@@ -98,6 +98,7 @@ public:
     Q_INVOKABLE void removeTagFromItems(const QList<int> &indices, const QString &tag);
     Q_INVOKABLE void loadFromDatabase(int collectionId = 0);
     Q_INVOKABLE void setCollectionAvailable(const QString &rootPath, bool available);
+    Q_INVOKABLE bool removeItems(const QList<int> &indices);
     Q_INVOKABLE void clearSession();
 
     [[nodiscard]] bool xmpSyncEnabled() const;

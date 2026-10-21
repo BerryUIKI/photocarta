@@ -93,6 +93,9 @@ public:
     bool addTagsToItems(const QStringList &filePaths, const QStringList &tags);
     bool removeTagsFromItems(const QStringList &filePaths, const QStringList &tags);
 
+    // Batch item removal (one transaction per call; item tag links cascade)
+    bool removeItems(const QStringList &filePaths);
+
     // Migration / Synchronization
     bool importFromDigikamDatabase(const QString &digikamDatabasePath);
 

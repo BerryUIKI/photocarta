@@ -39,6 +39,8 @@ add_library(photocarta_catalog STATIC
     histogram/histogramcalculator.cpp
     organization/batchrenamer.h
     organization/batchrenamer.cpp
+    fileops/trashservice.h
+    fileops/trashservice.cpp
 )
 
 target_include_directories(photocarta_catalog PUBLIC

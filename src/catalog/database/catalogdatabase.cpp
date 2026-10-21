@@ -1497,6 +1497,94 @@ bool CatalogDatabase::removeTagsFromItems(const QStringList &filePaths, const QS
     return true;
 }
 
+bool CatalogDatabase::removeItems(const QStringList &filePaths)
+{
+    if (!isOpen() || filePaths.isEmpty())
+    {
+        return false;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(m_connectionName);
+
+    if (m_schemaType == DatabaseSchemaType::Digikam && m_digikamAdapter)
+    {
+        if (!db.transaction())
+        {
+            m_lastError = db.lastError().text();
+            return false;
+        }
+
+        for (const QString &filePath : filePaths)
+        {
+            if (filePath.isEmpty())
+            {
+                continue;
+            }
+
+            const CatalogItem item = m_digikamAdapter->fetchItemByPath(db, QDir::fromNativeSeparators(filePath));
+            if (item.id.isEmpty())
+            {
+                continue;
+            }
+
+            QSqlQuery deleteQuery(db);
+            deleteQuery.prepare(QStringLiteral("DELETE FROM Images WHERE id = :id;"));
+            deleteQuery.bindValue(QStringLiteral(":id"), item.id.toInt());
+            if (!deleteQuery.exec())
+            {
+                m_lastError = deleteQuery.lastError().text();
+                db.rollback();
+                return false;
+            }
+        }
+
+        if (!db.commit())
+        {
+            m_lastError = db.lastError().text();
+            return false;
+        }
+
+        emit itemsChanged();
+        emit collectionsChanged();
+        return true;
+    }
+
+    if (!db.transaction())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("DELETE FROM items WHERE file_path = :path;"));
+
+    for (const QString &filePath : filePaths)
+    {
+        if (filePath.isEmpty())
+        {
+            continue;
+        }
+
+        query.bindValue(QStringLiteral(":path"), QDir::fromNativeSeparators(filePath));
+        if (!query.exec())
+        {
+            m_lastError = query.lastError().text();
+            db.rollback();
+            return false;
+        }
+    }
+
+    if (!db.commit())
+    {
+        m_lastError = db.lastError().text();
+        return false;
+    }
+
+    emit itemsChanged();
+    emit collectionsChanged();
+    return true;
+}
+
 QStringList CatalogDatabase::allTags() const
 {
     QStringList tags;
