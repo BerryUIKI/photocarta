@@ -97,6 +97,11 @@ Item {
             } else if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
                 sessionController.copySelectedPathsToClipboard()
                 event.accepted = true
+            } else if (event.key === Qt.Key_Delete) {
+                if (selectionManager.hasSelection || selectionManager.selectedCount > 0) {
+                    sessionController.openTrashDialog()
+                }
+                event.accepted = true
             }
         }
 

@@ -3,6 +3,7 @@
 
 #include "sessioncontroller.h"
 #include "export/imageexporter.h"
+#include "fileops/trashservice.h"
 #include "histogram/histogramcalculator.h"
 #include "organization/batchrenamer.h"
 
@@ -2072,6 +2073,145 @@ QVariantMap SessionController::executeBatchRename(const QVariantMap &ruleOptions
 
     emit batchRenameCompleted(result.successCount, result.failCount);
     return result.toVariantMap();
+}
+
+bool SessionController::trashDialogOpen() const
+{
+    return m_trashDialogOpen;
+}
+
+void SessionController::setTrashDialogOpen(bool open)
+{
+    if (m_trashDialogOpen == open)
+    {
+        return;
+    }
+    m_trashDialogOpen = open;
+    emit trashDialogOpenChanged();
+}
+
+int SessionController::trashCandidateCount() const
+{
+    return m_trashCandidateCount;
+}
+
+int SessionController::trashSkippedCount() const
+{
+    return m_trashSkippedCount;
+}
+
+void SessionController::openTrashDialog()
+{
+    if (!m_selectionManager || !m_model)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    if (proxyRows.isEmpty())
+    {
+        return;
+    }
+
+    QList<CatalogItem> items;
+    QList<int> srcRows;
+    for (int proxyRow : proxyRows)
+    {
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (srcRow < 0)
+        {
+            continue;
+        }
+        const CatalogItem *item = m_model->itemAt(srcRow);
+        if (item)
+        {
+            items.append(*item);
+            srcRows.append(srcRow);
+        }
+    }
+
+    const QList<TrashCandidate> candidates = TrashService::evaluateCandidates(items);
+    m_trashSourceRows = srcRows;
+    m_trashCandidateCount = 0;
+    m_trashSkippedCount = 0;
+    m_trashErrorMessages.clear();
+    for (const TrashCandidate &candidate : candidates)
+    {
+        if (candidate.canTrash())
+        {
+            ++m_trashCandidateCount;
+        }
+        else
+        {
+            ++m_trashSkippedCount;
+            m_trashErrorMessages.append(candidate.statusMessage);
+        }
+    }
+
+    emit trashCandidatesChanged();
+    setTrashDialogOpen(true);
+}
+
+void SessionController::closeTrashDialog()
+{
+    setTrashDialogOpen(false);
+}
+
+void SessionController::confirmTrashSelected()
+{
+    if (m_trashSourceRows.isEmpty() || !m_model)
+    {
+        setTrashDialogOpen(false);
+        return;
+    }
+
+    QList<CatalogItem> items;
+    items.reserve(m_trashSourceRows.size());
+    for (int srcRow : m_trashSourceRows)
+    {
+        const CatalogItem *item = m_model->itemAt(srcRow);
+        if (item)
+        {
+            items.append(*item);
+        }
+    }
+
+    const TrashResult result = TrashService::moveToTrash(items);
+
+    // Remove only successfully trashed items from the model; refused items stay in the catalog
+    QList<int> rowsToRemove;
+    for (int i = 0; i < m_trashSourceRows.size(); ++i)
+    {
+        const int srcRow = m_trashSourceRows[i];
+        const CatalogItem *item = (srcRow >= 0 && srcRow < m_model->count()) ? m_model->itemAt(srcRow) : nullptr;
+        if (item && result.trashedPaths.contains(item->filePath))
+        {
+            rowsToRemove.append(srcRow);
+        }
+    }
+
+    if (!rowsToRemove.isEmpty())
+    {
+        m_model->removeItems(rowsToRemove);
+    }
+
+    setTrashDialogOpen(false);
+    m_trashSourceRows.clear();
+    emit trashCandidatesChanged();
+
+    if (result.successCount > 0 && result.failCount == 0)
+    {
+        setStatusMessage(QStringLiteral("Moved %1 photo(s) to trash").arg(result.successCount));
+    }
+    else if (result.successCount > 0)
+    {
+        setStatusMessage(QStringLiteral("Moved %1 photo(s) to trash; %2 could not be moved").arg(result.successCount).arg(result.failCount));
+        showError(result.errorMessages.join(QStringLiteral(" • ")));
+    }
+    else if (result.failCount > 0)
+    {
+        showError(result.errorMessages.join(QStringLiteral(" • ")));
+    }
 }
 
 } // namespace PhotoCarta

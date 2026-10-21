@@ -42,6 +42,7 @@ add_photocarta_test(test_histogram_calculator)
 add_photocarta_test(test_metadata_editing)
 add_photocarta_test(test_xmp_sidecar)
 add_photocarta_test(test_batch_renamer)
+add_photocarta_test(test_trash)
 
 # Automated startup smoke tests for main application executable
 add_test(NAME app_startup_smoke_test
