@@ -73,14 +73,20 @@ documented limits, notices, and packaging dependencies in
 
 - CMake requires Qt 6.5 or newer with the Core, Gui, Widgets, Qml, Quick,
   QuickControls2, Concurrent, Sql, and Test modules, plus a C++17 compiler.
-- CPack produces a ZIP on Windows, a drag-and-drop image and TGZ on macOS, and a
-  TGZ and DEB on Linux.
-- The packaging rules do not run `windeployqt` or `macdeployqt` and do not bundle
-  Qt libraries or QML modules. A packaged build therefore needs a matching Qt 6
-  runtime installed on the target system until deployment is added.
+- Release artifacts are produced by `scripts/package.py`. On Windows it runs
+  `windeployqt` and writes a portable ZIP; on macOS it runs `macdeployqt` and
+  writes a DMG plus a ZIP; on Linux it writes a TGZ and relies on the system Qt 6
+  runtime. Each run writes SHA-256 checksums.
+- The alternative CPack rules produce a ZIP on Windows, a drag-and-drop image and
+  TGZ on macOS, and a TGZ and DEB on Linux. They package the install tree as-is
+  and do not deploy Qt libraries or QML modules.
+- Linux packages do not bundle Qt or KDE libraries, so they need the matching Qt 6
+  runtime from the distribution until an AppImage or equivalent is added.
 - Database storage uses Qt SQL with the SQLite driver.
-- Builds and behavioral tests are run in CI on Windows, macOS, and Linux. Runtime
-  verification of the packaged application on each platform is still pending.
+- Builds, behavioral tests, and package creation run in CI on Windows, macOS, and
+  Linux. The packaged artifacts are uploaded but are not yet launched as part of
+  the pipeline, so installation and startup of the packaged build on each
+  platform is still a manual verification step.
 
 ## License notices
 
