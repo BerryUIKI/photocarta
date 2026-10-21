@@ -43,6 +43,10 @@ if(APPLE)
         MACOSX_BUNDLE_GUI_IDENTIFIER "org.photocarta.PhotoCarta"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        # Deployed bundles load Qt from Contents/Frameworks. Keep that load path
+        # in the installed binary so @rpath references resolve without relying on
+        # macdeployqt to rewrite them.
+        INSTALL_RPATH "@executable_path/../Frameworks"
     )
 else()
     set_target_properties(photocarta PROPERTIES

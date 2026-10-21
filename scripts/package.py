@@ -150,6 +150,39 @@ def create_archive_with_root(archive_format, output_path, staging_dir, folder_na
     return Path(created)
 
 
+def create_macos_zip(output_path, staging_dir, folder_name):
+    """Create a macOS zip that preserves bundle symlinks and permissions.
+
+    Python's zipfile (used by shutil.make_archive) drops symlinks and Unix modes,
+    which breaks the framework layout inside a deployed .app bundle. ditto keeps
+    both, so the archived bundle stays runnable.
+    """
+    temp_wrap_dir = staging_dir.parent / f"_wrap_{folder_name}"
+    if temp_wrap_dir.exists():
+        shutil.rmtree(temp_wrap_dir)
+    target_dir = temp_wrap_dir / folder_name
+
+    try:
+        shutil.copytree(staging_dir, target_dir, symlinks=True)
+        subprocess.run(
+            [
+                "ditto",
+                "-c",
+                "-k",
+                "--sequesterRsrc",
+                "--keepParent",
+                str(target_dir),
+                str(output_path),
+            ],
+            check=True,
+        )
+    finally:
+        if temp_wrap_dir.exists():
+            shutil.rmtree(temp_wrap_dir)
+
+    return Path(output_path)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Package PhotoCarta release binaries.")
     parser.add_argument("--build-dir", default="build", help="Path to CMake build directory")
@@ -220,6 +253,10 @@ def main():
                 str(ROOT / "src" / "qml"),
                 "--compiler-runtime",
                 "--no-translations",
+                # Keep the offscreen platform plugin so packaged builds can be
+                # started headlessly by scripts/verify_package.py.
+                "--include-plugins",
+                "qoffscreen",
                 str(executable),
             ]
             print(f"Running: {' '.join(deploy_cmd)}")
@@ -267,7 +304,7 @@ def main():
         # Also create zip archive of the staging directory
         print("\n--- Step 3: Creating macOS zip package ---")
         zip_path = output_dir / f"{package_base}.zip"
-        archive_file = create_archive_with_root("zip", zip_path, staging_dir, package_base)
+        archive_file = create_macos_zip(zip_path, staging_dir, package_base)
         packages_created.append(archive_file)
 
     else:
