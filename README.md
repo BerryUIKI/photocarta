@@ -23,24 +23,36 @@ backend. Release early, then improve functionality incrementally.
 - [Architecture and reuse strategy](docs/architecture.md)
 - [Storage choices and scale](docs/storage-and-scale.md)
 - [Initial release scope](docs/initial-release.md)
+- [Known limitations](docs/known-limitations.md)
 - [GitFlow and repository protection](docs/gitflow.md)
 - [Local build instructions](docs/build-instructions.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Current status
 
-The initial Qt Quick GUI slice is implemented with CMake, C++ presentation models, and QML assets.
+The Qt Quick GUI is implemented with CMake, C++ presentation models, and QML assets.
 It delivers a photo-focused desktop interface with dark and light themes, responsive collection and
-metadata sidebars, a virtualized thumbnail grid, keyboard navigation, a large-image preview mode,
-and procedural SVG demo fixtures.
+metadata sidebars, a virtualized thumbnail grid, a large-image preview mode, a side-by-side compare
+view, and procedural SVG demo fixtures.
 
-Metadata editing is available in the details pane: ratings, favorites, and tags are written to the
-local SQLite catalog for a single photo or the whole selection, the sidebar tag list is derived from
-the catalog, and the grid can be filtered by tag or minimum rating.
+Keyboard navigation covers the grid and every custom-drawn control: controls are reachable with Tab,
+show a visible focus ring, activate with Enter or Space, and expose accessible roles, names, and
+states. The photo grid is an accessible list, and modal dialogs take focus on open, respond to
+Escape, and return focus to the grid. Fractional display scaling is preserved through Qt's
+`PassThrough` high-DPI policy and rendering is checked with offscreen screenshots at 150%.
 
-Local images can be opened into an ephemeral, non-destructive browsing session via the native file
-dialog. The presentation interface is decoupled from backend engines; digiKam database integration
-and metadata write operations will be introduced in subsequent milestones.
+Metadata editing is available in the details pane: ratings, favorites, color labels, titles,
+captions, and tags are written to the local SQLite catalog for a single photo or the whole selection,
+the sidebar tag list is derived from the catalog, and the grid can be filtered by search text, tag,
+rating, color label, or category.
+
+The catalog supports recursive folder scanning into SQLite, batch rename with a preview, image export
+with format conversion and resizing, XMP sidecar read/write, and move-to-trash. Existing digiKam
+catalogs can be opened and browsed, with rating and tag edits routed through the digiKam adapter.
+Offline collections are represented and never treated as deleted.
+
+The presentation interface is decoupled from backend engines. Remaining integration work, including
+the retained digiKam tool windows, is tracked in [Known limitations](docs/known-limitations.md).
 
 The reference checkout is `F:/dev/digikam`, inspected at commit
 `c60c45a8aa30a6a135982cfa4e46cbcaff0bc2c8` (version declared as 9.2.0).
@@ -60,6 +72,7 @@ python scripts/check_repository.py
 python -m unittest discover -s tests -v
 ```
 
-GitHub Actions runs repository checks on Windows, macOS, and Linux. Application
-builds will be added when the backend and GUI source are integrated. Normal PRs
-target `develop`; `main` is reserved for release and hotfix integration.
+GitHub Actions runs repository checks on Windows, macOS, and Linux, and builds the
+application with the focused Qt test suite and startup/screenshot smoke checks on
+each platform. Normal PRs target `develop`; `main` is reserved for release and
+hotfix integration.
