@@ -75,14 +75,30 @@ documented limits, notices, and packaging dependencies in
 
 - CMake requires Qt 6.5 or newer with the Core, Gui, Widgets, Qml, Quick,
   QuickControls2, Concurrent, Sql, and Test modules, plus a C++17 compiler.
-- CPack produces a ZIP on Windows, a drag-and-drop image and TGZ on macOS, and a
-  TGZ and DEB on Linux.
-- The packaging rules do not run `windeployqt` or `macdeployqt` and do not bundle
-  Qt libraries or QML modules. A packaged build therefore needs a matching Qt 6
-  runtime installed on the target system until deployment is added.
+- `scripts/package.py` is the release packaging path. It installs the build tree
+  into a staging directory, deploys the Qt runtime and QML modules with
+  `windeployqt` on Windows or `macdeployqt` on macOS, creates the platform
+  archives, and records SHA-256 checksums:
+  - Windows: a portable ZIP with the deployed Qt runtime.
+  - macOS: the deployed `PhotoCarta.app` in a ZIP and a drag-and-drop DMG.
+  - Linux: a tar.gz of the installed tree. It does not bundle Qt and relies on a
+    compatible system Qt 6 runtime, so glibc and Qt versions of the target
+    distribution matter.
+- CPack remains configured as an alternative route: ZIP on Windows, DragNDrop
+  and TGZ on macOS, and TGZ and DEB on Linux. CPack archives the install tree
+  without deploying Qt or QML modules, so those packages are not self-contained.
+- `scripts/verify_package.py` extracts a produced archive outside the build tree
+  and runs the packaged executable with `--smoke-test`, first with the offscreen
+  platform plugin and then with the platform default. CI runs this after
+  packaging on Windows, macOS, and Linux.
+- Packaged-build verification covers startup and a clean exit only. Interactive
+  use of a packaged build, code signing, and macOS notarization are not performed
+  or verified, so unsigned packages trigger operating-system warnings on first
+  launch.
+- CI builds one architecture per platform: x86_64 on Windows and Linux and arm64
+  on macOS. Other architectures and cross-compiled packages are not verified.
 - Database storage uses Qt SQL with the SQLite driver.
-- Builds and behavioral tests are run in CI on Windows, macOS, and Linux. Runtime
-  verification of the packaged application on each platform is still pending.
+- Builds and behavioral tests are run in CI on Windows, macOS, and Linux.
 
 ## License notices
 
