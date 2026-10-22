@@ -1,5 +1,9 @@
 # Initial Release Scope
 
+The MVP goal, audience, 100,000-item scale bar, and acceptance checklist are
+defined in [Minimum viable product](mvp.md). This document remains the transition
+scope for converting the digiKam-based application.
+
 ## Agreed priority
 
 Complete the GUI changes and release early. Improve functionality incrementally
