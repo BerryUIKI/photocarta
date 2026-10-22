@@ -46,6 +46,10 @@ captions, and tags are written to the local SQLite catalog for a single photo or
 the sidebar tag list is derived from the catalog, and the grid can be filtered by search text, tag,
 rating, color label, or category.
 
+The toolbar and the photo context menu can hand the selected photo to an external editor: an
+installed ShowFoto or digiKam, or the executable named by `PHOTOCARTA_EXTERNAL_EDITOR`. Unsupported
+handoffs, such as demo, offline, or multi-photo selections, are reported rather than ignored.
+
 The catalog supports recursive folder scanning into SQLite, batch rename with a preview, image export
 with format conversion and resizing, XMP sidecar read/write, and move-to-trash. Existing digiKam
 catalogs can be opened and browsed, with rating and tag edits routed through the digiKam adapter.
