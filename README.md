@@ -23,6 +23,7 @@ backend. Release early, then improve functionality incrementally.
 - [Architecture and reuse strategy](docs/architecture.md)
 - [Storage choices and scale](docs/storage-and-scale.md)
 - [Initial release scope](docs/initial-release.md)
+- [MVP definition](docs/mvp.md)
 - [Known limitations](docs/known-limitations.md)
 - [GitFlow and repository protection](docs/gitflow.md)
 - [Local build instructions](docs/build-instructions.md)
