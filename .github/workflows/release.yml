@@ -138,6 +138,9 @@ jobs:
       - name: Upload assets to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This job downloads artifacts and never checks out the repository, so
+          # gh cannot infer the repository from a git remote. Name it explicitly.
+          GH_REPO: ${{ github.repository }}
           TAG_NAME: ${{ github.event.release.tag_name || inputs.tag_name }}
         run: |
           gh release upload "${TAG_NAME}" release-assets/* --clobber
