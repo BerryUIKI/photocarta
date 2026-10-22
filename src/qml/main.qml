@@ -201,6 +201,15 @@ ApplicationWindow {
     }
 
     Shortcut {
+        sequence: "Ctrl+Shift+E"
+        onActivated: {
+            if (selectionManager.hasSelection || selectionManager.selectedCount > 0) {
+                sessionController.openSelectedInEditor()
+            }
+        }
+    }
+
+    Shortcut {
         sequence: "F2"
         onActivated: {
             if (selectionManager.hasSelection || selectionManager.selectedCount > 0 || catalogModel.count > 0) {

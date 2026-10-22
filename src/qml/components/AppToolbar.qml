@@ -260,6 +260,66 @@ Rectangle {
             FocusRing { targetRadius: themeManager.radiusMd }
         }
 
+        // Open in External Editor Button
+        Rectangle {
+            width: editBtnRow.implicitWidth + 16
+            height: 32
+            radius: themeManager.radiusMd
+            anchors.verticalCenter: parent.verticalCenter
+            color: editToolbarMouse.containsMouse ? themeManager.surfaceHover : themeManager.surfaceElevated
+            border.color: themeManager.border
+            border.width: 1
+            opacity: (selectionManager.hasSelection || selectionManager.selectedCount > 0) ? 1.0 : 0.5
+
+            Row {
+                id: editBtnRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "🖌"
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Edit")
+                    font.pixelSize: themeManager.fontSm
+                    font.weight: Font.Medium
+                    color: themeManager.textPrimary
+                    visible: root.width > 1060
+                }
+            }
+
+            activeFocusOnTab: enabled
+            enabled: selectionManager.hasSelection || selectionManager.selectedCount > 0
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Open in external editor")
+            Accessible.description: qsTr("Open the selected photo in the configured external editor (Ctrl+Shift+E)")
+            Accessible.onPressAction: sessionController.openSelectedInEditor()
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    sessionController.openSelectedInEditor()
+                    event.accepted = true
+                }
+            }
+
+            ToolTip.visible: editToolbarMouse.containsMouse
+            ToolTip.text: qsTr("Open the selected photo in the external editor (Ctrl+Shift+E)")
+
+            MouseArea {
+                id: editToolbarMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                enabled: selectionManager.hasSelection || selectionManager.selectedCount > 0
+                onClicked: sessionController.openSelectedInEditor()
+            }
+
+            FocusRing { targetRadius: themeManager.radiusMd }
+        }
+
         // Export Photos Button
         Rectangle {
             width: exportBtnRow.implicitWidth + 16
