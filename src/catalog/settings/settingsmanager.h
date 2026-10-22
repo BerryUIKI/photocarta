@@ -41,6 +41,7 @@ class SettingsManager : public QObject
     Q_PROPERTY(bool windowMaximized READ windowMaximized WRITE setWindowMaximized NOTIFY windowGeometryChanged)
     Q_PROPERTY(bool filmstripVisible READ filmstripVisible WRITE setFilmstripVisible NOTIFY filmstripVisibleChanged)
     Q_PROPERTY(bool xmpSidecarSyncEnabled READ xmpSidecarSyncEnabled WRITE setXmpSidecarSyncEnabled NOTIFY xmpSidecarSyncEnabledChanged)
+    Q_PROPERTY(QString externalEditorPath READ externalEditorPath WRITE setExternalEditorPath NOTIFY externalEditorPathChanged)
 
 public:
     explicit SettingsManager(QObject *parent = nullptr);
@@ -106,6 +107,10 @@ public:
     [[nodiscard]] bool xmpSidecarSyncEnabled() const;
     void setXmpSidecarSyncEnabled(bool enabled);
 
+    // External tools
+    [[nodiscard]] QString externalEditorPath() const;
+    void setExternalEditorPath(const QString &path);
+
     Q_INVOKABLE void saveWindowGeometry(int x, int y, int width, int height, bool maximized);
     Q_INVOKABLE void resetToDefaults();
 
@@ -121,6 +126,7 @@ signals:
     void windowGeometryChanged();
     void filmstripVisibleChanged(bool visible);
     void xmpSidecarSyncEnabledChanged(bool enabled);
+    void externalEditorPathChanged(const QString &path);
 
 private:
     std::unique_ptr<QSettings> m_settings;
@@ -140,6 +146,7 @@ private:
     bool m_windowMaximized = false;
     bool m_filmstripVisible = true;
     bool m_xmpSidecarSyncEnabled = true;
+    QString m_externalEditorPath;
 };
 
 } // namespace PhotoCarta

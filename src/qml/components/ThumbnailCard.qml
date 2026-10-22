@@ -265,6 +265,16 @@ Rectangle {
         }
 
         MenuItem {
+            text: qsTr("Open in Editor (Ctrl+Shift+E)")
+            onTriggered: {
+                if (!root.isSelected) {
+                    selectionManager.select(root.itemIndex)
+                }
+                sessionController.openSelectedInEditor()
+            }
+        }
+
+        MenuItem {
             text: (selectionManager.selectedCount >= 2 && root.isSelected)
                   ? qsTr("Compare Selected Photos (C)")
                   : qsTr("Compare with Next Photo (C)")

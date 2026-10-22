@@ -49,6 +49,17 @@ add_photocarta_test(test_batch_renamer)
 add_photocarta_test(test_trash)
 add_photocarta_test(test_accessibility)
 
+# External editor handoff: the test launches this stub and inspects the
+# arguments it receives, so both binaries must land in the same directory.
+add_executable(photocarta_tool_stub tool_stub.cpp)
+set_target_properties(photocarta_tool_stub PROPERTIES
+    AUTOMOC OFF
+    AUTORCC OFF
+)
+
+add_photocarta_test(test_external_tools)
+add_dependencies(test_external_tools photocarta_tool_stub)
+
 # Automated startup smoke tests for main application executable
 add_test(NAME app_startup_smoke_test
     COMMAND photocarta --smoke-test -platform offscreen

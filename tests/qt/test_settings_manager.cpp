@@ -21,6 +21,7 @@ private slots:
     void testSignalsEmitted();
     void testZoomFactorClamping();
     void testWindowGeometrySaving();
+    void testExternalEditorPath();
     void testResetToDefaults();
 
 private:
@@ -57,6 +58,7 @@ void TestSettingsManager::testDefaultValues()
     QCOMPARE(settings.windowHeight(), 800);
     QCOMPARE(settings.windowMaximized(), false);
     QCOMPARE(settings.filmstripVisible(), true);
+    QCOMPARE(settings.externalEditorPath(), QString());
 }
 
 void TestSettingsManager::testPersistenceAndReload()
@@ -166,6 +168,29 @@ void TestSettingsManager::testWindowGeometrySaving()
     QCOMPARE(settings.windowMaximized(), false);
 }
 
+void TestSettingsManager::testExternalEditorPath()
+{
+    const QString iniPath = m_tempDir->filePath(QStringLiteral("editor.ini"));
+    SettingsManager settings(iniPath);
+    QCOMPARE(settings.externalEditorPath(), QString());
+
+    QSignalSpy spy(&settings, &SettingsManager::externalEditorPathChanged);
+    settings.setExternalEditorPath(QStringLiteral("C:/tools/showfoto.exe"));
+    QCOMPARE(settings.externalEditorPath(), QStringLiteral("C:/tools/showfoto.exe"));
+    QCOMPARE(spy.count(), 1);
+
+    // Setting the same value again does not emit another change.
+    settings.setExternalEditorPath(QStringLiteral("C:/tools/showfoto.exe"));
+    QCOMPARE(spy.count(), 1);
+
+    settings.sync();
+    SettingsManager reloaded(iniPath);
+    QCOMPARE(reloaded.externalEditorPath(), QStringLiteral("C:/tools/showfoto.exe"));
+
+    reloaded.resetToDefaults();
+    QCOMPARE(reloaded.externalEditorPath(), QString());
+}
+
 void TestSettingsManager::testResetToDefaults()
 {
     const QString iniPath = m_tempDir->filePath(QStringLiteral("reset.ini"));
@@ -176,6 +201,7 @@ void TestSettingsManager::testResetToDefaults()
     settings.setGridZoomFactor(2.0);
     settings.setSortCriterion(QStringLiteral("size"));
     settings.saveWindowGeometry(20, 20, 800, 600, true);
+    settings.setExternalEditorPath(QStringLiteral("C:/tools/digikam.exe"));
 
     settings.resetToDefaults();
 
@@ -188,6 +214,7 @@ void TestSettingsManager::testResetToDefaults()
     QCOMPARE(settings.windowWidth(), 1200);
     QCOMPARE(settings.windowHeight(), 800);
     QCOMPARE(settings.windowMaximized(), false);
+    QCOMPARE(settings.externalEditorPath(), QString());
 }
 
 QTEST_MAIN(TestSettingsManager)
