@@ -79,5 +79,5 @@ python -m unittest discover -s tests -v
 
 GitHub Actions runs repository checks on Windows, macOS, and Linux, and builds the
 application with the focused Qt test suite and startup/screenshot smoke checks on
-each platform. Normal PRs target `develop`; `main` is reserved for release and
+each platform. Normal PRs target `dev`; `main` is reserved for release and
 hotfix integration.
