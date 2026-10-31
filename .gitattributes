@@ -26,3 +26,7 @@ LICENSE text eol=lf
 *.zip binary
 *.onnx binary
 *.weights binary
+# Windows batch files need CRLF: cmd.exe truncates paths and variables on LF-only
+# files, producing "\Microsoft was unexpected at this time."
+*.bat text eol=crlf
+*.cmd text eol=crlf
