@@ -8,12 +8,6 @@ from pathlib import Path
 
 WORK_TYPES = {"feature", "bugfix", "fix", "chore", "docs", "ci", "refactor", "test", "perf"}
 
-# The integration branch is named `dev`. `develop` is its previous name: it stays
-# accepted until the GitHub-side rename lands, so the rename change itself and any
-# pull request opened against the old branch are not rejected. Drop this alias once
-# origin/dev is the only integration branch.
-LEGACY_INTEGRATION_BRANCH = "develop"
-
 
 def branch_kind(branch):
     if branch.startswith("codex/"):
@@ -30,17 +24,17 @@ def validate_route(base, head, same_repository=True):
         if same_repository and stabilization:
             return None
         return "main accepts same-repository release/* or hotfix/* PRs only."
-    if base in {"dev", LEGACY_INTEGRATION_BRANCH}:
+    if base == "dev":
         if kind in WORK_TYPES or kind == "dependabot":
             return None
         if same_repository and (head == "main" or stabilization):
             return None
-        return f"{base} accepts work branches, or same-repository release/hotfix/main back-merges."
+        return "dev accepts work branches, or same-repository release/hotfix/main back-merges."
     if branch_kind(base) in {"release", "hotfix"}:
         if kind in {"bugfix", "fix", "chore", "docs", "ci", "test"}:
             return None
         return "Stabilization branches accept focused fixes, documentation, CI, and tests."
-    return "Choose dev, develop, main, release/*, or hotfix/* as the PR target."
+    return "Choose dev, main, release/*, or hotfix/* as the PR target."
 
 
 def main():

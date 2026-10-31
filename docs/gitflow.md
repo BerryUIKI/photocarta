@@ -16,10 +16,9 @@ Agents use `codex/feature/<topic>`, `codex/bugfix/<topic>`, or
 `codex/chore/<topic>`; the CI route policy recognizes the prefix. It also accepts
 focused `fix/`, `refactor/`, `test/`, `perf/`, and Dependabot work into `dev`.
 
-`develop` is the previous name of the integration branch. The route check still
-accepts it so pull requests opened before the rename keep passing; remove that
-tolerance (`LEGACY_INTEGRATION_BRANCH` in `scripts/check_gitflow.py`) once
-`origin/dev` is the only integration branch.
+`dev` was created at the tip of the former `develop` branch on 2026-11-01, after
+the `gitflow-dev` ruleset replaced `gitflow-develop`. The route check no longer
+accepts `develop` as a target; a pull request into it is rejected.
 
 ## Normal work
 

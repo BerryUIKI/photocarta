@@ -44,15 +44,11 @@ class GitFlowTests(unittest.TestCase):
             with self.subTest(base=base, head=head):
                 self.assertIsNotNone(validate_route(base, head))
 
-    def test_legacy_develop_target_is_accepted_until_the_rename_lands(self):
-        # The rename PR and any PR still open against `develop` must keep passing.
-        for head in ("chore/rename-develop-to-dev", "feature/grid"):
-            with self.subTest(head=head):
-                self.assertIsNone(validate_route("develop", head))
-                self.assertIsNone(validate_route("develop", head, False))
-        self.assertIsNone(validate_route("develop", "release/0.1.0"))
-        self.assertIsNone(validate_route("develop", "main"))
-        self.assertIsNotNone(validate_route("develop", "hotfix/0.1.1", False))
+    def test_removed_integration_branch_name_is_no_longer_a_target(self):
+        # `develop` was renamed to `dev`; nothing may route into the old name.
+        self.assertIsNotNone(validate_route("develop", "feature/grid"))
+        self.assertIsNotNone(validate_route("develop", "release/0.1.0"))
+        self.assertIsNotNone(validate_route("develop", "main"))
 
 
 class ConfigurationTests(unittest.TestCase):
