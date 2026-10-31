@@ -16,6 +16,11 @@ Agents use `codex/feature/<topic>`, `codex/bugfix/<topic>`, or
 `codex/chore/<topic>`; the CI route policy recognizes the prefix. It also accepts
 focused `fix/`, `refactor/`, `test/`, `perf/`, and Dependabot work into `dev`.
 
+`develop` is the previous name of the integration branch. The route check still
+accepts it so pull requests opened before the rename keep passing; remove that
+tolerance (`LEGACY_INTEGRATION_BRANCH` in `scripts/check_gitflow.py`) once
+`origin/dev` is the only integration branch.
+
 ## Normal work
 
 ```sh
