@@ -1,9 +1,9 @@
 {
-  "name": "gitflow-develop",
+  "name": "gitflow-dev",
   "target": "branch",
   "enforcement": "active",
   "bypass_actors": [],
-  "conditions": {"ref_name": {"include": ["refs/heads/develop"], "exclude": []}},
+  "conditions": {"ref_name": {"include": ["refs/heads/dev"], "exclude": []}},
   "rules": [
     {"type": "deletion"},
     {"type": "non_fast_forward"},
