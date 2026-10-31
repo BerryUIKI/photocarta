@@ -6,6 +6,7 @@
 #include "fileops/trashservice.h"
 #include "histogram/histogramcalculator.h"
 #include "organization/batchrenamer.h"
+#include "tools/externaltoolservice.h"
 
 #include <algorithm>
 #include <QClipboard>
@@ -2212,6 +2213,62 @@ void SessionController::confirmTrashSelected()
     {
         showError(result.errorMessages.join(QStringLiteral(" • ")));
     }
+}
+
+QString SessionController::externalEditorPath() const
+{
+    return m_externalEditorPath;
+}
+
+void SessionController::setExternalEditorPath(const QString &path)
+{
+    if (m_externalEditorPath == path)
+    {
+        return;
+    }
+    m_externalEditorPath = path;
+    emit externalEditorPathChanged();
+}
+
+void SessionController::openSelectedInEditor()
+{
+    if (!m_selectionManager || !m_filterModel || !m_model)
+    {
+        return;
+    }
+
+    const QList<int> proxyRows = m_selectionManager->selectedProxyRows();
+    QList<CatalogItem> items;
+    items.reserve(proxyRows.size());
+    for (int proxyRow : proxyRows)
+    {
+        const int srcRow = sourceRowForProxy(proxyRow);
+        if (srcRow < 0)
+        {
+            continue;
+        }
+        if (const CatalogItem *item = m_model->itemAt(srcRow))
+        {
+            items.append(*item);
+        }
+    }
+
+    const ToolLaunchPlan plan = ExternalToolService::planFor(items, m_externalEditorPath);
+    if (!plan.canLaunch())
+    {
+        showError(plan.message);
+        return;
+    }
+
+    QString launchError;
+    if (!ExternalToolService::launch(plan.program, plan.arguments, &launchError))
+    {
+        showError(launchError);
+        return;
+    }
+
+    setStatusMessage(QStringLiteral("Opened %1 in %2")
+                         .arg(plan.fileName, QFileInfo(plan.program).fileName()));
 }
 
 } // namespace PhotoCarta

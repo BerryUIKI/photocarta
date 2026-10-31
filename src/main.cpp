@@ -204,6 +204,14 @@ int main(int argc, char *argv[])
         sessionController->setXmpSyncEnabled(settingsManager->xmpSidecarSyncEnabled());
     });
 
+    sessionController->setExternalEditorPath(settingsManager->externalEditorPath());
+    QObject::connect(sessionController, &SessionController::externalEditorPathChanged, settingsManager, [sessionController, settingsManager]() {
+        settingsManager->setExternalEditorPath(sessionController->externalEditorPath());
+    });
+    QObject::connect(settingsManager, &SettingsManager::externalEditorPathChanged, sessionController, [sessionController, settingsManager]() {
+        sessionController->setExternalEditorPath(settingsManager->externalEditorPath());
+    });
+
     QObject::connect(sessionController, &SessionController::currentCollectionChanged, collectionModel, [sessionController, collectionModel]() {
         collectionModel->setActiveCollectionId(sessionController->currentCollectionId());
     });

@@ -24,17 +24,17 @@ def validate_route(base, head, same_repository=True):
         if same_repository and stabilization:
             return None
         return "main accepts same-repository release/* or hotfix/* PRs only."
-    if base == "develop":
+    if base == "dev":
         if kind in WORK_TYPES or kind == "dependabot":
             return None
         if same_repository and (head == "main" or stabilization):
             return None
-        return "develop accepts work branches, or same-repository release/hotfix/main back-merges."
+        return "dev accepts work branches, or same-repository release/hotfix/main back-merges."
     if branch_kind(base) in {"release", "hotfix"}:
         if kind in {"bugfix", "fix", "chore", "docs", "ci", "test"}:
             return None
         return "Stabilization branches accept focused fixes, documentation, CI, and tests."
-    return "Choose develop, main, release/*, or hotfix/* as the PR target."
+    return "Choose dev, main, release/*, or hotfix/* as the PR target."
 
 
 def main():

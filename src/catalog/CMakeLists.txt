@@ -41,6 +41,8 @@ add_library(photocarta_catalog STATIC
     organization/batchrenamer.cpp
     fileops/trashservice.h
     fileops/trashservice.cpp
+    tools/externaltoolservice.h
+    tools/externaltoolservice.cpp
 )
 
 target_include_directories(photocarta_catalog PUBLIC

@@ -63,6 +63,7 @@ class SessionController : public QObject
     Q_PROPERTY(bool trashDialogOpen READ trashDialogOpen WRITE setTrashDialogOpen NOTIFY trashDialogOpenChanged)
     Q_PROPERTY(int trashCandidateCount READ trashCandidateCount NOTIFY trashCandidatesChanged)
     Q_PROPERTY(int trashSkippedCount READ trashSkippedCount NOTIFY trashCandidatesChanged)
+    Q_PROPERTY(QString externalEditorPath READ externalEditorPath WRITE setExternalEditorPath NOTIFY externalEditorPathChanged)
 
 public:
     explicit SessionController(CatalogModel *model,
@@ -255,6 +256,11 @@ public:
     Q_INVOKABLE void closeTrashDialog();
     Q_INVOKABLE void confirmTrashSelected();
 
+    // External tools
+    [[nodiscard]] QString externalEditorPath() const;
+    void setExternalEditorPath(const QString &path);
+    Q_INVOKABLE void openSelectedInEditor();
+
 signals:
     void previewModeChanged();
     void leftPaneVisibleChanged();
@@ -290,6 +296,7 @@ signals:
     void batchRenameCompleted(int successCount, int failCount);
     void trashDialogOpenChanged();
     void trashCandidatesChanged();
+    void externalEditorPathChanged();
 
 private slots:
     void onModelCountChanged();
@@ -349,6 +356,9 @@ private:
     QStringList m_trashErrorMessages;
     int m_trashCandidateCount = 0;
     int m_trashSkippedCount = 0;
+
+    // External tools
+    QString m_externalEditorPath;
 };
 
 } // namespace PhotoCarta

@@ -90,9 +90,9 @@ def main():
         "branches": [{"ref": branch["ref"], "sha": branch["object"]["sha"]} for branch in branches],
     }, indent=2) + "\n", encoding="utf-8")
     print(f"Saved previous managed settings to {backup.relative_to(ROOT)}")
-    if not any(branch["ref"] == "refs/heads/develop" for branch in branches):
-        gh_api(f"{endpoint}/git/refs", "POST", {"ref": "refs/heads/develop", "sha": main_ref["object"]["sha"]})
-        print("Created develop from main.")
+    if not any(branch["ref"] == "refs/heads/dev" for branch in branches):
+        gh_api(f"{endpoint}/git/refs", "POST", {"ref": "refs/heads/dev", "sha": main_ref["object"]["sha"]})
+        print("Created dev from main.")
     if not matches(settings, repo):
         gh_api(endpoint, "PATCH", settings)
         print("Updated merge settings.")

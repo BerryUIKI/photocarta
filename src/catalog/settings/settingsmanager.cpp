@@ -42,6 +42,7 @@ void SettingsManager::load()
     m_windowMaximized = m_settings->value(QStringLiteral("window/maximized"), false).toBool();
     m_filmstripVisible = m_settings->value(QStringLiteral("viewer/filmstripVisible"), true).toBool();
     m_xmpSidecarSyncEnabled = m_settings->value(QStringLiteral("metadata/xmpSidecarSyncEnabled"), true).toBool();
+    m_externalEditorPath = m_settings->value(QStringLiteral("tools/externalEditorPath"), QString()).toString();
 }
 
 void SettingsManager::sync()
@@ -324,6 +325,25 @@ void SettingsManager::setXmpSidecarSyncEnabled(bool enabled)
     emit xmpSidecarSyncEnabledChanged(m_xmpSidecarSyncEnabled);
 }
 
+QString SettingsManager::externalEditorPath() const
+{
+    return m_externalEditorPath;
+}
+
+void SettingsManager::setExternalEditorPath(const QString &path)
+{
+    if (m_externalEditorPath == path)
+    {
+        return;
+    }
+    m_externalEditorPath = path;
+    if (m_settings)
+    {
+        m_settings->setValue(QStringLiteral("tools/externalEditorPath"), m_externalEditorPath);
+    }
+    emit externalEditorPathChanged(m_externalEditorPath);
+}
+
 void SettingsManager::saveWindowGeometry(int x, int y, int width, int height, bool maximized)
 {
     m_windowX = x;
@@ -366,6 +386,7 @@ void SettingsManager::resetToDefaults()
     setLastCollectionId(0);
     setFilmstripVisible(true);
     setXmpSidecarSyncEnabled(true);
+    setExternalEditorPath(QString());
     saveWindowGeometry(-1, -1, 1200, 800, false);
 }
 

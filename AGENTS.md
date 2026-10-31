@@ -41,13 +41,13 @@
 
 ## GitFlow
 
-- Read `docs/gitflow.md`. `main` is the stable line; `develop` is integration.
-- Branch from `develop` for normal work. Agents use `codex/feature/<topic>`,
+- Read `docs/gitflow.md`. `main` is the stable line; `dev` is integration.
+- Branch from `dev` for normal work. Agents use `codex/feature/<topic>`,
   `codex/bugfix/<topic>`, or `codex/chore/<topic>` as appropriate.
-- Releases use `release/<version>` from `develop`; urgent fixes use
-  `hotfix/<version>` from `main`. Merge both into `main` and back into `develop`.
+- Releases use `release/<version>` from `dev`; urgent fixes use
+  `hotfix/<version>` from `main`. Merge both into `main` and back into `dev`.
 - Use PRs and merge commits for protected branches. Do not force-push, delete,
-  or commit directly to `main` or `develop`. Do not weaken rules to pass CI.
+  or commit directly to `main` or `dev`. Do not weaken rules to pass CI.
 - Preserve user changes. Do not reset, discard, auto-merge, or publish a release
   without authorization in the current task. Do not infer a commit/push request
   from an unrelated implementation task.

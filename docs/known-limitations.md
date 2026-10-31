@@ -10,12 +10,28 @@ documented limits, notices, and packaging dependencies in
 
 - The initial release converts the main photo management window. Retained digiKam
   tool windows (for example the editor, batch queue manager, and camera import)
-  are not integrated into the Qt Quick shell yet.
+  are not integrated into the Qt Quick shell yet. PhotoCarta can hand one selected
+  photo to an external editor process; embedding tools in the shell, the batch
+  queue manager, camera import, and an in-app editor picker remain out of scope.
 - The application is a catalog browser and organizer: it does not develop RAW
   files, edit pixels, or replace the digiKam editor.
 - Ratings, favorites, color labels, titles, captions, and tags are cataloged
   metadata. PhotoCarta does not write embedded XMP/IPTC into the image files;
   metadata interchange uses companion `.xmp` sidecars.
+
+## External editor
+
+- "Open in Editor" hands the selected photo to an external process: an installed
+  ShowFoto or digiKam, or the executable named by `PHOTOCARTA_EXTERNAL_EDITOR`.
+  The environment variable overrides the saved `tools/externalEditorPath` setting,
+  and both override auto-detection, so a path that no longer exists is reported
+  instead of silently replaced.
+- Only one photo is handed off at a time. Demo fixtures, offline collections, and
+  missing files are refused, and every refusal is reported in the error banner.
+- PhotoCarta does not wait for or track the launched editor. Changes made there
+  are not observed, and the catalog is not refreshed when the editor closes.
+- No in-app editor picker is provided yet. Install ShowFoto or digiKam in a
+  standard location or set the environment variable before starting PhotoCarta.
 
 ## Catalog compatibility
 

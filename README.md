@@ -23,6 +23,7 @@ backend. Release early, then improve functionality incrementally.
 - [Architecture and reuse strategy](docs/architecture.md)
 - [Storage choices and scale](docs/storage-and-scale.md)
 - [Initial release scope](docs/initial-release.md)
+- [MVP definition](docs/mvp.md)
 - [Known limitations](docs/known-limitations.md)
 - [GitFlow and repository protection](docs/gitflow.md)
 - [Local build instructions](docs/build-instructions.md)
@@ -45,6 +46,10 @@ Metadata editing is available in the details pane: ratings, favorites, color lab
 captions, and tags are written to the local SQLite catalog for a single photo or the whole selection,
 the sidebar tag list is derived from the catalog, and the grid can be filtered by search text, tag,
 rating, color label, or category.
+
+The toolbar and the photo context menu can hand the selected photo to an external editor: an
+installed ShowFoto or digiKam, or the executable named by `PHOTOCARTA_EXTERNAL_EDITOR`. Unsupported
+handoffs, such as demo, offline, or multi-photo selections, are reported rather than ignored.
 
 The catalog supports recursive folder scanning into SQLite, batch rename with a preview, image export
 with format conversion and resizing, XMP sidecar read/write, and move-to-trash. Existing digiKam
@@ -74,5 +79,5 @@ python -m unittest discover -s tests -v
 
 GitHub Actions runs repository checks on Windows, macOS, and Linux, and builds the
 application with the focused Qt test suite and startup/screenshot smoke checks on
-each platform. Normal PRs target `develop`; `main` is reserved for release and
+each platform. Normal PRs target `dev`; `main` is reserved for release and
 hotfix integration.
