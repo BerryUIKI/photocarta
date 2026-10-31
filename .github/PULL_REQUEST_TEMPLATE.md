@@ -1,6 +1,6 @@
 ## Change
 
-Describe the problem and resulting behavior. Normal work targets `develop`.
+Describe the problem and resulting behavior. Normal work targets `dev`.
 
 ## Scope
 

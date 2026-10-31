@@ -6,12 +6,12 @@ retaining established digiKam behavior.
 
 ## Development workflow
 
-Use [GitFlow](docs/gitflow.md). Normal changes target `develop`, not `main`.
+Use [GitFlow](docs/gitflow.md). Normal changes target `dev`, not `main`.
 
 ```sh
 git clone https://github.com/BerryUIKI/photocarta.git
 cd photocarta
-git switch develop
+git switch dev
 git switch -c feature/your-topic
 ```
 
