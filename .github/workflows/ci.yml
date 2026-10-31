@@ -111,11 +111,25 @@ jobs:
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_TESTING=ON
+            -DBUILD_TESTING=ON \
+            -DBUILD_BENCHMARK=ON
 
       - name: Build PhotoCarta
         shell: bash
         run: cmake --build build --config Release
+
+      # Compiles the benchmark on every platform so it cannot rot, but never
+      # runs it: a 100,000-item run needs a real library and is opt-in.
+      - name: Confirm the scale benchmark is built but not registered
+        shell: bash
+        run: |
+          list=$(ctest --test-dir build -N -R '^benchmark_scale$')
+          echo "$list"
+          if echo "$list" | grep -q "benchmark_scale"; then
+            echo "::error::benchmark_scale is registered without PHOTOCARTA_BENCHMARK_MEDIA"
+            exit 1
+          fi
+          find build -name 'photocarta_benchmark*' -type f -not -path '*/CMakeFiles/*' -print -quit | grep -q .
 
       - name: Run Qt behavioral tests & startup smoke tests (Linux xvfb)
         if: runner.os == 'Linux'

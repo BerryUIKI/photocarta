@@ -58,6 +58,10 @@
   `python -m unittest discover -s tests -v` for initialization/policy changes.
 - CI validates repository files, GitFlow policy, and native builds on
   Windows, macOS, and Linux, running focused behavioral tests and startup smoke checks.
+- The scale benchmark (`-DBUILD_BENCHMARK=ON`, then
+  `python scripts/run_benchmark.py --media-dir <library>`) needs a real photo
+  library and is run by the project owner, not in CI. Record results in
+  `docs/benchmarks.md`. Never report a target as met without a recorded run.
 - When native toolchains are present locally, run `ctest --test-dir build --output-on-failure`
   and use visual review via `photocarta --screenshot <path>`.
 - Focused behavioral tests in `tests/qt/` verify model data roles, selection state,
