@@ -4,3 +4,7 @@
 if(BUILD_TESTING)
     add_subdirectory(qt)
 endif()
+
+# tests/benchmark is added from the top-level CMakeLists.txt, not here: this
+# directory is skipped entirely when BUILD_TESTING is OFF, and a benchmark run
+# uses exactly that configuration.
