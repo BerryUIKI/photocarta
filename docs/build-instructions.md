@@ -47,6 +47,37 @@ export CMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
 
 ## 2. Configuring and Building
 
+### Windows: one-command build with MSVC and a system Qt
+
+`scripts/build-msvc.bat` wraps the whole loop: it enters the MSVC environment,
+puts Qt's `bin` on `PATH`, then configures, builds, and runs `ctest`.
+
+```cmd
+scripts\build-msvc.bat
+```
+
+Pass `configure`, `build`, or `test` to run a single step. The script expects the
+machine-wide Qt SDK at `D:\Qt\6.8.3\msvc2022_64`; edit `VSROOT` or `QTDIR` at the
+top for a different layout.
+
+Qt is installed once per machine rather than per project, and is deliberately not
+added to `PATH`. The checkout only carries a git-ignored `CMakeUserPresets.json`
+whose `dev-local` preset points at that SDK:
+
+```cmd
+python -m aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 -O D:/Qt
+```
+
+`CMakeUserPresets.json` is per-developer and not committed, so each machine can
+point at its own Qt. CI installs the same 6.8.3 kit with
+`jurplel/install-qt-action`, so a local build matches CI.
+
+With the Ninja generator, Qt's runtime DLLs are **not** on `PATH` automatically
+(the Visual Studio generator does that for you). Launching a test or the
+application without `D:\Qt\6.8.3\msvc2022_64\bin` on `PATH` fails with
+`0xC0000135` / "Qt6Core.dll was not found". The script handles this; a manual
+`cmake` invocation does not.
+
 ### Using CMake Presets (Recommended)
 
 PhotoCarta provides presets in [CMakePresets.json](../CMakePresets.json):
@@ -57,6 +88,15 @@ cmake --preset default
 
 # Build all targets (application + tests)
 cmake --build --preset default
+```
+
+On Windows, use the `dev-local` preset instead; it inherits `default` and adds the
+Qt path:
+
+```cmd
+cmake --preset dev-local -G Ninja
+cmake --build --preset dev-local
+ctest --preset dev-local
 ```
 
 ### Manual Configuration
@@ -72,8 +112,21 @@ cmake --build build --config Release
 ```
 
 The resulting executable is located at:
-- Windows: `build/src/photocarta.exe`
+- Windows: `build/src/photocarta.exe` (`build/default/src/photocarta.exe` with presets)
 - Linux/macOS: `build/src/photocarta`
+
+### Windows: font rendering under the offscreen plugin
+
+`-platform offscreen` on Windows does not get system fonts, so an offscreen
+screenshot renders every glyph as a box. The layout and geometry are still valid
+for review, but capture with the default plugin instead when checking typography:
+
+```cmd
+build\default\src\photocarta.exe --screenshot review.png --theme light
+```
+
+On headless Linux, `offscreen` and `xvfb-run` do render text and remain the
+supported path.
 
 ---
 
