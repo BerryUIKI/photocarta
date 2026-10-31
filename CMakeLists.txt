@@ -45,11 +45,19 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
 # Standard testing enablement
 include(CTest)
 
+# Opt-in: the scale benchmark takes minutes and gigabytes on a real library.
+# Declared before the tests subdirectory so it can be built with
+# -DBUILD_TESTING=OFF, which is the configuration a benchmark run wants.
+option(BUILD_BENCHMARK "Build the scale benchmark target" OFF)
+
 add_subdirectory(src)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
+
+# Not under tests/, because tests/ is skipped when BUILD_TESTING is OFF.
+add_subdirectory(tests/benchmark)
 
 # CPack packaging configuration
 include(cmake/Packaging.cmake)

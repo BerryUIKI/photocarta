@@ -5,6 +5,6 @@ if(BUILD_TESTING)
     add_subdirectory(qt)
 endif()
 
-# Opt-in: the scale benchmark takes minutes and gigabytes on a real library.
-option(BUILD_BENCHMARK "Build the scale benchmark target" OFF)
-add_subdirectory(benchmark)
+# tests/benchmark is added from the top-level CMakeLists.txt, not here: this
+# directory is skipped entirely when BUILD_TESTING is OFF, and a benchmark run
+# uses exactly that configuration.
