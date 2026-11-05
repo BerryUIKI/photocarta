@@ -3,10 +3,16 @@
 
 #include "catalog/thumbnails/thumbnailcache.h"
 
+#include <QColor>
 #include <QDir>
 #include <QImage>
+#include <QList>
+#include <QRunnable>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QThreadPool>
+
+#include <vector>
 
 using namespace PhotoCarta;
 
@@ -17,6 +23,8 @@ class TestThumbnailCache : public QObject
 private slots:
     void testThumbnailGenerationAndCaching();
     void testClearCaches();
+    void testConcurrentGeneration();
+    void testConcurrentDuplicateRequest();
 };
 
 void TestThumbnailCache::testThumbnailGenerationAndCaching()
@@ -80,6 +88,84 @@ void TestThumbnailCache::testClearCaches()
     cache.clearDiskCache();
     QCOMPARE(cache.memoryCacheCost(), 0);
     QVERIFY(!cache.hasCachedThumbnail(srcPath, QSize(64, 64)));
+}
+
+void TestThumbnailCache::testConcurrentGeneration()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    constexpr int imageCount = 8;
+    QList<QString> paths;
+    paths.reserve(imageCount);
+    for (int i = 0; i < imageCount; ++i)
+    {
+        QImage source(1200, 800, QImage::Format_RGB32);
+        source.fill(QColor::fromHsv((i * 37) % 360, 180, 220));
+        const QString path = tempDir.filePath(QStringLiteral("concurrent_%1.jpg").arg(i));
+        QVERIFY(source.save(path, "JPG", 90));
+        paths.append(path);
+    }
+
+    ThumbnailCache cache;
+    cache.setDiskCachePath(tempDir.filePath(QStringLiteral("cache")));
+
+    std::vector<QImage> results(imageCount);
+    QThreadPool pool;
+    pool.setMaxThreadCount(4);
+    for (int i = 0; i < imageCount; ++i)
+    {
+        pool.start(QRunnable::create([&cache, &results, i, path = paths.at(i)]() {
+            results[i] = cache.getOrCreateThumbnail(path, QSize(200, 200));
+        }));
+    }
+    QVERIFY(pool.waitForDone(30000));
+
+    for (const QImage &thumb : results)
+    {
+        QVERIFY(!thumb.isNull());
+        QVERIFY(thumb.width() <= 200);
+        QVERIFY(thumb.height() <= 200);
+    }
+    QVERIFY(cache.memoryCacheCost() > 0);
+
+    cache.clearMemoryCache();
+    QCOMPARE(cache.memoryCacheCost(), 0);
+    const QImage fromDisk = cache.getOrCreateThumbnail(paths.first(), QSize(200, 200));
+    QVERIFY(!fromDisk.isNull());
+    QVERIFY(fromDisk.width() <= 200);
+}
+
+void TestThumbnailCache::testConcurrentDuplicateRequest()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString srcPath = tempDir.filePath(QStringLiteral("shared.jpg"));
+    QImage source(1600, 1200, QImage::Format_RGB32);
+    source.fill(Qt::magenta);
+    QVERIFY(source.save(srcPath, "JPG", 90));
+
+    ThumbnailCache cache;
+    cache.setDiskCachePath(tempDir.filePath(QStringLiteral("cache")));
+
+    constexpr int requestCount = 8;
+    std::vector<QImage> results(requestCount);
+    QThreadPool pool;
+    pool.setMaxThreadCount(4);
+    for (int i = 0; i < requestCount; ++i)
+    {
+        pool.start(QRunnable::create([&cache, &results, i, srcPath]() {
+            results[i] = cache.getOrCreateThumbnail(srcPath, QSize(96, 96));
+        }));
+    }
+    QVERIFY(pool.waitForDone(30000));
+
+    for (const QImage &thumb : results)
+    {
+        QVERIFY(!thumb.isNull());
+        QCOMPARE(thumb.size(), QSize(96, 72));
+    }
 }
 
 QTEST_MAIN(TestThumbnailCache)

@@ -8,12 +8,15 @@
 #include <QFileInfo>
 #include <QImageReader>
 #include <QLoggingCategory>
+#include <QSaveFile>
 #include <QStandardPaths>
+#include <QThread>
 
 namespace
 {
 Q_LOGGING_CATEGORY(lcThumb, "photocarta.thumbnails")
 constexpr int DEFAULT_MAX_MEMORY_CACHE_BYTES = 64 * 1024 * 1024; // 64 MB
+constexpr int MAX_CONCURRENT_DECODES = 4;
 }
 
 namespace PhotoCarta
@@ -21,6 +24,7 @@ namespace PhotoCarta
 
 ThumbnailCache::ThumbnailCache(QObject *parent)
     : QObject(parent),
+      m_decodeSlots(maxConcurrentDecodes()),
       m_memoryCache(DEFAULT_MAX_MEMORY_CACHE_BYTES)
 {
     const QString cacheBase = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
@@ -34,6 +38,11 @@ ThumbnailCache &ThumbnailCache::instance()
 {
     static ThumbnailCache s_instance;
     return s_instance;
+}
+
+int ThumbnailCache::maxConcurrentDecodes()
+{
+    return qBound(1, QThread::idealThreadCount(), MAX_CONCURRENT_DECODES);
 }
 
 QString ThumbnailCache::diskCachePath() const
@@ -78,37 +87,70 @@ bool ThumbnailCache::hasCachedThumbnail(const QString &filePath, const QSize &ta
 
 QImage ThumbnailCache::getOrCreateThumbnail(const QString &filePath, const QSize &targetSize)
 {
-    QMutexLocker locker(&m_mutex);
     const QString key = cacheKey(filePath, targetSize);
 
     // 1. Check in-memory bounded cache
-    if (auto *cached = m_memoryCache.object(key))
     {
-        return *cached;
+        QMutexLocker locker(&m_mutex);
+        if (auto *cached = m_memoryCache.object(key))
+        {
+            return *cached;
+        }
     }
 
-    // 2. Check on-disk cache
-    const QString diskPath = diskFilePath(key);
+    QString diskPath;
+    {
+        QMutexLocker locker(&m_mutex);
+        diskPath = diskFilePath(key);
+    }
+
+    // 2. Check on-disk cache. Loading and decoding happen outside the lock so
+    // concurrent requests do not serialize on it.
     if (QFileInfo::exists(diskPath))
     {
-        QImage diskImage(diskPath);
+        const QImage diskImage(diskPath);
         if (!diskImage.isNull())
         {
-            m_memoryCache.insert(key, new QImage(diskImage), static_cast<int>(diskImage.sizeInBytes()));
+            QMutexLocker locker(&m_mutex);
+            m_memoryCache.insert(key, new QImage(diskImage),
+                                 static_cast<int>(diskImage.sizeInBytes()));
             return diskImage;
         }
     }
 
-    // 3. Generate from source image file
+    // 3. Generate from the source image, bounding concurrent full-image
+    // decodes so their transient buffers stay predictable.
+    m_decodeSlots.acquire();
     const QImage generated = generateThumbnail(filePath, targetSize);
     if (!generated.isNull())
     {
-        // Save to disk asynchronously / synchronously
-        generated.save(diskPath, "JPG", 85);
-        m_memoryCache.insert(key, new QImage(generated), static_cast<int>(generated.sizeInBytes()));
+        writeThumbnail(generated, diskPath);
+        QMutexLocker locker(&m_mutex);
+        m_memoryCache.insert(key, new QImage(generated),
+                             static_cast<int>(generated.sizeInBytes()));
     }
+    m_decodeSlots.release();
 
     return generated;
+}
+
+void ThumbnailCache::writeThumbnail(const QImage &image, const QString &diskPath) const
+{
+    // QSaveFile replaces the target atomically, so another thread reading the
+    // thumbnail never sees a partially written JPEG.
+    QSaveFile file(diskPath);
+    if (!file.open(QIODevice::WriteOnly))
+    {
+        qCDebug(lcThumb) << "Failed to open thumbnail cache file:" << diskPath
+                         << file.errorString();
+        return;
+    }
+
+    if (!image.save(&file, "JPG", 85) || !file.commit())
+    {
+        qCDebug(lcThumb) << "Failed to write thumbnail cache file:" << diskPath
+                         << file.errorString();
+    }
 }
 
 QImage ThumbnailCache::generateThumbnail(const QString &filePath, const QSize &targetSize) const

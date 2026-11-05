@@ -41,6 +41,7 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
+#include <QFutureWatcher>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -52,6 +53,7 @@
 #include <QStringList>
 #include <QThread>
 #include <QTimer>
+#include <QtConcurrent>
 #include <QtGlobal>
 
 #include <algorithm>
@@ -483,19 +485,27 @@ int main(int argc, char *argv[])
 
     if (!thumbnailPaths.isEmpty())
     {
-        // Measure only generation: the cache is empty, so every call decodes.
+        // Measure the asynchronous path the application uses: concurrent
+        // requests through the cache, decoded on worker threads, while this
+        // thread keeps its event loop running so the probe observes real
+        // UI-thread responsiveness rather than benchmark-side blocking.
         probe.start();
         thumbTimer.start();
-        for (const QString &path : thumbnailPaths)
-        {
-            const QImage image = cache.getOrCreateThumbnail(path, QSize(256, 256));
-            if (!image.isNull())
-            {
-                ++generated;
-            }
-            // Yield so the stall probe can observe event-loop responsiveness.
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 1);
-        }
+
+        const QFuture<int> future = QtConcurrent::mapped(
+            thumbnailPaths, [&cache](const QString &path) {
+                return cache.getOrCreateThumbnail(path, QSize(256, 256)).isNull() ? 0 : 1;
+            });
+
+        QEventLoop thumbLoop;
+        QFutureWatcher<int> watcher;
+        QObject::connect(&watcher, &QFutureWatcher<int>::finished, &thumbLoop, &QEventLoop::quit);
+        watcher.setFuture(future);
+        thumbLoop.exec();
+
+        const QList<int> outcomes = future.results();
+        generated = static_cast<int>(std::count(outcomes.cbegin(), outcomes.cend(), 1));
+
         probe.stop();
         longestStallMs = probe.longestMs();
         probeTicks = probe.ticks();
@@ -569,6 +579,7 @@ int main(int argc, char *argv[])
     thumbnails.insert(QStringLiteral("elapsedSeconds"), thumbSeconds);
     thumbnails.insert(QStringLiteral("perSecond"), thumbPerSecond);
     thumbnails.insert(QStringLiteral("targetPerSecond"), THUMBNAIL_TARGET_PER_SECOND);
+    thumbnails.insert(QStringLiteral("decodeConcurrency"), ThumbnailCache::maxConcurrentDecodes());
     thumbnails.insert(QStringLiteral("pass"), thumbPerSecond >= THUMBNAIL_TARGET_PER_SECOND);
     thumbnails.insert(QStringLiteral("longestEventLoopStallMs"), longestStallMs);
     thumbnails.insert(QStringLiteral("stallProbeTicks"), probeTicks);

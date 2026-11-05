@@ -34,11 +34,14 @@ What each number means:
   a saved catalog. It is currently a synchronous full load.
 - **Filter p95** — 21 filter changes (free-text search, rating, tag) over the
   loaded catalog, each timed through a full `rowCount()` traversal of the proxy.
-- **Thumbnails/s** — thumbnails generated into an empty cache, so every call
-  decodes. Reported as generated images per second.
-- **Longest stall** — the longest gap between 5 ms event-loop timer ticks while
-  thumbnails generate. A run whose probe fires fewer than 10 times does not
-  report a stall measurement, because too few samples overstate real blocking.
+- **Thumbnails/s** — thumbnails generated into an empty cache, so every request
+  decodes. Requests run concurrently through the cache as the application's
+  image provider issues them, with at most `min(4, logical CPUs)` decodes in
+  flight. Reported as generated images per second.
+- **Longest stall** — the longest gap between 5 ms event-loop timer ticks on the
+  main thread while worker threads decode thumbnails. A run whose probe fires
+  fewer than 10 times does not report a stall measurement, because too few
+  samples overstate real blocking.
 - **Peak RSS** — process peak working set after the thumbnail run.
 
 ### Running it
@@ -62,7 +65,9 @@ python scripts/run_benchmark.py --media-dir D:/photos/library --label "Windows 1
 
 The benchmark only reads the media directory. The catalog and thumbnail cache
 go into a temporary directory that is removed afterwards, or into `--work-dir`
-when you want to inspect them.
+when you want to inspect them. Keep the work directory on a different disk from
+the media: putting the thumbnail writes on the same busy disk as the source
+reads measures I/O contention instead of decode throughput.
 
 A run exits non-zero when a target is missed, but the script still records the
 row: a recorded miss is the point of the exercise, and it gives the next

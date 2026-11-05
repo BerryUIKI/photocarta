@@ -7,6 +7,7 @@
 #include <QImage>
 #include <QMutex>
 #include <QObject>
+#include <QSemaphore>
 #include <QSize>
 #include <QString>
 
@@ -22,6 +23,9 @@ public:
     ~ThumbnailCache() override;
 
     static ThumbnailCache &instance();
+
+    /// Upper bound on full-image decodes that may run at the same time.
+    [[nodiscard]] static int maxConcurrentDecodes();
 
     [[nodiscard]] QString diskCachePath() const;
     void setDiskCachePath(const QString &path);
@@ -43,8 +47,10 @@ private:
     [[nodiscard]] QString cacheKey(const QString &filePath, const QSize &targetSize) const;
     [[nodiscard]] QString diskFilePath(const QString &cacheKey) const;
     [[nodiscard]] QImage generateThumbnail(const QString &filePath, const QSize &targetSize) const;
+    void writeThumbnail(const QImage &image, const QString &diskPath) const;
 
     mutable QMutex m_mutex;
+    QSemaphore m_decodeSlots;
     QString m_diskCacheDir;
     QCache<QString, QImage> m_memoryCache;
 };
