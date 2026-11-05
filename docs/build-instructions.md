@@ -56,16 +56,48 @@ puts Qt's `bin` on `PATH`, then configures, builds, and runs `ctest`.
 scripts\build-msvc.bat
 ```
 
-Pass `configure`, `build`, or `test` to run a single step. The script expects the
-machine-wide Qt SDK at `D:\Qt\6.8.3\msvc2022_64`; edit `VSROOT` or `QTDIR` at the
-top for a different layout.
+Pass `configure`, `build`, or `test` to run a single step. The script defaults to
+the machine-wide Qt SDK at `D:\Qt\6.8.3\msvc2022_64` and the Visual Studio Build
+Tools installation; set `QTDIR` and `VSROOT` in the environment to match another
+layout. CMake 3.22+ and Ninja must be on `PATH`, or bundled with Visual Studio.
+
+```cmd
+set QTDIR=F:\Qt\6.8.3\msvc2022_64
+set VSROOT=C:\Program Files\Microsoft Visual Studio\2022\Community
+scripts\build-msvc.bat
+```
 
 Qt is installed once per machine rather than per project, and is deliberately not
-added to `PATH`. The checkout only carries a git-ignored `CMakeUserPresets.json`
-whose `dev-local` preset points at that SDK:
+added to `PATH`. The script requires a git-ignored `CMakeUserPresets.json` in the
+repository root whose `dev-local` preset points at that SDK:
 
 ```cmd
 python -m aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 -O D:/Qt
+```
+
+```json
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "dev-local",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "D:/Qt/6.8.3/msvc2022_64"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "dev-local", "configurePreset": "dev-local" }
+  ],
+  "testPresets": [
+    {
+      "name": "dev-local",
+      "configurePreset": "dev-local",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}
 ```
 
 `CMakeUserPresets.json` is per-developer and not committed, so each machine can
@@ -90,8 +122,8 @@ cmake --preset default
 cmake --build --preset default
 ```
 
-On Windows, use the `dev-local` preset instead; it inherits `default` and adds the
-Qt path:
+On Windows, use the `dev-local` preset from your `CMakeUserPresets.json` instead;
+it inherits `default` and adds the Qt path:
 
 ```cmd
 cmake --preset dev-local -G Ninja
